@@ -1,2 +1,3 @@
 rootProject.name = "webp-android"
 include ':example'
+include ':webp-codec'
