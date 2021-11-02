@@ -21,3 +21,10 @@ add_subdirectory(${LIBWEBP_PATH} ${CMAKE_CURRENT_BINARY_DIR}/libwebp)
 add_library(webp_jni SHARED ${LIBWEBP_PATH}/swig/libwebp_java_wrap.c)
 target_link_libraries(webp_jni webp)
 target_include_directories(webp_jni PRIVATE ${JAVA_INCLUDE_PATH} ${LIBWEBP_PATH}/src)
+
+# libwebpcodec jni bindings
+find_library(bitmap-lib jnigraphics)
+find_library(log-lib log)
+add_library(webpcodec_jni SHARED src/main/cpp/encoder.cpp)
+target_link_libraries(webpcodec_jni libwebpmux ${bitmap-lib} ${log-lib})
+target_include_directories(webpcodec_jni PRIVATE ${JAVA_INCLUDE_PATH} ${LIBWEBP_PATH}/src)
