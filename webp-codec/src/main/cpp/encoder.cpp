@@ -2,6 +2,7 @@
 // Created by udara on 11/2/21.
 //
 
+#include <cerrno>
 #include <android/bitmap.h>
 
 #include "includes/encoder.h"
