@@ -23,7 +23,7 @@ class WebPAnimEncoder(
 
     private external fun create(width: Int, height: Int, options: WebPAnimEncoderOptions?): Long
 
-    external fun config(config: WebPConfig): Boolean
+    external fun config(config: WebPConfig)
 
     external fun config(
         preset: WebPPreset,
@@ -36,11 +36,11 @@ class WebPAnimEncoder(
          */
         @FloatRange(from = 0.0, to = 100.0)
         quality: Float
-    ): Boolean
+    )
 
-    external fun addFrame(frame: WebPFrame): Boolean
+    external fun addFrame(frame: WebPFrame)
 
-    external fun assemble(timestamp: Long, path: String): Boolean
+    external fun assemble(timestamp: Long, path: String)
 
-    external fun release(): Boolean
+    external fun release()
 }
