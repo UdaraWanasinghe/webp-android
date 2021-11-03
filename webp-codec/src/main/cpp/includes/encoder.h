@@ -21,3 +21,15 @@ extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv *, jobject,
                                                                                                               jobject, jfloat);
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *, jobject, jobject);
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_assemble(JNIEnv *, jobject, jlong, jstring);
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_release(JNIEnv *, jobject);

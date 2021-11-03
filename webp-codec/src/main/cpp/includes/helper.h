@@ -8,23 +8,32 @@
 #endif //WEBP_ANDROID_HELPER_H
 
 #include <jni.h>
+#include <stdlib.h>
+#include <string>
 
-static jboolean getBooleanValue(JNIEnv *env, jobject object) {
-    jclass cls = env->FindClass("java/lang/Boolean");
-    return env->CallBooleanMethod(object, env->GetMethodID(cls, "booleanValue", "()Z"));
+using namespace std;
+
+static jboolean GetBooleanValue(JNIEnv *env, jobject object) {
+    jclass Boolean = env->FindClass("java/lang/Boolean");
+    return env->CallBooleanMethod(object, env->GetMethodID(Boolean, "booleanValue", "()Z"));
 }
 
-static jint getIntegerValue(JNIEnv *env, jobject object) {
-    jclass cls = env->FindClass("java/lang/Integer");
-    return env->CallIntMethod(object, env->GetMethodID(cls, "intValue", "()I"));
+static jint GetIntegerValue(JNIEnv *env, jobject object) {
+    jclass Integer = env->FindClass("java/lang/Integer");
+    return env->CallIntMethod(object, env->GetMethodID(Integer, "intValue", "()I"));
 }
 
-static jlong getLong(JNIEnv *env, jobject object) {
-    jclass cls = env->FindClass("java/lang/Long");
-    return env->CallLongMethod(object, env->GetMethodID(cls, "longValue", "()J"));
+static jlong GetLongValue(JNIEnv *env, jobject object) {
+    jclass Long = env->FindClass("java/lang/Long");
+    return env->CallLongMethod(object, env->GetMethodID(Long, "longValue", "()J"));
 }
 
-static jfloat getFloat(JNIEnv *env, jobject object) {
-    jclass cls = env->FindClass("java/lang/Float");
-    return env->CallFloatMethod(object, env->GetMethodID(cls, "floatValue", "()F"));
+static jfloat GetFloatValue(JNIEnv *env, jobject object) {
+    jclass Float = env->FindClass("java/lang/Float");
+    return env->CallFloatMethod(object, env->GetMethodID(Float, "floatValue", "()F"));
+}
+
+static void ThrowException(JNIEnv *env, string message) {
+    jclass Exception = env->FindClass("java/lang/Exception");
+    env->ThrowNew(Exception, message.data());
 }
