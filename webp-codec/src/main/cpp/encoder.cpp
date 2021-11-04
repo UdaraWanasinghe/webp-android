@@ -14,10 +14,10 @@ class Encoder {
 
 public:
     WebPAnimEncoder *encoder = nullptr;
-    WebPConfig *config = nullptr;
+    WebPConfig config = {0};
 
-    Encoder(int width, int height, WebPAnimEncoderOptions *options) {
-        encoder = WebPAnimEncoderNew(width, height, options);
+    Encoder(int width, int height, WebPAnimEncoderOptions options) {
+        encoder = WebPAnimEncoderNew(width, height, &options);
     }
 
     static Encoder *GetInstance(JNIEnv *env, jobject self) {
@@ -65,7 +65,7 @@ public:
             // anim params
             WebPMuxAnimParams anim_params;
             jobject anim_params_obj = env->GetObjectField(options, env->GetFieldID(options_class, "animParams",
-                                                                                   "Lcom/aureusapps/webpcodec/encoder/WebPMuxAnimParams"));
+                                                                                   "Lcom/aureusapps/webpcodec/encoder/WebPMuxAnimParams;"));
             if (anim_params_obj != nullptr) {
                 jclass anim_params_class = env->GetObjectClass(anim_params_obj);
                 // bgColor
@@ -101,7 +101,7 @@ public:
             // lossless
             jobject lossless = env->GetObjectField(config, env->GetFieldID(config_class, "lossless", "Ljava/lang/Integer;"));
             if (lossless != nullptr) {
-                encoder_config->lossless = GetIntegerValue(env, config);
+                encoder_config->lossless = GetIntegerValue(env, lossless);
             }
             // quality
             jobject quality = env->GetObjectField(config, env->GetFieldID(config_class, "quality", "Ljava/lang/Float;"));
@@ -284,7 +284,7 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *env, jobjec
     WebPAnimEncoderOptions encoder_options;
     if (WebPAnimEncoderOptionsInit(&encoder_options)) {
         Encoder::ParseOptions(env, options, &encoder_options);
-        auto *encoder = new Encoder(width, height, &encoder_options);
+        auto *encoder = new Encoder(width, height, encoder_options);
         return reinterpret_cast<jlong>(encoder);
     } else {
         ThrowException(env, "WebPAnimEncoderOptionsInit failed");
@@ -302,8 +302,12 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_we
     WebPConfig encoder_config;
     if (WebPConfigInit(&encoder_config)) {
         Encoder::ParseConfig(env, config, &encoder_config);
-        Encoder *encoder = Encoder::GetInstance(env, thiz);
-        encoder->config = &encoder_config;
+        if (WebPValidateConfig(&encoder_config)) {
+            Encoder *encoder = Encoder::GetInstance(env, thiz);
+            encoder->config = encoder_config;
+        } else {
+            ThrowException(env, "WebPValidateConfig failed");
+        }
     } else {
         ThrowException(env, "WebPConfigInit failed");
     }
@@ -321,8 +325,12 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_we
     WebPPreset encoder_preset = Encoder::ParsePreset(env, preset);
     WebPConfig encoder_config;
     if (WebPConfigPreset(&encoder_config, encoder_preset, quality)) {
-        Encoder *encoder = Encoder::GetInstance(env, thiz);
-        encoder->config = &encoder_config;
+        if (WebPValidateConfig(&encoder_config)) {
+            Encoder *encoder = Encoder::GetInstance(env, thiz);
+            encoder->config = encoder_config;
+        } else {
+            ThrowException(env, "WebPValidateConfig failed");
+        }
     } else {
         ThrowException(env, "WebPConfigPreset failed");
     }
@@ -358,12 +366,12 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *env, jobj
             uint32_t *dst = webp_picture.argb;
             for (int y = 0; y < info.height; ++y) {
                 memcpy(dst, pixels, info.width * 4);
-                pixels = (int *) pixels + info.stride;
+                pixels = (void *) ((uint8_t *) pixels + info.stride);
                 dst += webp_picture.argb_stride;
             }
             AndroidBitmap_unlockPixels(env, bitmap);
             auto *encoder = Encoder::GetInstance(env, thiz);
-            if (WebPAnimEncoderAdd(encoder->encoder, &webp_picture, timestamp, encoder->config)) {
+            if (WebPAnimEncoderAdd(encoder->encoder, &webp_picture, timestamp, &encoder->config)) {
             } else {
                 ThrowException(env, "WebPAnimEncoderAdd failed");
             }
