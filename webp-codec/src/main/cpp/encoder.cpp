@@ -294,14 +294,14 @@ extern "C"
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_webpcodec_encoder_WebPConfig_2(JNIEnv *env,
-                                                                                                             jobject thiz,
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPConfig_2(JNIEnv *env,
+                                                                                                             jobject self,
                                                                                                              jobject config) {
     WebPConfig encoder_config;
     if (WebPConfigInit(&encoder_config)) {
         Encoder::ParseConfig(env, config, &encoder_config);
         if (WebPValidateConfig(&encoder_config)) {
-            Encoder *encoder = Encoder::GetInstance(env, thiz);
+            Encoder *encoder = Encoder::GetInstance(env, self);
             encoder->config = encoder_config;
         } else {
             ThrowException(env, "WebPValidateConfig failed");
@@ -316,14 +316,14 @@ extern "C"
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv *env,
-                                                                                                              jobject thiz,
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv *env,
+                                                                                                              jobject self,
                                                                                                               jobject preset,
                                                                                                               jfloat quality) {
     WebPPreset encoder_preset = Encoder::ParsePreset(env, preset);
     WebPConfig encoder_config;
     if (WebPConfigPreset(&encoder_config, encoder_preset, quality)) {
-        Encoder *encoder = Encoder::GetInstance(env, thiz);
+        Encoder *encoder = Encoder::GetInstance(env, self);
         encoder->config = encoder_config;
     } else {
         ThrowException(env, "WebPConfigPreset failed");
@@ -333,7 +333,7 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_we
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *env, jobject thiz, jobject frame) {
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *env, jobject self, jobject frame) {
     jclass frame_class = env->GetObjectClass(frame);
     jobject bitmap = env->GetObjectField(frame, env->GetFieldID(frame_class, "bitmap", "Landroid/graphics/Bitmap;"));
     jlong timestamp = env->GetLongField(frame, env->GetFieldID(frame_class, "timestamp", "J"));
@@ -350,7 +350,7 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *env, jobj
 
     WebPPicture webp_picture;
     if (WebPPictureInit(&webp_picture)) {
-        webp_picture.use_argb = JNI_TRUE;
+        webp_picture.use_argb = true;
         webp_picture.width = info.width;
         webp_picture.height = info.height;
         webp_picture.colorspace = WEBP_YUV420;
@@ -364,7 +364,7 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *env, jobj
                 dst += webp_picture.argb_stride;
             }
             AndroidBitmap_unlockPixels(env, bitmap);
-            auto *encoder = Encoder::GetInstance(env, thiz);
+            auto *encoder = Encoder::GetInstance(env, self);
             if (WebPAnimEncoderAdd(encoder->encoder, &webp_picture, timestamp, &encoder->config)) {
             } else {
                 ThrowException(env, "WebPAnimEncoderAdd failed");
@@ -379,8 +379,8 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_assemble(JNIEnv *env, jobject thiz, jlong timestamp, jstring path) {
-    auto *encoder = Encoder::GetInstance(env, thiz);
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_assemble(JNIEnv *env, jobject self, jlong timestamp, jstring path) {
+    auto *encoder = Encoder::GetInstance(env, self);
     if (WebPAnimEncoderAdd(encoder->encoder, nullptr, timestamp, nullptr)) {
         WebPData data;
         WebPDataInit(&data);
@@ -407,11 +407,11 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_assemble(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_release(JNIEnv *env, jobject thiz) {
-    auto *encoder = Encoder::GetInstance(env, thiz);
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_release(JNIEnv *env, jobject self) {
+    auto *encoder = Encoder::GetInstance(env, self);
     WebPAnimEncoderDelete(encoder->encoder);
-    jclass encoder_class = env->GetObjectClass(thiz);
-    env->SetLongField(thiz, env->GetFieldID(encoder_class, "nativeObjectPointer", "J"), (jlong) 0);
+    jclass encoder_class = env->GetObjectClass(self);
+    env->SetLongField(self, env->GetFieldID(encoder_class, "nativeObjectPointer", "J"), (jlong) 0);
     delete encoder;
 
 }

@@ -24,9 +24,9 @@ class WebPAnimEncoder(
 
     private external fun create(width: Int, height: Int, options: WebPAnimEncoderOptions?): Long
 
-    external fun config(config: WebPConfig)
+    external fun configure(config: WebPConfig)
 
-    external fun config(
+    external fun configure(
         preset: WebPPreset,
         /**
          * between 0 and 100. For lossy, 0 gives the smallest

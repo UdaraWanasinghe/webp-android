@@ -14,12 +14,12 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *, jobject, 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_webpcodec_encoder_WebPConfig_2(JNIEnv *, jobject,
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPConfig_2(JNIEnv *, jobject,
                                                                                                              jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv *, jobject,
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv *, jobject,
                                                                                                               jobject, jfloat);
 
 extern "C"

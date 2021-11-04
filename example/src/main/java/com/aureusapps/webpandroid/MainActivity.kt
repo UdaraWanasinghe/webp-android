@@ -30,15 +30,25 @@ class MainActivity : AppCompatActivity() {
             }
             val bitmap1 = loadBitmap("image1.jpg")
             val bitmap2 = loadBitmap("image2.jpg")
-            val options = WebPAnimEncoderOptions(animParams = WebPMuxAnimParams(loopCount = 0))
-            val config = WebPConfig(lossless = WebPConfig.COMPRESSION_LOSSLESS, quality = 100f)
-            val encoder = WebPAnimEncoder(512, 512, options)
-            encoder.config(config)
+            val encoder = WebPAnimEncoder(
+                512,
+                512,
+                WebPAnimEncoderOptions(
+                    animParams = WebPMuxAnimParams(loopCount = 0)
+                )
+            )
+            encoder.configure(
+                WebPConfig(
+                    lossless = WebPConfig.COMPRESSION_LOSSLESS,
+                    quality = 100f
+                )
+            )
             encoder.addFrame(WebPFrame(bitmap1, 0))
             encoder.addFrame(WebPFrame(bitmap2, 1000))
             encoder.assemble(2000, path)
             encoder.release()
             showImage(path)
+
         } catch (e: Exception) {
             Log.d("Example", e.message ?: "Unknown exception")
         }
