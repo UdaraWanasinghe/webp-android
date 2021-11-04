@@ -1,6 +1,5 @@
 package com.aureusapps.webpcodec.encoder
 
-import android.util.Log
 import androidx.annotation.FloatRange
 
 class WebPAnimEncoder(
@@ -19,8 +18,18 @@ class WebPAnimEncoder(
 
     private val nativeObjectPointer: Long
 
+    private val progressListeners: ArrayList<WebPAnimEncoderListener> = ArrayList()
+
     init {
         nativeObjectPointer = create(width, height, options)
+    }
+
+    fun addProgressListener(listener: WebPAnimEncoderListener) {
+        progressListeners.add(listener)
+    }
+
+    fun removeProgressListener(listener: WebPAnimEncoderListener) {
+        progressListeners.remove(listener)
     }
 
     private external fun create(width: Int, height: Int, options: WebPAnimEncoderOptions?): Long
@@ -40,8 +49,11 @@ class WebPAnimEncoder(
         quality: Float
     )
 
-    fun onProgressUpdate(framePercent: Int, currentFrame: Int) {
-        Log.d("MY_TAG", "$framePercent, $currentFrame")
+    @Suppress("unused")
+    private fun onProgressUpdate(framePercent: Int, currentFrame: Int) {
+        progressListeners.forEach {
+            it.onProgressUpdate(framePercent, currentFrame)
+        }
     }
 
     external fun addFrame(frame: WebPFrame)
