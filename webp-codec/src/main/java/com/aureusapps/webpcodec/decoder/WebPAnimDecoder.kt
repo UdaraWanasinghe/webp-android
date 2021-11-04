@@ -5,6 +5,12 @@ class WebPAnimDecoder(
     listener: WebPAnimDecoderListener
 ) {
 
-    external fun start()
+    companion object {
+        init {
+            System.loadLibrary("webpcodec_jni")
+        }
+    }
+
+    external fun start(options: WebPAnimDecoderOptions)
 
 }

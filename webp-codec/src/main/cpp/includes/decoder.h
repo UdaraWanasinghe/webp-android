@@ -8,3 +8,7 @@
 #endif //WEBP_ANDROID_DECODER_H
 
 #include <jni.h>
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_start(JNIEnv *, jobject, jobject);
