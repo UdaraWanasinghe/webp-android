@@ -1,5 +1,6 @@
 package com.aureusapps.webpcodec.encoder
 
+import android.util.Log
 import androidx.annotation.FloatRange
 
 class WebPAnimEncoder(
@@ -39,9 +40,14 @@ class WebPAnimEncoder(
         quality: Float
     )
 
+    fun onProgressUpdate(framePercent: Int, currentFrame: Int) {
+        Log.d("MY_TAG", "$framePercent, $currentFrame")
+    }
+
     external fun addFrame(frame: WebPFrame)
 
     external fun assemble(timestamp: Long, path: String)
 
     external fun release()
+
 }

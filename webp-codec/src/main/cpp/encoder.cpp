@@ -10,14 +10,54 @@
 #include "webp/encode.h"
 #include "webp/mux.h"
 
+static JavaVM *javaVm = nullptr;
+
+class Encoder;
+
+struct FrameUserData {
+    Encoder *encoder;
+    int frame_id;
+};
+
 class Encoder {
 
 public:
-    WebPAnimEncoder *encoder = nullptr;
-    WebPConfig config = {0};
+    WebPAnimEncoder *anim_encoder = nullptr;
+    WebPConfig encoder_config = {0};
+    int frame_count = 0;
+    jweak java_encoder_ref = nullptr;
 
-    Encoder(int width, int height, WebPAnimEncoderOptions options) {
-        encoder = WebPAnimEncoderNew(width, height, &options);
+    Encoder(int width, int height, WebPAnimEncoderOptions options, jweak java_encoder) {
+        anim_encoder = WebPAnimEncoderNew(width, height, &options);
+        java_encoder_ref = java_encoder;
+    }
+
+    static int OnProgressUpdate(int percent, const WebPPicture *picture) {
+        JNIEnv *env;
+        int env_stat = javaVm->GetEnv((void **) &env, JNI_VERSION_1_6);
+        switch (env_stat) {
+            case JNI_EDETACHED:
+                if (javaVm->AttachCurrentThread(&env, nullptr) != 0) {
+                    // failed to attach
+                    return true;
+                }
+                break;
+            case JNI_EVERSION:
+                // version not supported
+                return true;
+            case JNI_OK:
+                break;
+            default:
+                return true;
+        }
+        auto *user_data = (FrameUserData *) picture->user_data;
+        Encoder *encoder = user_data->encoder;
+        int current_frame = user_data->frame_id;
+        jweak encoder_ref = encoder->java_encoder_ref;
+        jclass cls = env->GetObjectClass(encoder_ref);
+        jmethodID method_id = env->GetMethodID(cls, "onProgressUpdate", "(II)V");
+        env->CallVoidMethod(encoder_ref, method_id, percent, current_frame);
+        return true;
     }
 
     static Encoder *GetInstance(JNIEnv *env, jobject self) {
@@ -274,15 +314,18 @@ public:
         int preset_value = env->GetIntField(preset, env->GetFieldID(preset_class, "value", "I"));
         return static_cast<WebPPreset>(preset_value);
     }
+
 };
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *env, jobject, jint width, jint height, jobject options) {
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *env, jobject self, jint width, jint height,
+                                                             jobject options) {
+    env->GetJavaVM(&javaVm);
     WebPAnimEncoderOptions encoder_options;
     if (WebPAnimEncoderOptionsInit(&encoder_options)) {
         Encoder::ParseOptions(env, options, &encoder_options);
-        auto *encoder = new Encoder(width, height, encoder_options);
+        auto *encoder = new Encoder(width, height, encoder_options, env->NewWeakGlobalRef(self));
         return reinterpret_cast<jlong>(encoder);
     } else {
         ThrowException(env, "WebPAnimEncoderOptionsInit failed");
@@ -295,14 +338,14 @@ extern "C"
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPConfig_2(JNIEnv *env,
-                                                                                                             jobject self,
-                                                                                                             jobject config) {
+                                                                                                                jobject self,
+                                                                                                                jobject config) {
     WebPConfig encoder_config;
     if (WebPConfigInit(&encoder_config)) {
         Encoder::ParseConfig(env, config, &encoder_config);
         if (WebPValidateConfig(&encoder_config)) {
             Encoder *encoder = Encoder::GetInstance(env, self);
-            encoder->config = encoder_config;
+            encoder->encoder_config = encoder_config;
         } else {
             ThrowException(env, "WebPValidateConfig failed");
         }
@@ -317,14 +360,14 @@ extern "C"
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv *env,
-                                                                                                              jobject self,
-                                                                                                              jobject preset,
-                                                                                                              jfloat quality) {
+                                                                                                                 jobject self,
+                                                                                                                 jobject preset,
+                                                                                                                 jfloat quality) {
     WebPPreset encoder_preset = Encoder::ParsePreset(env, preset);
     WebPConfig encoder_config;
     if (WebPConfigPreset(&encoder_config, encoder_preset, quality)) {
         Encoder *encoder = Encoder::GetInstance(env, self);
-        encoder->config = encoder_config;
+        encoder->encoder_config = encoder_config;
     } else {
         ThrowException(env, "WebPConfigPreset failed");
     }
@@ -364,8 +407,13 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *env, jobj
                 dst += webp_picture.argb_stride;
             }
             AndroidBitmap_unlockPixels(env, bitmap);
-            auto *encoder = Encoder::GetInstance(env, self);
-            if (WebPAnimEncoderAdd(encoder->encoder, &webp_picture, timestamp, &encoder->config)) {
+            Encoder *encoder = Encoder::GetInstance(env, self);
+            auto *user_data = new FrameUserData;
+            user_data->encoder = encoder;
+            user_data->frame_id = ++encoder->frame_count;
+            webp_picture.user_data = user_data;
+            webp_picture.progress_hook = Encoder::OnProgressUpdate;
+            if (WebPAnimEncoderAdd(encoder->anim_encoder, &webp_picture, timestamp, &encoder->encoder_config)) {
             } else {
                 ThrowException(env, "WebPAnimEncoderAdd failed");
             }
@@ -381,27 +429,31 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_assemble(JNIEnv *env, jobject self, jlong timestamp, jstring path) {
     auto *encoder = Encoder::GetInstance(env, self);
-    if (WebPAnimEncoderAdd(encoder->encoder, nullptr, timestamp, nullptr)) {
-        WebPData data;
-        WebPDataInit(&data);
-        if (WebPAnimEncoderAssemble(encoder->encoder, &data)) {
-            const char *file_path = env->GetStringUTFChars(path, nullptr);
-            FILE *file = fopen(file_path, "w+");
-            if (file != nullptr) {
-                int ret = fwrite(data.bytes, 1, data.size, file);
-                if (ret == data.size) {
-                    fclose(file);
+    if (encoder != nullptr) {
+        if (WebPAnimEncoderAdd(encoder->anim_encoder, nullptr, timestamp, nullptr)) {
+            WebPData data;
+            WebPDataInit(&data);
+            if (WebPAnimEncoderAssemble(encoder->anim_encoder, &data)) {
+                const char *file_path = env->GetStringUTFChars(path, nullptr);
+                FILE *file = fopen(file_path, "w+");
+                if (file != nullptr) {
+                    int ret = fwrite(data.bytes, 1, data.size, file);
+                    if (ret == data.size) {
+                        fclose(file);
+                    } else {
+                        ThrowException(env, "File write failed");
+                    }
                 } else {
-                    ThrowException(env, "File write failed");
+                    ThrowException(env, strerror(errno));
                 }
             } else {
-                ThrowException(env, strerror(errno));
+                ThrowException(env, "WebPAnimEncoderAssemble failed");
             }
         } else {
-            ThrowException(env, "WebPAnimEncoderAssemble failed");
+            ThrowException(env, "WebPAnimEncoderAdd failed");
         }
     } else {
-        ThrowException(env, "WebPAnimEncoderAdd failed");
+        ThrowException(env, "Encoder is null");
     }
 }
 
@@ -409,9 +461,13 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_release(JNIEnv *env, jobject self) {
     auto *encoder = Encoder::GetInstance(env, self);
-    WebPAnimEncoderDelete(encoder->encoder);
-    jclass encoder_class = env->GetObjectClass(self);
-    env->SetLongField(self, env->GetFieldID(encoder_class, "nativeObjectPointer", "J"), (jlong) 0);
-    delete encoder;
-
+    if (encoder != nullptr) {
+        WebPAnimEncoderDelete(encoder->anim_encoder);
+        jclass encoder_class = env->GetObjectClass(self);
+        env->SetLongField(self, env->GetFieldID(encoder_class, "nativeObjectPointer", "J"), (jlong) 0);
+        env->DeleteWeakGlobalRef(encoder->java_encoder_ref);
+        delete encoder;
+    } else {
+        ThrowException(env, "Encoder is null");
+    }
 }
