@@ -1,7 +1,12 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+project.ext {
+    libwebp_path = "../../libwebp"
+}
+
 buildscript {
     ext.kotlin_version = "1.5.31"
-    ext.libwebp_path = "../../libwebp"
+
     repositories {
         google()
         mavenCentral()

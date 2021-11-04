@@ -22,7 +22,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments "-DLIBWEBP_PATH=${rootProject.ext.libwebp_path}"
+                arguments "-DLIBWEBP_PATH=$libwebp_path"
             }
         }
     }
