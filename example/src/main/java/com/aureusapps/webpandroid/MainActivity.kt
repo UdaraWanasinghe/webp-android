@@ -33,7 +33,8 @@ class MainActivity : AppCompatActivity() {
             val options = WebPAnimEncoderOptions(animParams = WebPMuxAnimParams(loopCount = 0))
             val config = WebPConfig(
                 lossless = WebPConfig.COMPRESSION_LOSSLESS,
-                quality = 100f
+                quality = 100f,
+                method = 6
             )
             val encoder = WebPAnimEncoder(512, 512, options)
             encoder.config(config)
