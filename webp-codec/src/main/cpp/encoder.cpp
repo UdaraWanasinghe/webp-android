@@ -278,9 +278,7 @@ public:
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *env, jobject, jint width, jint height,
-                                                             jobject options) {
-
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *env, jobject, jint width, jint height, jobject options) {
     WebPAnimEncoderOptions encoder_options;
     if (WebPAnimEncoderOptionsInit(&encoder_options)) {
         Encoder::ParseOptions(env, options, &encoder_options);
@@ -325,12 +323,8 @@ Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_config__Lcom_aureusapps_we
     WebPPreset encoder_preset = Encoder::ParsePreset(env, preset);
     WebPConfig encoder_config;
     if (WebPConfigPreset(&encoder_config, encoder_preset, quality)) {
-        if (WebPValidateConfig(&encoder_config)) {
-            Encoder *encoder = Encoder::GetInstance(env, thiz);
-            encoder->config = encoder_config;
-        } else {
-            ThrowException(env, "WebPValidateConfig failed");
-        }
+        Encoder *encoder = Encoder::GetInstance(env, thiz);
+        encoder->config = encoder_config;
     } else {
         ThrowException(env, "WebPConfigPreset failed");
     }
