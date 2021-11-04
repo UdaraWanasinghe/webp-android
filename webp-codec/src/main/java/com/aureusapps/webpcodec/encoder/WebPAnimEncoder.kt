@@ -10,8 +10,6 @@ class WebPAnimEncoder(
 
     companion object {
         init {
-            System.loadLibrary("webp")
-            System.loadLibrary("webpmux")
             System.loadLibrary("webpcodec_jni")
         }
     }

@@ -25,6 +25,6 @@ target_include_directories(webp_jni PRIVATE ${JAVA_INCLUDE_PATH} ${LIBWEBP_PATH}
 # libwebpcodec jni bindings
 find_library(bitmap-lib jnigraphics)
 find_library(log-lib log)
-add_library(webpcodec_jni SHARED src/main/cpp/encoder.cpp)
-target_link_libraries(webpcodec_jni libwebpmux ${bitmap-lib} ${log-lib})
+add_library(webpcodec_jni SHARED src/main/cpp/encoder.cpp src/main/cpp/decoder.cpp)
+target_link_libraries(webpcodec_jni libwebpmux webpdemux ${bitmap-lib} ${log-lib})
 target_include_directories(webpcodec_jni PRIVATE ${JAVA_INCLUDE_PATH} ${LIBWEBP_PATH}/src)
