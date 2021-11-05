@@ -1,8 +1,8 @@
 package com.aureusapps.webpcodec.decoder
 
 class WebPAnimDecoder(
-    path: String,
-    listener: WebPAnimDecoderListener
+    val path: String,
+    val listener: WebPAnimDecoderListener
 ) {
 
     companion object {
