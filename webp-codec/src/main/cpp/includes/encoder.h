@@ -9,28 +9,36 @@
 
 #include <jni.h>
 
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *, jobject, jint width, jint height, jobject options);
+extern "C" JNIEXPORT jlong
+
+JNICALL
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_create(JNIEnv *, jobject, jint width,
+                                                             jint height, jobject options);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPConfig_2(JNIEnv *, jobject,
-                                                                                                                jobject);
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPConfig_2(JNIEnv
+*, jobject,
+jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv *,
-                                                                                                                 jobject,
-                                                                                                                 jobject, jfloat);
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpcodec_encoder_WebPPreset_2F(JNIEnv
+*,
+jobject,
+jobject, jfloat);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv *, jobject, jobject);
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_addFrame(JNIEnv
+*, jobject, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_assemble(JNIEnv *, jobject, jlong, jstring);
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_assemble(JNIEnv
+*, jobject, jlong, jstring);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_release(JNIEnv *, jobject);
+Java_com_aureusapps_webpcodec_encoder_WebPAnimEncoder_release(JNIEnv
+*, jobject);

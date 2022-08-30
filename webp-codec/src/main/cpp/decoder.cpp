@@ -104,16 +104,20 @@ public:
         return env->GetStringUTFChars(path_str, nullptr);
     }
 
-    static void ParseOptions(JNIEnv *env, jobject options_obj, WebPAnimDecoderOptions *decoder_options) {
+    static void
+    ParseOptions(JNIEnv *env, jobject options_obj, WebPAnimDecoderOptions *decoder_options) {
         jclass options_class = env->GetObjectClass(options_obj);
         // color mode
-        jobject color_mode = env->GetObjectField(options_obj, env->GetFieldID(options_class, "colorMode", "Ljava/lang/Integer;"));
+        jobject color_mode = env->GetObjectField(options_obj,
+                                                 env->GetFieldID(options_class, "colorMode",
+                                                                 "Ljava/lang/Integer;"));
         if (color_mode != nullptr) {
             decoder_options->color_mode = (WEBP_CSP_MODE) GetIntegerValue(env, color_mode);
         }
         // use threads
         jobject use_threads = env->GetObjectField(options_obj,
-                                                  env->GetFieldID(options_class, "useThreads", "Ljava/lang/Boolean;"));
+                                                  env->GetFieldID(options_class, "useThreads",
+                                                                  "Ljava/lang/Boolean;"));
         if (use_threads != nullptr) {
             decoder_options->use_threads = GetBooleanValue(env, use_threads);
         }
@@ -121,8 +125,11 @@ public:
 };
 
 extern "C"
-JNIEXPORT jlong JNICALL
-Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_create(JNIEnv *env, jobject self, jobject options_obj) {
+JNIEXPORT jlong
+
+JNICALL
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_create(JNIEnv *env, jobject self,
+                                                             jobject options_obj) {
     WebPAnimDecoderOptions decoder_options;
     if (WebPAnimDecoderOptionsInit(&decoder_options)) {
         Decoder::ParseOptions(env, options_obj, &decoder_options);
@@ -137,31 +144,50 @@ Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_create(JNIEnv *env, jobjec
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_start(JNIEnv *env, jobject self) {
-    auto *decoder = Decoder::GetInstance(env, self);
-    // create thread
-    // read file
-    // decode and render to surface
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_start(JNIEnv
+*env,
+jobject self
+) {
+auto *decoder = Decoder::GetInstance(env, self);
+// create thread
+// read file
+// decode and render to surface
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_stop(JNIEnv *env, jobject self) {
-    auto *decoder = Decoder::GetInstance(env, self);
-    decoder->status_flag = STOP;
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_stop(JNIEnv
+*env,
+jobject self
+) {
+auto *decoder = Decoder::GetInstance(env, self);
+decoder->
+status_flag = STOP;
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_release(JNIEnv *env, jobject self) {
-    auto *decoder = Decoder::GetInstance(env, self);
-    if (decoder != nullptr) {
-        WebPAnimDecoderDelete(decoder->anim_decoder);
-        jclass decoder_class = env->GetObjectClass(self);
-        env->SetLongField(self, env->GetFieldID(decoder_class, "nativeObjectPointer", "J"), (jlong) 0);
-        env->DeleteWeakGlobalRef(decoder->decoder_obj);
-        delete decoder;
-    } else {
-        ThrowException(env, "Decoder is null");
-    }
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_release(JNIEnv
+*env,
+jobject self
+) {
+auto *decoder = Decoder::GetInstance(env, self);
+if (decoder != nullptr) {
+WebPAnimDecoderDelete(decoder
+->anim_decoder);
+jclass decoder_class = env->GetObjectClass(self);
+env->
+SetLongField(self, env
+->
+GetFieldID(decoder_class,
+"nativeObjectPointer", "J"), (jlong) 0);
+env->
+DeleteWeakGlobalRef(decoder
+->decoder_obj);
+delete
+decoder;
+} else {
+ThrowException(env,
+"Decoder is null");
+}
 }

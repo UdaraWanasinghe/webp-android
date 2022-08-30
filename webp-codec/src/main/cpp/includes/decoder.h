@@ -10,17 +10,22 @@
 #include <jni.h>
 
 extern "C"
-JNIEXPORT jlong JNICALL
+JNIEXPORT jlong
+
+JNICALL
 Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_create(JNIEnv *, jobject, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_start(JNIEnv *, jobject);
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_start(JNIEnv
+*, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_stop(JNIEnv *, jobject);
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_stop(JNIEnv
+*, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_release(JNIEnv *, jobject);
+Java_com_aureusapps_webpcodec_decoder_WebPAnimDecoder_release(JNIEnv
+*, jobject);
