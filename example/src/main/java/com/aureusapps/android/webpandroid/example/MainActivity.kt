@@ -78,11 +78,7 @@ class MainActivity : AppCompatActivity() {
                         quality = 100f
                     )
                 )
-                val path = File(cacheDir, IMAGE_NAME).absolutePath
-                // add frames
                 val frameCount = 2
-                encoder.addFrame(WebPFrame(bitmap1, 0))
-                encoder.addFrame(WebPFrame(bitmap2, 1000))
                 encoder.addProgressListener(object : WebPAnimEncoderListener {
                     override fun onProgressUpdate(framePercent: Int, currentFrame: Int) {
                         Log.d("MY_APP", framePercent.toString())
@@ -92,6 +88,10 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 })
+                val path = File(cacheDir, IMAGE_NAME).absolutePath
+                // add frames
+                encoder.addFrame(WebPFrame(bitmap1, 0))
+                encoder.addFrame(WebPFrame(bitmap2, 1000))
                 // assemble animation
                 encoder.assemble(2000, path)
                 // release encoder

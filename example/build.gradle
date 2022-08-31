@@ -46,7 +46,7 @@ dependencies {
     implementation "com.google.android.material:material:$material_version"
 
     // webp-android
-    implementation 'com.aureusapps.android:webp-android:1.0.0'
+    implementation project(":webp-android")
 
     // fresco
     implementation 'com.facebook.fresco:fresco:2.5.0'
