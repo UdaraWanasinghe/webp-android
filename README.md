@@ -135,4 +135,4 @@ At this point our library should be in the maven local repository.
 
 ## Appreciate my work!
 
-<a href="https://www.buymeacoffee.com/udarawanasinghe" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="" width="200" style="border-radius: 12px; box-shadow: 0px 6px 12px rgba(249, 140, 73, 0.4);"></a>
+<a href="https://www.buymeacoffee.com/udarawanasinghe" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
