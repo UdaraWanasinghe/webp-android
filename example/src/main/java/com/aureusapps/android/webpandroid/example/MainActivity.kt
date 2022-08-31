@@ -3,7 +3,6 @@ package com.aureusapps.android.webpandroid.example
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
@@ -66,8 +65,8 @@ class MainActivity : AppCompatActivity() {
                 val bitmap2 = loadBitmapFromAssets("image2.jpg")
                 // prepare encoder
                 val encoder = WebPAnimEncoder(
-                    512,
-                    512,
+                    width = 512,
+                    height = 512,
                     WebPAnimEncoderOptions(
                         animParams = WebPMuxAnimParams(loopCount = 0)
                     )
@@ -81,7 +80,6 @@ class MainActivity : AppCompatActivity() {
                 val frameCount = 2
                 encoder.addProgressListener(object : WebPAnimEncoderListener {
                     override fun onProgressUpdate(framePercent: Int, currentFrame: Int) {
-                        Log.d("MY_APP", framePercent.toString())
                         lifecycleScope.launch(Dispatchers.Main) {
                             val progress = (framePercent + (currentFrame - 1) * 100) / frameCount
                             progressIndicator.progress = progress
