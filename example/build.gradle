@@ -8,7 +8,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        applicationId "com.aureusapps.webpandroid"
+        applicationId "com.aureusapps.android.webpandroid.example"
         minSdkVersion 19
         targetSdkVersion 33
         versionCode 1
@@ -34,20 +34,32 @@ android {
 
 dependencies {
 
+    // kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation "androidx.core:core-ktx:$kotlin_core_version"
+
+    // androidx
+    implementation "androidx.core:core-ktx:$core_version"
     implementation "androidx.appcompat:appcompat:$appcompat_version"
-    implementation "com.google.android.material:material:$material_version"
     implementation "androidx.constraintlayout:constraintlayout:$constraint_layout_version"
 
+    // material
+    implementation "com.google.android.material:material:$material_version"
+
+    // webp-android
     implementation 'com.aureusapps.android:webp-android:1.0.0'
 
+    // fresco
     implementation 'com.facebook.fresco:fresco:2.5.0'
     implementation 'com.facebook.fresco:animated-webp:2.6.0'
     implementation 'com.facebook.fresco:webpsupport:2.6.0'
 
+    // lifecycle
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
+
+    // unit testing
     testImplementation "junit:junit:$junit_version"
 
+    // instrumentation testing
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }

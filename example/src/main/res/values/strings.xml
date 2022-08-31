@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">webp-android</string>
+    <string name="start">Start</string>
 </resources>

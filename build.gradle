@@ -8,12 +8,13 @@ plugins {
 
 ext {
     libwebp_path = "../../libwebp"
-    junit_version = "4.13.2"
     kotlin_version = "1.7.10"
-    kotlin_core_version = "1.8.0"
+    core_version = "1.8.0"
     appcompat_version = "1.5.0"
-    material_version = "1.6.1"
     constraint_layout_version = "2.1.4"
+    material_version = "1.6.1"
+    lifecycle_version = "2.5.1"
+    junit_version = "4.13.2"
 }
 
 task clean(type: Delete) {
