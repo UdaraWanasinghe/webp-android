@@ -53,15 +53,29 @@ At this point our library should be in the maven local repository.
 
 ## Using
 
-1. Import the library into your project.
+1. Include the `mavenLocal` repository in your project.
+
    ```groovy
+   // settings.gradle
+   dependencyResolutionManagement {
+       ...
+       repositories {
+           ...
+           mavenLocal()
+       }
+   }
+   ```
+
+2. Import the library into your project.
+
+   ```groovy
+   // module level build.gradle
    dependencies {
        implementation "com.aureusapps.android:webp-android:1.0.0"
    }
    ```
-   
 
-2. Create an encoder instance.
+3. Create an encoder instance.
 
    ```kotlin
    val encoder = WebPAnimEncoder(
@@ -75,7 +89,7 @@ At this point our library should be in the maven local repository.
 
    See full list of encoder options [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPAnimEncoderOptions.kt).
 
-3. Configure the encoder.
+4. Configure the encoder.
 
    ```kotlin
    encoder.configure(
@@ -88,7 +102,7 @@ At this point our library should be in the maven local repository.
 
    See full list of encoder configurations [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPConfig.kt).
 
-4. Add encoder progress listener.
+5. Add encoder progress listener.
 
    ```kotlin
    encoder.addProgressListener(object : WebPAnimEncoderListener {
@@ -98,20 +112,20 @@ At this point our library should be in the maven local repository.
    })
    ```
 
-5. Add frames with their timestamp.
+6. Add frames with their timestamp.
 
    ```kotlin
    encoder.addFrame(WebPFrame(bitmap1, 0))
    encoder.addFrame(WebPFrame(bitmap2, 1000))
    ```
 
-6. Call assemble by giving the last timestamp and the save path.
+7. Call assemble by giving the last timestamp and the save path.
 
    ```kotlin
    encoder.assemble(2000, path)
    ```
 
-7. Release encoder resources.
+8. Release the encoder resources.
 
    ```kotlin
    encoder.release()
