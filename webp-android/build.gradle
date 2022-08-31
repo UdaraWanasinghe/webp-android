@@ -53,6 +53,9 @@ dependencies {
     // kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
+    // annotation
+    implementation "androidx.annotation:annotation:$annotation_version"
+
     // unit testing
     testImplementation "junit:junit:$junit_version"
 

@@ -15,6 +15,7 @@ ext {
     material_version = "1.6.1"
     lifecycle_version = "2.5.1"
     junit_version = "4.13.2"
+    annotation_version = "1.4.0"
 }
 
 task clean(type: Delete) {
