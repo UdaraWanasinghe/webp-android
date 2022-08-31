@@ -361,20 +361,14 @@ self,
                                                                        height,
                                                                        jobject options
 ) {
-    env->
-            GetJavaVM(&javaVm);
+    env->GetJavaVM(&javaVm);
     WebPAnimEncoderOptions encoder_options;
-    if (
-            WebPAnimEncoderOptionsInit(&encoder_options)
-            ) {
-        Encoder::ParseOptions(env, options, &encoder_options
-        );
+    if (WebPAnimEncoderOptionsInit(&encoder_options)) {
+        Encoder::ParseOptions(env, options, &encoder_options);
         auto *encoder = new Encoder(width, height, encoder_options, env->NewWeakGlobalRef(self));
-        return reinterpret_cast
-                <jlong>(encoder);
+        return reinterpret_cast<jlong>(encoder);
     } else {
-        ThrowException(env,
-                       "WebPAnimEncoderOptionsInit failed");
+        ThrowException(env, "WebPAnimEncoderOptionsInit failed");
     }
     return 0;
 }
@@ -390,24 +384,16 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_
         jobject
         config) {
     WebPConfig encoder_config;
-    if (
-            WebPConfigInit(&encoder_config)
-            ) {
-        Encoder::ParseConfig(env, config, &encoder_config
-        );
-        if (
-                WebPValidateConfig(&encoder_config)
-                ) {
+    if (WebPConfigInit(&encoder_config)) {
+        Encoder::ParseConfig(env, config, &encoder_config);
+        if (WebPValidateConfig(&encoder_config)) {
             Encoder *encoder = Encoder::GetInstance(env, self);
-            encoder->
-                    encoder_config = encoder_config;
+            encoder->encoder_config = encoder_config;
         } else {
-            ThrowException(env,
-                           "WebPValidateConfig failed");
+            ThrowException(env, "WebPValidateConfig failed");
         }
     } else {
-        ThrowException(env,
-                       "WebPConfigInit failed");
+        ThrowException(env, "WebPConfigInit failed");
     }
 }
 #pragma clang diagnostic pop
@@ -426,15 +412,11 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_
 ) {
     WebPPreset encoder_preset = Encoder::ParsePreset(env, preset);
     WebPConfig encoder_config;
-    if (
-            WebPConfigPreset(&encoder_config, encoder_preset, quality
-            )) {
+    if (WebPConfigPreset(&encoder_config, encoder_preset, quality)) {
         Encoder *encoder = Encoder::GetInstance(env, self);
-        encoder->
-                encoder_config = encoder_config;
+        encoder->encoder_config = encoder_config;
     } else {
-        ThrowException(env,
-                       "WebPConfigPreset failed");
+        ThrowException(env, "WebPConfigPreset failed");
     }
 }
 #pragma clang diagnostic pop
