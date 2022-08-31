@@ -476,8 +476,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
                 pixels = (void *) ((uint8_t *) pixels + info.stride);
                 dst += webp_picture.argb_stride;
             }
-            AndroidBitmap_unlockPixels(env, bitmap
-            );
+            AndroidBitmap_unlockPixels(env, bitmap);
             Encoder *encoder = Encoder::GetInstance(env, self);
             auto *user_data = new FrameUserData;
             user_data->encoder = encoder;

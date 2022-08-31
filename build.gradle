@@ -1,32 +1,19 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+plugins {
+    id 'com.android.application' version '7.2.2' apply false
+    id 'com.android.library' version '7.2.2' apply false
+    id 'org.jetbrains.kotlin.android' version '1.7.10' apply false
+}
+
 ext {
     libwebp_path = "../../libwebp"
     junit_version = "4.13.2"
-}
-
-buildscript {
-    ext.kotlin_version = "1.5.31"
-
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.2.2'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        mavenLocal()
-    }
+    kotlin_version = "1.7.10"
+    kotlin_core_version = "1.8.0"
+    appcompat_version = "1.5.0"
+    material_version = "1.6.1"
+    constraint_layout_version = "2.1.4"
 }
 
 task clean(type: Delete) {

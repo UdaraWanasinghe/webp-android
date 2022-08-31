@@ -1,6 +1,6 @@
-package com.aureusapps.android
+package com.aureusapps.example
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**

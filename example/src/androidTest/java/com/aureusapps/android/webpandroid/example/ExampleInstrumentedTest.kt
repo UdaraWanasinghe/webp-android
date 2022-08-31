@@ -1,4 +1,4 @@
-package com.aureusapps.android
+package com.aureusapps.example
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry

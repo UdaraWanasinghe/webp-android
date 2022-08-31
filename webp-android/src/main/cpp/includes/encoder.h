@@ -13,8 +13,7 @@ extern "C" JNIEXPORT jlong
 
 JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(JNIEnv *, jobject,
-                                                                       jint width,
-                                                                       jint height,
+                                                                       jint width, jint height,
                                                                        jobject options);
 
 extern "C"

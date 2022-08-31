@@ -125,9 +125,7 @@ public:
 };
 
 extern "C"
-JNIEXPORT jlong
-
-JNICALL
+JNIEXPORT jlong JNICALL
 Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *env, jobject self,
                                                                        jobject options_obj) {
     WebPAnimDecoderOptions decoder_options;
