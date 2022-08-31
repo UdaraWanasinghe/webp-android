@@ -18,7 +18,7 @@
 
 ## Building
 
-1. Clone libwebp library and checkout to version `1.2.4`
+1. Clone libwebp library and checkout to the version `1.2.4`
    ```shell
    git clone https://chromium.googlesource.com/webm/libwebp
    cd libwebp
@@ -39,9 +39,8 @@
    sdk.dir=/home/udara/Android/Sdk
    ```
 
-4. Run `gradle` task `publishToMavenLocal` in webp-android project.
+4. Run `gradle` task `publishToMavenLocal`.
    ```shell
-   cd webp-android
    sh gradlew publishToMavenLocal
    ```
 
