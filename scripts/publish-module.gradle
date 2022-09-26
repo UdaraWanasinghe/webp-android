@@ -18,19 +18,21 @@ afterEvaluate {
     publishing {
         publications {
             release(MavenPublication) {
+                // standard metadata
+                groupId PUBLISH_GROUP_ID
+                artifactId PUBLISH_ARTIFACT_ID
+                version PUBLISH_VERSION
+
                 // publication component defined by the android library plugin
                 from components.release
 
                 // custom artifacts
                 artifact androidSourcesJar
 
-                groupId PUBLISH_GROUP_ID
-                artifactId PUBLISH_ARTIFACT_ID
-                version PUBLISH_VERSION
-
+                // pom file
                 pom {
                     name = PUBLISH_ARTIFACT_ID
-                    description = 'libwebp JNI bindings for Android'
+                    description = 'libwebp JNI bindings for Android.'
                     url = 'https://github.com/UdaraWanasinghe/webp-android'
                     licenses {
                         license {
@@ -44,15 +46,11 @@ afterEvaluate {
                             name = 'Udara Wanasinghe'
                             email = 'udara.developer@gmail.com'
                         }
-                        // Add all other devs here...
                     }
-
-                    // Version control info - if you're using GitHub, follow the
-                    // format as seen here
                     scm {
                         connection = 'scm:git:github.com/UdaraWanasinghe/webp-android.git'
                         developerConnection = 'scm:git:ssh://github.com/UdaraWanasinghe/webp-android.git'
-                        url = 'https://github.com/UdaraWanasinghe/webp-android/tree/main'
+                        url = 'https://github.com/UdaraWanasinghe/webp-android'
                     }
                 }
             }
