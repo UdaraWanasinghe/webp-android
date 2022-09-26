@@ -114,7 +114,7 @@ public:
             WebPMuxAnimParams anim_params;
             jobject anim_params_obj = env->GetObjectField(options, env->GetFieldID(options_class,
                                                                                    "animParams",
-                                                                                   "Lcom/aureusapps/android/webpandroid/encoder/WebPMuxAnimParams;"));
+                                                                                   "Lcom/aureusapps/webpandroid/encoder/WebPMuxAnimParams;"));
             if (anim_params_obj != nullptr) {
                 jclass anim_params_class = env->GetObjectClass(anim_params_obj);
                 // bgColor
