@@ -10,19 +10,19 @@
 #include <jni.h>
 
 extern "C" jlong
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *, jobject, jobject);
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *, jobject, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_start(JNIEnv
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_start(JNIEnv
 *, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_stop(JNIEnv
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_stop(JNIEnv
 *, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_release(JNIEnv
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_release(JNIEnv
 *, jobject);

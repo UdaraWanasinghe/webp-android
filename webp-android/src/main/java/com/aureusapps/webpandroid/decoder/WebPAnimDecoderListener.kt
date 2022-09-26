@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid.decoder
+package com.aureusapps.webpandroid.decoder
 
 import android.graphics.Bitmap
 

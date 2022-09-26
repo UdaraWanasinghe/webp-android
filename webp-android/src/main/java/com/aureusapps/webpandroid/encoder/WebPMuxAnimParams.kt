@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid.encoder
+package com.aureusapps.webpandroid.encoder
 
 data class WebPMuxAnimParams(
 

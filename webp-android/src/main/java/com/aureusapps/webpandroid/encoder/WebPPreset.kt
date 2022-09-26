@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid.encoder
+package com.aureusapps.webpandroid.encoder
 
 enum class WebPPreset(val value: Int) {
     WEBP_PRESET_DEFAULT(0),

@@ -8,7 +8,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        applicationId "com.aureusapps.android.webpandroid.example"
+        applicationId "com.aureusapps.webpandroid.example"
         minSdkVersion 19
         targetSdkVersion 33
         versionCode 1

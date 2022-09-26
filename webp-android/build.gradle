@@ -1,11 +1,14 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
-    id 'maven-publish'
 }
 
-def _versionCode = 1
-def _versionName = "1.0.0"
+ext {
+    PUBLISH_GROUP_ID = 'com.aureusapps'
+    PUBLISH_VERSION = '1.0.0'
+    PUBLISH_VERSION_CODE = 1
+    PUBLISH_ARTIFACT_ID = 'webp-android'
+}
 
 android {
     compileSdkVersion 33
@@ -13,8 +16,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode _versionCode
-        versionName _versionName
+        versionCode PUBLISH_VERSION_CODE
+        versionName PUBLISH_VERSION
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -64,22 +67,4 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 }
 
-task androidSourcesJar(type: Jar) {
-    archiveClassifier.set('sources')
-    from android.sourceSets.main.java.srcDirs
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            release(MavenPublication) {
-                from components.release
-                artifact androidSourcesJar
-                groupId = 'com.aureusapps.android'
-                artifactId = 'webp-android'
-                version = _versionName
-            }
-        }
-    }
-}
-
+apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"

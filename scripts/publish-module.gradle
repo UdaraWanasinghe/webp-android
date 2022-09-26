@@ -1,0 +1,70 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+task androidSourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    from android.sourceSets.main.java.srcDirs
+    from android.sourceSets.main.kotlin.srcDirs
+}
+
+artifacts {
+    archives androidSourcesJar
+}
+
+group = PUBLISH_GROUP_ID
+version = PUBLISH_VERSION
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                // publication component defined by the android library plugin
+                from components.release
+
+                // custom artifacts
+                artifact androidSourcesJar
+
+                groupId PUBLISH_GROUP_ID
+                artifactId PUBLISH_ARTIFACT_ID
+                version PUBLISH_VERSION
+
+                pom {
+                    name = PUBLISH_ARTIFACT_ID
+                    description = 'libwebp JNI bindings for Android'
+                    url = 'https://github.com/UdaraWanasinghe/webp-android'
+                    licenses {
+                        license {
+                            name = 'MIT License'
+                            url = 'https://github.com/UdaraWanasinghe/webp-android/blob/main/LICENSE'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'UdaraWanasinghe'
+                            name = 'Udara Wanasinghe'
+                            email = 'udara.developer@gmail.com'
+                        }
+                        // Add all other devs here...
+                    }
+
+                    // Version control info - if you're using GitHub, follow the
+                    // format as seen here
+                    scm {
+                        connection = 'scm:git:github.com/UdaraWanasinghe/webp-android.git'
+                        developerConnection = 'scm:git:ssh://github.com/UdaraWanasinghe/webp-android.git'
+                        url = 'https://github.com/UdaraWanasinghe/webp-android/tree/main'
+                    }
+                }
+            }
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(
+            rootProject.ext["signing.keyId"],
+            rootProject.ext["signing.key"],
+            rootProject.ext["signing.password"],
+    )
+    sign publishing.publications
+}

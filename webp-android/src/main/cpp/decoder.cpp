@@ -126,7 +126,7 @@ public:
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *env, jobject self,
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *env, jobject self,
                                                                        jobject options_obj) {
     WebPAnimDecoderOptions decoder_options;
     if (WebPAnimDecoderOptionsInit(&decoder_options)) {
@@ -142,7 +142,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *e
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_start(JNIEnv
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_start(JNIEnv
                                                                       *env,
                                                                       jobject self
 ) {
@@ -154,7 +154,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_start(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_stop(JNIEnv
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_stop(JNIEnv
                                                                      *env,
                                                                      jobject self
 ) {
@@ -164,7 +164,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_stop(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_release(JNIEnv
+Java_com_aureusapps_webpandroid_decoder_WebPAnimDecoder_release(JNIEnv
                                                                         *env,
                                                                         jobject self
 ) {

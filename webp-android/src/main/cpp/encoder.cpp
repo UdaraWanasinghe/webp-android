@@ -355,7 +355,7 @@ public:
 extern "C"
 JNIEXPORT jlong
 JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(JNIEnv *env, jobject
+Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_create(JNIEnv *env, jobject
 self,
                                                                        jint width, jint
                                                                        height,
@@ -377,7 +377,7 @@ extern "C"
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_android_webpandroid_encoder_WebPConfig_2(
+Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpandroid_encoder_WebPConfig_2(
         JNIEnv
         *env,
         jobject self,
@@ -402,7 +402,7 @@ extern "C"
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_android_webpandroid_encoder_WebPPreset_2F(
+Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpandroid_encoder_WebPPreset_2F(
         JNIEnv
         *env,
         jobject self,
@@ -423,7 +423,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
+Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
                                                                          *env,
                                                                          jobject self, jobject
                                                                          frame) {
@@ -481,7 +481,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(JNIEnv
+Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_assemble(JNIEnv
                                                                          *env,
                                                                          jobject self, jlong
                                                                          timestamp,
@@ -519,7 +519,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(JNIEnv
+Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_release(JNIEnv
                                                                         *env,
                                                                         jobject self
 ) {
