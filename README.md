@@ -1,6 +1,4 @@
-[![android library](https://img.shields.io/badge/version-v1.0.0-orange)](https://github.com/UdaraWanasinghe/webp-android)
-
-
+[![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml)
 
 ## What's Included?
 
