@@ -1,4 +1,4 @@
-package com.aureusapps.webpandroid.example
+package com.aureusapps.android.webpandroid.example
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -8,7 +8,9 @@ import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.aureusapps.android.webpandroid.encoder.*
 import com.aureusapps.webpandroid.encoder.*
+import com.aureusapps.webpandroid.example.R
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.view.SimpleDraweeView
 import com.facebook.imagepipeline.request.ImageRequestBuilder

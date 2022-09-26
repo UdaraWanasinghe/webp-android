@@ -1,4 +1,4 @@
-package com.aureusapps.webpandroid.encoder
+package com.aureusapps.android.webpandroid.encoder
 
 import androidx.annotation.FloatRange
 import androidx.annotation.IntDef

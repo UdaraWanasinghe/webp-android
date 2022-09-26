@@ -1,4 +1,4 @@
-package com.aureusapps.webpandroid.encoder
+package com.aureusapps.android.webpandroid.encoder
 
 interface WebPAnimEncoderListener {
 

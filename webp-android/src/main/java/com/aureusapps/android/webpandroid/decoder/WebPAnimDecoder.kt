@@ -1,4 +1,4 @@
-package com.aureusapps.webpandroid.decoder
+package com.aureusapps.android.webpandroid.decoder
 
 class WebPAnimDecoder(
     private val path: String,

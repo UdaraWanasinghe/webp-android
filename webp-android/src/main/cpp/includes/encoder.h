@@ -12,20 +12,20 @@
 extern "C" JNIEXPORT jlong
 
 JNICALL
-Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_create(JNIEnv *, jobject,
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(JNIEnv *, jobject,
                                                                        jint width, jint height,
                                                                        jobject options);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpandroid_encoder_WebPConfig_2(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_android_webpandroid_encoder_WebPConfig_2(
         JNIEnv
         *, jobject,
         jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_webpandroid_encoder_WebPPreset_2F(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_android_webpandroid_encoder_WebPPreset_2F(
         JNIEnv
         *,
         jobject,
@@ -33,16 +33,16 @@ Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusap
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
                                                                          *, jobject, jobject);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_assemble(JNIEnv
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(JNIEnv
                                                                          *, jobject, jlong,
                                                                          jstring);
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_webpandroid_encoder_WebPAnimEncoder_release(JNIEnv
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(JNIEnv
                                                                         *, jobject);

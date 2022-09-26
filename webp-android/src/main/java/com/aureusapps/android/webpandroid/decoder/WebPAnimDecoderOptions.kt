@@ -1,4 +1,4 @@
-package com.aureusapps.webpandroid.decoder
+package com.aureusapps.android.webpandroid.decoder
 
 data class WebPAnimDecoderOptions(
     val colorMode: Int? = null,
