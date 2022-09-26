@@ -30,19 +30,19 @@ jobs:
           distribution: adopt
           java-version: 11
 
-      - name: Change directory to webp-android
-        run: cd webp-android
-
         # Builds the release artifacts of the library
       - name: Release build
+        working-directory: webp-android
         run: ./gradlew :webp-android:assembleRelease
 
         # Generates source artifacts
       - name: Source jar
+        working-directory: webp-android
         run: ./gradlew androidSourcesJar
 
         # Runs upload, and then closes & releases the repository
       - name: Publish to MavenCentral
+        working-directory: webp-android
         run: ./gradlew publishReleasePublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
