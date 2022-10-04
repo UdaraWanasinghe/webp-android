@@ -1,0 +1,40 @@
+abstract class UpdateVersionTask extends DefaultTask {
+
+    @Option(option = "code", description = "The version code to set.")
+    @Input
+    String versionCode
+
+    @Option(option = "name", description = "The version name to set.")
+    @Input
+    String versionName
+
+    @TaskAction
+    void updateVersion() {
+        updateReadme()
+        updateRootProjectBuildGradle()
+    }
+
+    private void updateReadme() {
+        def file = project.file('README.md')
+        def text = file.text
+        def pattern = /\d+\.\d+\.\d+/
+        text = text.replaceAll(pattern, versionName)
+        file.write(text)
+    }
+
+    private void updateRootProjectBuildGradle() {
+        def file = project.file('build.gradle')
+        def text = file.text
+        def pattern = /version_code = \d+/
+        text = text.replaceAll(pattern, "version_code = $versionCode")
+        pattern = /version_name = '\d+\.\d+\.\d+'/
+        text = text.replaceAll(pattern, "version_name = \'$versionName\'")
+        file.write(text)
+    }
+
+}
+
+tasks.register("updateVersion", UpdateVersionTask) {
+    group = "Version Control"
+    description = "Updates the version code and name in the root project build.gradle file and README.md file."
+}

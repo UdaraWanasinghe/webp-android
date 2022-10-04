@@ -5,8 +5,7 @@ plugins {
 
 ext {
     PUBLISH_GROUP_ID = 'com.aureusapps.android'
-    PUBLISH_VERSION = '1.0.1'
-    PUBLISH_VERSION_CODE = 2
+    PUBLISH_VERSION = version_name
     PUBLISH_ARTIFACT_ID = 'webp-android'
 }
 
@@ -16,8 +15,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode PUBLISH_VERSION_CODE
-        versionName PUBLISH_VERSION
+        versionCode version_code
+        versionName version_name
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
