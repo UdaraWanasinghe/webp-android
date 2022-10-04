@@ -16,20 +16,24 @@ abstract class UpdateVersionTask extends DefaultTask {
 
     private void updateReadme() {
         def file = project.file('README.md')
-        def text = file.text
-        def pattern = /\d+\.\d+\.\d+/
-        text = text.replaceAll(pattern, versionName)
-        file.write(text)
+        if (file.exists()) {
+            def text = file.text
+            def pattern = /\d+\.\d+\.\d+/
+            text = text.replaceAll(pattern, versionName)
+            file.write(text)
+        }
     }
 
     private void updateRootProjectBuildGradle() {
         def file = project.file('build.gradle')
-        def text = file.text
-        def pattern = /version_code = \d+/
-        text = text.replaceAll(pattern, "version_code = $versionCode")
-        pattern = /version_name = '\d+\.\d+\.\d+'/
-        text = text.replaceAll(pattern, "version_name = \'$versionName\'")
-        file.write(text)
+        if (file.exists()) {
+            def text = file.text
+            def pattern = /version_code = \d+/
+            text = text.replaceAll(pattern, "version_code = $versionCode")
+            pattern = /version_name = '\d+\.\d+\.\d+'/
+            text = text.replaceAll(pattern, "version_name = \'$versionName\'")
+            file.write(text)
+        }
     }
 
 }
