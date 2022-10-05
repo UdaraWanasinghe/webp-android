@@ -84,6 +84,11 @@
    ```
 
 
+## Updating version
+```shell
+./gradlew updateVersion --code=xx --name=xx.xx.xx
+```
+
 
 ## Appreciate my work!
 
