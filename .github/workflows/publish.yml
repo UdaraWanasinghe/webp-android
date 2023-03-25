@@ -11,6 +11,13 @@ jobs:
     name: Release build and publish
     runs-on: ubuntu-latest
     steps:
+      - name: Check out version-catalog
+        uses: actions/checkout@v3
+        with:
+          repository: UdaraWanasinghe/android-version-catalog
+          path: version-catalog
+          fetch-depth: 1
+
       - name: Check out webp-android
         uses: actions/checkout@v3
         with:
@@ -29,6 +36,11 @@ jobs:
         with:
           distribution: adopt
           java-version: 11
+
+        # Build and publish version catalog
+      - name: Publish version-catalog
+        working-directory: version-catalog
+        run: ./gradlew publishToMavenLocal
 
         # Builds the release artifacts of the library
       - name: Release build
