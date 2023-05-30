@@ -10,13 +10,15 @@ ext {
 }
 
 android {
-    compileSdkVersion 33
+    compileSdk 33
+    namespace 'com.aureusapps.android.webpandroid'
 
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode version_code
         versionName version_name
+        multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -35,19 +37,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
     }
+
     externalNativeBuild {
         cmake {
-            path file('CMakeLists.txt')
-            version '3.18.1'
+            path file("src/main/cpp/CMakeLists.txt")
+            version '3.26.3'
         }
     }
+
 }
 
 dependencies {

@@ -5,8 +5,8 @@
 #include <cerrno>
 #include <android/bitmap.h>
 
-#include "includes/encoder.h"
-#include "includes/helper.h"
+#include "include/webp_anim_encoder.h"
+#include "include/jni_helper.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
 
@@ -32,7 +32,10 @@ public:
         java_encoder_ref = java_encoder;
     }
 
-    static int OnProgressUpdate(int percent, const WebPPicture *picture) {
+    static int OnProgressUpdate(
+            int percent,
+            const WebPPicture *picture
+    ) {
         JNIEnv *env;
         int env_stat = javaVm->GetEnv((void **) &env, JNI_VERSION_1_6);
         switch (env_stat) {
@@ -60,7 +63,10 @@ public:
         return true;
     }
 
-    static Encoder *GetInstance(JNIEnv *env, jobject self) {
+    static Encoder *GetInstance(
+            JNIEnv *env,
+            jobject self
+    ) {
         jclass cls = env->GetObjectClass(self);
         if (!cls) {
             ThrowException(env, "GetObjectClass failed");
@@ -74,7 +80,11 @@ public:
     }
 
     static void
-    ParseOptions(JNIEnv *env, jobject options, WebPAnimEncoderOptions *encoder_options) {
+    ParseOptions(
+            JNIEnv *env,
+            jobject options,
+            WebPAnimEncoderOptions *encoder_options
+    ) {
         if (options != nullptr) {
             jclass options_class = env->GetObjectClass(options);
             // minimizeSize
@@ -145,7 +155,11 @@ public:
         }
     }
 
-    static void ParseConfig(JNIEnv *env, jobject config, WebPConfig *encoder_config) {
+    static void ParseConfig(
+            JNIEnv *env,
+            jobject config,
+            WebPConfig *encoder_config
+    ) {
         if (config != nullptr) {
             // config
             jclass config_class = env->GetObjectClass(config);
@@ -344,7 +358,10 @@ public:
         }
     }
 
-    static WebPPreset ParsePreset(JNIEnv *env, jobject preset) {
+    static WebPPreset ParsePreset(
+            JNIEnv *env,
+            jobject preset
+    ) {
         jclass preset_class = env->GetObjectClass(preset);
         int preset_value = env->GetIntField(preset, env->GetFieldID(preset_class, "value", "I"));
         return static_cast<WebPPreset>(preset_value);
@@ -355,11 +372,12 @@ public:
 extern "C"
 JNIEXPORT jlong
 JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(JNIEnv *env, jobject
-self,
-                                                                       jint width, jint
-                                                                       height,
-                                                                       jobject options
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
+        JNIEnv *env,
+        jobject self,
+        jint width, jint
+        height,
+        jobject options
 ) {
     env->GetJavaVM(&javaVm);
     WebPAnimEncoderOptions encoder_options;
@@ -378,11 +396,10 @@ extern "C"
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_android_webpandroid_encoder_WebPConfig_2(
-        JNIEnv
-        *env,
+        JNIEnv *env,
         jobject self,
-        jobject
-        config) {
+        jobject config
+) {
     WebPConfig encoder_config;
     if (WebPConfigInit(&encoder_config)) {
         Encoder::ParseConfig(env, config, &encoder_config);
@@ -396,6 +413,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_
         ThrowException(env, "WebPConfigInit failed");
     }
 }
+
 #pragma clang diagnostic pop
 
 extern "C"
@@ -403,11 +421,9 @@ extern "C"
 #pragma ide diagnostic ignored "bugprone-reserved-identifier"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_aureusapps_android_webpandroid_encoder_WebPPreset_2F(
-        JNIEnv
-        *env,
+        JNIEnv *env,
         jobject self,
-        jobject
-        preset,
+        jobject preset,
         jfloat quality
 ) {
     WebPPreset encoder_preset = Encoder::ParsePreset(env, preset);
@@ -419,14 +435,16 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure__Lcom_
         ThrowException(env, "WebPConfigPreset failed");
     }
 }
+
 #pragma clang diagnostic pop
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
-                                                                         *env,
-                                                                         jobject self, jobject
-                                                                         frame) {
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
+        JNIEnv *env,
+        jobject self,
+        jobject frame
+) {
     jclass frame_class = env->GetObjectClass(frame);
     jobject bitmap = env->GetObjectField(frame,
                                          env->GetFieldID(frame_class, "bitmap",
@@ -481,11 +499,11 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(JNIEnv
-                                                                         *env,
-                                                                         jobject self, jlong
-                                                                         timestamp,
-                                                                         jstring path
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
+        JNIEnv *env,
+        jobject self,
+        jlong timestamp,
+        jstring path
 ) {
     auto *encoder = Encoder::GetInstance(env, self);
     if (encoder != nullptr) {
@@ -519,9 +537,9 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(JNIEnv
-                                                                        *env,
-                                                                        jobject self
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
+        JNIEnv *env,
+        jobject self
 ) {
     auto *encoder = Encoder::GetInstance(env, self);
     if (encoder != nullptr) {

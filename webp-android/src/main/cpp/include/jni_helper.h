@@ -2,16 +2,11 @@
 // Created by udara on 11/3/21.
 //
 
-#ifndef WEBP_ANDROID_HELPER_H
-#define WEBP_ANDROID_HELPER_H
-
-#endif //WEBP_ANDROID_HELPER_H
+#pragma once
 
 #include <jni.h>
 #include <stdlib.h>
 #include <string>
-
-using namespace std;
 
 static jboolean GetBooleanValue(JNIEnv *env, jobject object) {
     jclass Boolean = env->FindClass("java/lang/Boolean");
@@ -33,7 +28,7 @@ static jfloat GetFloatValue(JNIEnv *env, jobject object) {
     return env->CallFloatMethod(object, env->GetMethodID(Float, "floatValue", "()F"));
 }
 
-static void ThrowException(JNIEnv *env, string message) {
+static void ThrowException(JNIEnv *env, std::string message) {
     jclass Exception = env->FindClass("java/lang/Exception");
     env->ThrowNew(Exception, message.data());
 }

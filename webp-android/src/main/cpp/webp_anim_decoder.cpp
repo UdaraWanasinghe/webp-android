@@ -3,7 +3,8 @@
 //
 
 #include "webp/demux.h"
-#include "includes/helper.h"
+#include "include/jni_helper.h"
+#include "include/webp_anim_decoder.h"
 
 enum StatusFlag {
     START,
@@ -25,7 +26,10 @@ public:
         // render frame with timestamp
     }
 
-    static Decoder *GetInstance(JNIEnv *env, jobject self) {
+    static Decoder *GetInstance(
+            JNIEnv *env,
+            jobject self
+    ) {
         jclass cls = env->GetObjectClass(self);
         if (!cls)
             ThrowException(env, "GetObjectClass failed");
@@ -36,7 +40,11 @@ public:
         return reinterpret_cast<Decoder *>(nativeObjectPointer);
     }
 
-    void DecodeFile(JNIEnv *env, char *path, WebPAnimDecoderOptions *decoder_options) {
+    void DecodeFile(
+            JNIEnv *env,
+            char *path,
+            WebPAnimDecoderOptions *decoder_options
+    ) {
 
         // read webp file
         FILE *file;
@@ -96,7 +104,10 @@ public:
 
     }
 
-    static const char *GetPath(JNIEnv *env, jobject self) {
+    static const char *GetPath(
+            JNIEnv *env,
+            jobject self
+    ) {
         // get path
         jclass decoder_class = env->GetObjectClass(self);
         jfieldID path_field_id = env->GetFieldID(decoder_class, "path", "Ljava/lang/String;");
@@ -105,7 +116,11 @@ public:
     }
 
     static void
-    ParseOptions(JNIEnv *env, jobject options_obj, WebPAnimDecoderOptions *decoder_options) {
+    ParseOptions(
+            JNIEnv *env,
+            jobject options_obj,
+            WebPAnimDecoderOptions *decoder_options
+    ) {
         jclass options_class = env->GetObjectClass(options_obj);
         // color mode
         jobject color_mode = env->GetObjectField(options_obj,
@@ -126,8 +141,11 @@ public:
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *env, jobject self,
-                                                                       jobject options_obj) {
+Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(
+        JNIEnv *env,
+        jobject self,
+        jobject options_obj
+) {
     WebPAnimDecoderOptions decoder_options;
     if (WebPAnimDecoderOptionsInit(&decoder_options)) {
         Decoder::ParseOptions(env, options_obj, &decoder_options);
@@ -142,9 +160,9 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(JNIEnv *e
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_start(JNIEnv
-                                                                      *env,
-                                                                      jobject self
+Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_start(
+        JNIEnv *env,
+        jobject self
 ) {
     auto *decoder = Decoder::GetInstance(env, self);
 // create thread
@@ -154,9 +172,9 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_start(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_stop(JNIEnv
-                                                                     *env,
-                                                                     jobject self
+Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_stop(
+        JNIEnv *env,
+        jobject self
 ) {
     auto *decoder = Decoder::GetInstance(env, self);
     decoder->status_flag = STOP;
@@ -164,9 +182,9 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_stop(JNIEnv
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_release(JNIEnv
-                                                                        *env,
-                                                                        jobject self
+Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_release(
+        JNIEnv *env,
+        jobject self
 ) {
     auto *decoder = Decoder::GetInstance(env, self);
     if (decoder != nullptr) {

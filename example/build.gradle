@@ -4,15 +4,16 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion "30.0.3"
+    compileSdk 33
+    namespace 'com.aureusapps.android.webpandroid.example'
 
     defaultConfig {
         applicationId "com.aureusapps.android.webpandroid.example"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode version_code
         versionName version_name
+        multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -24,11 +25,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
     }
 }
 
@@ -42,6 +43,7 @@ dependencies {
     implementation libs.fresco.animated.webp
     implementation libs.fresco.webpsupport
     implementation libs.lifecycle.runtime.ktx
+    implementation libs.aureusapps.extensions
     implementation project(":webp-android")
 
     testImplementation libs.junit
