@@ -2,23 +2,35 @@
 // Created by udara on 11/5/21.
 //
 
+#define LOG_TAG "WEBP_DECODER"
+
+#include <android/log.h>
+#include <cstdio>
+#include <iostream>
+#include <fstream>
+#include <webp/decode.h>
+#include <android/bitmap.h>
+
+#include "webp/decode.h"
 #include "webp/demux.h"
 #include "include/jni_helper.h"
-#include "include/webp_anim_decoder.h"
+#include "include/webp_decoder_helper.h"
 
 enum StatusFlag {
     START,
     STOP
 };
 
-class Decoder {
+class JNIWebPDecoder {
 
 public:
     StatusFlag status_flag = START;
+    WebPDecoderConfig decoderConfig{};
     WebPAnimDecoder *anim_decoder = nullptr;
     jweak decoder_obj = nullptr;
+    bool decoderConfigured = false;
 
-    Decoder(const char *path, WebPAnimDecoderOptions decoder_options) {
+    JNIWebPDecoder() {
         // check path is file or url
         // create thread
         // load data to byte buffer
@@ -26,18 +38,18 @@ public:
         // render frame with timestamp
     }
 
-    static Decoder *GetInstance(
+    static JNIWebPDecoder *GetInstance(
             JNIEnv *env,
-            jobject self
+            jobject thiz
     ) {
-        jclass cls = env->GetObjectClass(self);
+        jclass cls = env->GetObjectClass(thiz);
         if (!cls)
             ThrowException(env, "GetObjectClass failed");
         jfieldID nativeObjectPointerID = env->GetFieldID(cls, "nativeObjectPointer", "J");
         if (!nativeObjectPointerID)
             ThrowException(env, "GetFieldID failed");
-        jlong nativeObjectPointer = env->GetLongField(self, nativeObjectPointerID);
-        return reinterpret_cast<Decoder *>(nativeObjectPointer);
+        jlong nativeObjectPointer = env->GetLongField(thiz, nativeObjectPointerID);
+        return reinterpret_cast<JNIWebPDecoder *>(nativeObjectPointer);
     }
 
     void DecodeFile(
@@ -95,8 +107,7 @@ public:
                 uint8_t *buf;
                 int timestamp;
                 WebPAnimDecoderGetNext(decoder, &buf, &timestamp);
-                // ... (Render 'buf' based on 'timestamp').
-                // ... (Do NOT free 'buf', as it is owned by 'dec').
+
             }
             WebPAnimDecoderReset(decoder);
         }
@@ -114,79 +125,148 @@ public:
         auto path_str = (jstring) env->GetObjectField(self, path_field_id);
         return env->GetStringUTFChars(path_str, nullptr);
     }
-
-    static void
-    ParseOptions(
-            JNIEnv *env,
-            jobject options_obj,
-            WebPAnimDecoderOptions *decoder_options
-    ) {
-        jclass options_class = env->GetObjectClass(options_obj);
-        // color mode
-        jobject color_mode = env->GetObjectField(options_obj,
-                                                 env->GetFieldID(options_class, "colorMode",
-                                                                 "Ljava/lang/Integer;"));
-        if (color_mode != nullptr) {
-            decoder_options->color_mode = (WEBP_CSP_MODE) GetIntegerValue(env, color_mode);
-        }
-        // use threads
-        jobject use_threads = env->GetObjectField(options_obj,
-                                                  env->GetFieldID(options_class, "useThreads",
-                                                                  "Ljava/lang/Boolean;"));
-        if (use_threads != nullptr) {
-            decoder_options->use_threads = GetBooleanValue(env, use_threads);
-        }
-    }
 };
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_create(
-        JNIEnv *env,
-        jobject self,
-        jobject options_obj
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_create(
+        JNIEnv *,
+        jobject
 ) {
-    WebPAnimDecoderOptions decoder_options;
-    if (WebPAnimDecoderOptionsInit(&decoder_options)) {
-        Decoder::ParseOptions(env, options_obj, &decoder_options);
-        const char *path = Decoder::GetPath(env, self);
-        auto *decoder = new Decoder(path, decoder_options);
-        return reinterpret_cast<jlong>(decoder);
-    } else {
-        ThrowException(env, "WebPAnimDecoderOptionsInit failed");
+    auto *decoder = new JNIWebPDecoder();
+    return reinterpret_cast<jlong>(decoder);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decode(
+        JNIEnv *env,
+        jobject,
+        jstring filePath,
+        jobject decodeListener
+) {
+    // load webp file data
+    uint8_t *fileData;
+    size_t fileSize;
+    if (!loadFileData(env, filePath, &fileData, &fileSize)) {
+        env->ThrowNew(
+                env->FindClass("java/io/IOException"),
+                "Error loading WebP file data."
+        );
+        return;
     }
-    return 0;
+
+    // get webp file features
+    WebPBitstreamFeatures features;
+    WebPGetFeatures(fileData, fileSize, &features);
+
+    // get decode listener
+    jclass decodeListenerClass = env->GetObjectClass(decodeListener);
+    jmethodID onReceiveInfoMethodID = env->GetMethodID(
+            decodeListenerClass,
+            "onReceiveInfo",
+            "(Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;)V"
+    );
+    jmethodID onReceiveFrameMethodID = env->GetMethodID(
+            decodeListenerClass,
+            "onReceiveFrame",
+            "(Landroid/graphics/Bitmap;I)V"
+    );
+
+    // create webp info jobject
+    jclass webPInfoClass = env->FindClass("com/aureusapps/android/webpandroid/decoder/WebPInfo");
+    jmethodID webPInfoConstructorID = env->GetMethodID(webPInfoClass, "<init>", "(IIZZIII)V");
+
+    if (features.has_animation) {
+        // use animation decoder
+        // decode options
+        WebPAnimDecoderOptions decoderOptions;
+        WebPAnimDecoderOptionsInit(&decoderOptions);
+        decoderOptions.color_mode = MODE_RGBA;
+        decoderOptions.use_threads = true;
+
+        // create decoder
+        WebPData webPData;
+        WebPDataInit(&webPData);
+        webPData.size = fileSize;
+        webPData.bytes = fileData;
+        WebPAnimDecoder *animDecoder = WebPAnimDecoderNew(&webPData, &decoderOptions);
+
+        // get extended info
+        WebPAnimInfo animInfo;
+        WebPAnimDecoderGetInfo(animDecoder, &animInfo);
+
+        // submit extended info
+        int frameWidth = static_cast<int>(animInfo.canvas_width);
+        int frameHeight = static_cast<int>(animInfo.canvas_height);
+        jobject webPInfo = env->NewObject(
+                webPInfoClass,
+                webPInfoConstructorID,
+                frameWidth,
+                frameHeight,
+                features.has_alpha,
+                features.has_animation,
+                static_cast<int>(animInfo.bgcolor),
+                static_cast<int>(animInfo.frame_count),
+                static_cast<int>(animInfo.loop_count)
+        );
+        env->CallVoidMethod(decodeListener, onReceiveInfoMethodID, webPInfo);
+        jobject bitmap = createBitmap(env, frameWidth, frameHeight);
+
+        uint8_t *pixelData;
+        int timestamp;
+
+        // decode frame by frame
+        while (WebPAnimDecoderGetNext(animDecoder, &pixelData, &timestamp)) {
+            copyPixels(env, &pixelData, &bitmap);
+            env->CallVoidMethod(decodeListener, onReceiveFrameMethodID, bitmap, timestamp);
+        }
+        WebPAnimDecoderReset(animDecoder);
+
+    } else {
+        // submit info
+        jobject webPInfo = env->NewObject(
+                webPInfoClass,
+                webPInfoConstructorID,
+                features.width,
+                features.height,
+                features.has_alpha,
+                features.has_animation,
+                0, 0, 0
+        );
+        env->CallVoidMethod(decodeListener, onReceiveInfoMethodID, webPInfo);
+
+        // decode image
+        int width;
+        int height;
+        uint8_t *pixelData = WebPDecodeRGBA(fileData, fileSize, &width, &height);
+        // create bitmap
+        jobject bitmap = createBitmap(env, width, height, &pixelData);
+        // submit frame
+        env->CallVoidMethod(decodeListener, onReceiveFrameMethodID, bitmap, 0);
+        // release resources
+        WebPFree(pixelData);
+    }
+    free(fileData);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_start(
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_stop(
         JNIEnv *env,
         jobject self
 ) {
-    auto *decoder = Decoder::GetInstance(env, self);
-// create thread
-// read file
-// decode and render to surface
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_stop(
-        JNIEnv *env,
-        jobject self
-) {
-    auto *decoder = Decoder::GetInstance(env, self);
+    auto *decoder = JNIWebPDecoder::GetInstance(env, self);
     decoder->status_flag = STOP;
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_release(
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_release(
         JNIEnv *env,
         jobject self
 ) {
-    auto *decoder = Decoder::GetInstance(env, self);
+    auto *decoder = JNIWebPDecoder::GetInstance(env, self);
     if (decoder != nullptr) {
         WebPAnimDecoderDelete(decoder->anim_decoder);
         jclass decoder_class = env->GetObjectClass(self);
@@ -196,6 +276,6 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPAnimDecoder_release(
         env->DeleteWeakGlobalRef(decoder->decoder_obj);
         delete decoder;
     } else {
-        ThrowException(env, "Decoder is null");
+        ThrowException(env, "JNIWebPDecoder is null");
     }
 }

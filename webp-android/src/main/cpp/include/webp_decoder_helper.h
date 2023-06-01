@@ -5,27 +5,64 @@
 #pragma once
 
 #include <jni.h>
+#include <android/bitmap.h>
 
 /**
- * Loads the contents of a WebP file into memory.
+ * @brief Load binary data from a file into memory.
  *
- * This function takes a file path as input and reads the contents of the WebP file
- * into memory. The resulting file data and its size are returned through the
- * `fileData` and `fileSize` parameters, respectively.
+ * This function reads the contents of the specified file and stores the data and file size in the provided pointers.
  *
- * @param env The JNI environment pointer.
- * @param filePath The file path of the WebP file to load.
- * @param fileData A pointer to a pointer that will store the loaded file data.
- *                     After the function call, this pointer will point to the allocated
- *                     memory containing the file data.
- * @param fileSize A pointer to a size_t variable that will store the size of the
- *                     loaded file data. After the function call, this variable will
- *                     contain the size of the allocated memory.
- * @return True if the file was successfully loaded into memory, false otherwise.
+ * @param env A pointer to the JNI environment.
+ * @param filePath The path of the file to be loaded.
+ * @param fileData A pointer to a pointer of type `const uint8_t`. This will be used to store the loaded file data, represented as an array of unsigned 8-bit integers.
+ * @param fileSize A pointer to a `size_t` variable. This will be used to store the size of the loaded file data in bytes.
+ *
+ * @return `true` if the file data was successfully loaded, `false` otherwise.
  */
-bool loadWebPFileData(
+bool loadFileData(
         JNIEnv *env,
         jstring filePath,
-        const uint8_t **fileData,
+        uint8_t **fileData,
         size_t *fileSize
 );
+
+/**
+ * Creates a new Java Bitmap object with the specified width and height.
+ *
+ * @param width The width of the bitmap.
+ * @param height The height of the bitmap.
+ *
+ * @return The created Bitmap object as a jobject.
+ */
+jobject createBitmap(
+        JNIEnv *env,
+        int width,
+        int height
+);
+
+/**
+ * Creates a new Java Bitmap object with the specified width and height, and initializes it with pixel data.
+ *
+ * @param env The pointer to the JNI environment.
+ * @param width The width of the bitmap.
+ * @param height The height of the bitmap.
+ * @param pixels A pointer to the pixel data, represented as a two-dimensional array of uint8_t.
+ *
+ * @return bitmap object as jobject.
+ */
+jobject createBitmap(
+        JNIEnv *env,
+        int width,
+        int height,
+        uint8_t **pixels
+);
+
+/**
+ * @brief Copies pixels to the bitmap.
+ *
+ * @param pixels A pointer to the pixels data to copy.
+ * @param bitmap Bitmap to copy pixels to.
+ *
+ * @return true if copied successfully, otherwise false.
+ */
+bool copyPixels(JNIEnv *env, uint8_t **pixels, jobject *bitmap);
