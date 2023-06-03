@@ -17,6 +17,6 @@ interface WebPDecoderListener {
      * @param frame The frame of the image.
      * @param timestamp The timestamp of the frame.
      */
-    fun onReceiveFrame(frame: Bitmap, timestamp: Int)
+    fun onReceiveFrame(frame: Bitmap, index: Int, timestamp: Int)
 
 }

@@ -123,7 +123,7 @@ bool copyPixels(JNIEnv *env, uint8_t **pixels, jobject *bitmap) {
     auto bitmapData = static_cast<uint8_t *>(bitmapPixels);
     size_t pixelCount = bitmapInfo.width * bitmapInfo.height;
     size_t numBytes = pixelCount * 4;
-    memcpy(bitmapData, pixels, numBytes);
+    memcpy(bitmapData, *pixels, numBytes);
 
     // Unlock the bitmap
     AndroidBitmap_unlockPixels(env, *bitmap);

@@ -1,7 +1,5 @@
 package com.aureusapps.android.webpandroid.encoder
 
-interface WebPAnimEncoderListener {
-
-    fun onProgressUpdate(framePercent: Int, currentFrame: Int)
-
+fun interface WebPAnimEncoderListener {
+    fun onProgressUpdate(frameProgress: Int, currentFrame: Int)
 }

@@ -2,11 +2,11 @@
 // Created by udara on 11/2/21.
 //
 
-#include <cerrno>
+#include <sstream>
 #include <android/bitmap.h>
 
 #include "include/webp_anim_encoder.h"
-#include "include/jni_helper.h"
+#include "include/webp_encoder_helper.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
 
@@ -445,55 +445,84 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         jobject self,
         jobject frame
 ) {
-    jclass frame_class = env->GetObjectClass(frame);
-    jobject bitmap = env->GetObjectField(frame,
-                                         env->GetFieldID(frame_class, "bitmap",
-                                                         "Landroid/graphics/Bitmap;"));
-    jlong timestamp = env->GetLongField(frame, env->GetFieldID(frame_class, "timestamp", "J"));
+    jclass frameClass = env->GetObjectClass(frame);
+    jobject bitmap = env->GetObjectField(
+            frame,
+            env->GetFieldID(frameClass, "bitmap", "Landroid/graphics/Bitmap;")
+    );
+    jlong timestamp = env->GetLongField(
+            frame,
+            env->GetFieldID(frameClass, "timestamp", "J")
+    );
 
     AndroidBitmapInfo info;
     if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
-        ThrowException(env, "AndroidBitmap_getInfo failed");
+        env->ThrowNew(
+                env->FindClass("java/lang/RuntimeException"),
+                "Failed to get bitmap info."
+        );
+        return;
     }
 
     void *pixels;
     if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
-        ThrowException(env, "AndroidBitmap_lockPixels failed");
+        env->ThrowNew(
+                env->FindClass("java/lang/RuntimeException"),
+                "Failed to get bitmap pixel data."
+        );
+        return;
     }
 
-    WebPPicture webp_picture;
-    if (WebPPictureInit(&webp_picture)) {
-        webp_picture.use_argb = true;
-        webp_picture.width = (int) info.width;
-        webp_picture.height = (int) info.height;
-        webp_picture.colorspace = WEBP_YUV420;
-        webp_picture.argb_stride = 4;
-        if (WebPPictureAlloc(&webp_picture)) {
+    WebPPicture webPPicture;
+    if (WebPPictureInit(&webPPicture)) {
+        webPPicture.use_argb = true;
+        webPPicture.width = (int) info.width;
+        webPPicture.height = (int) info.height;
+        webPPicture.colorspace = WEBP_YUV420;
+        webPPicture.argb_stride = 4;
+        if (WebPPictureAlloc(&webPPicture)) {
             // copy pixel data from the bitmap
-            uint32_t *dst = webp_picture.argb;
+            uint32_t *dst = webPPicture.argb;
             for (int y = 0; y < info.height; ++y) {
                 memcpy(dst, pixels, info.width * 4);
                 pixels = (void *) ((uint8_t *) pixels + info.stride);
-                dst += webp_picture.argb_stride;
+                dst += webPPicture.argb_stride;
             }
             AndroidBitmap_unlockPixels(env, bitmap);
             Encoder *encoder = Encoder::GetInstance(env, self);
-            auto *user_data = new FrameUserData;
-            user_data->encoder = encoder;
-            user_data->frame_id = ++encoder->frame_count;
-            webp_picture.user_data = user_data;
-            webp_picture.progress_hook = Encoder::OnProgressUpdate;
-            if (WebPAnimEncoderAdd(encoder->anim_encoder,
-                                   &webp_picture, (int) timestamp,
-                                   &encoder->encoder_config)) {
-            } else {
-                ThrowException(env, "WebPAnimEncoderAdd failed");
+            auto *userData = new FrameUserData;
+            userData->encoder = encoder;
+            userData->frame_id = ++encoder->frame_count;
+            webPPicture.user_data = userData;
+            webPPicture.progress_hook = Encoder::OnProgressUpdate;
+            if (!WebPAnimEncoderAdd(
+                    encoder->anim_encoder,
+                    &webPPicture, (int) timestamp,
+                    &encoder->encoder_config)
+                    ) {
+                std::stringstream ss;
+                ss << "Failed to add frame to the encoder {errorCode: " << webPPicture.error_code
+                   << "}";
+                env->ThrowNew(
+                        env->FindClass("java/lang/RuntimeException"),
+                        ss.str().c_str()
+                );
+                return;
             }
+
         } else {
-            ThrowException(env, "WebPPictureAlloc failed");
+            env->ThrowNew(
+                    env->FindClass("java/lang/RuntimeException"),
+                    "Memory error occurred while allocating image buffer."
+            );
+            return;
         }
     } else {
-        ThrowException(env, "WebPPictureInit failed");
+        env->ThrowNew(
+                env->FindClass("java/lang/RuntimeException"),
+                "Version mismatch."
+        );
+        return;
     }
 }
 

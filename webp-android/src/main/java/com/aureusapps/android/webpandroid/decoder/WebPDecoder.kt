@@ -1,23 +1,13 @@
 package com.aureusapps.android.webpandroid.decoder
 
-class WebPDecoder {
-
-    companion object {
-        init {
-            System.loadLibrary("webpcodec_jni")
-        }
-    }
-
-    private var nativeObjectPointer: Long = 0
+object WebPDecoder {
 
     init {
-        nativeObjectPointer = create()
+        System.loadLibrary("webpcodec_jni")
     }
 
-    private external fun create(): Long
+    external fun extractImages(filePath: String, decodeListener: WebPDecoderListener)
 
-    external fun decode(filePath: String, decodeListener: WebPDecoderListener)
-
-    external fun release()
+    external fun readInfo(filePath: String): WebPInfo
 
 }

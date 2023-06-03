@@ -7,14 +7,15 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.Webpandroid">
         <activity
-            android:exported="true"
-            android:name="com.aureusapps.android.webpandroid.example.MainActivity">
+            android:name="com.aureusapps.android.webpandroid.example.CodecActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>
