@@ -47,7 +47,7 @@ internal class EncodedImagePreview(
                         setBackgroundColor(
                             resolveColorAttribute(R.attr.colorSurface)
                         )
-                        title = "Preview"
+                        title = context.getString(R.string.encoded_image)
                     }
                 }
             }

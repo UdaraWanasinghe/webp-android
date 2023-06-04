@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.graphics.scale
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aureusapps.android.webpandroid.decoder.WebPDecoder
@@ -13,23 +14,27 @@ import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPFrame
 import com.aureusapps.android.webpandroid.example.actions.UiAction
-import com.aureusapps.android.webpandroid.example.extensions.copy
+import com.aureusapps.android.webpandroid.example.events.UiEvent
 import com.aureusapps.android.webpandroid.example.states.DecodeState
 import com.aureusapps.android.webpandroid.example.states.EncodeState
+import com.facebook.drawee.backends.pipeline.Fresco
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
 internal class CodecViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _encodeStateFlow = MutableStateFlow(EncodeState())
-    private val _decodeStateFlow = MutableStateFlow(DecodeState())
+    private val _encodeStateFlow = MutableSharedFlow<EncodeState>(replay = 1)
+    private val _decodeStateFlow = MutableSharedFlow<DecodeState>(replay = 1)
+    private val _uiEventFlow = MutableSharedFlow<UiEvent>(replay = 1)
 
     val encodeStateFlow: Flow<EncodeState> = _encodeStateFlow
     val decodeStateFlow: Flow<DecodeState> = _decodeStateFlow
+    val uiEventFlow: Flow<UiEvent> = _uiEventFlow
 
     fun submitAction(action: UiAction) {
         when (action) {
@@ -37,8 +42,12 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 encodeImage(action)
             }
 
-            is UiAction.DecodeAction -> {
-                decodeImage(action)
+            is UiAction.ExtractImagesAction -> {
+                extractImages(action)
+            }
+
+            is UiAction.DeleteCacheAction -> {
+                deleteCache()
             }
         }
     }
@@ -46,27 +55,28 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     private fun encodeImage(action: UiAction.EncodeAction) {
         viewModelScope.launch(Dispatchers.IO) {
             val encoder = WebPAnimEncoder(
-                action.width, action.height, action.encoderOptions
+                action.width,
+                action.height,
+                action.encoderOptions
             )
+            val frameCount = action.frames.size
+            var state = EncodeState()
             try {
-                val frameCount = action.frames.size
-                _encodeStateFlow.update { state ->
+                _encodeStateFlow.emit(
                     state.copy(
                         outputPath = action.outputPath,
                         imageWidth = action.width,
-                        imageHeight = action.height,
-                        progress = 0,
-                        isFinished = false,
-                        hasError = false,
-                        errorMessage = null
-                    )
-                }
+                        imageHeight = action.height
+                    ).also { state = it }
+                )
                 encoder.configure(action.webPConfig)
                 encoder.addProgressListener { frameProgress, currentFrame ->
                     val progress = (frameProgress + 100f * (currentFrame - 1)) / frameCount
-                    _encodeStateFlow.update { state ->
-                        state.copy(
-                            progress = progress.roundToInt()
+                    viewModelScope.launch {
+                        _encodeStateFlow.emit(
+                            state.copy(
+                                progress = progress.roundToInt()
+                            ).also { state = it }
                         )
                     }
                 }
@@ -79,18 +89,22 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                     )
                 }
                 encoder.assemble(action.lastTime, action.outputPath)
-                _encodeStateFlow.update { state ->
+                _encodeStateFlow.emit(
                     state.copy(
+                        progress = 100,
                         isFinished = true
-                    )
-                }
+                    ).also { state = it }
+                )
 
             } catch (e: Exception) {
-                _encodeStateFlow.update { state ->
+                _encodeStateFlow.emit(
                     state.copy(
-                        hasError = true, errorMessage = e.message
-                    )
-                }
+                        progress = 0,
+                        hasError = true,
+                        errorMessage = e.message
+                    ).also { state = it }
+                )
+
             } finally {
                 encoder.release()
             }
@@ -103,52 +117,93 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         return BitmapFactory.decodeStream(inputStream)
     }
 
-    private fun decodeImage(action: UiAction.DecodeAction) {
+    private fun extractImages(action: UiAction.ExtractImagesAction) {
         viewModelScope.launch(Dispatchers.IO) {
+            val imagePath = action.imagePath
             try {
-                val imagePath = action.imageUri.toString().removePrefix("file://")
-                val frames = mutableListOf<Pair<Bitmap, Int>>()
-                _decodeStateFlow.update { state ->
-                    state.copy(
-                        outputPath = imagePath, imageInfo = null, progress = 0
+                val frames = mutableListOf<Pair<Uri, Int>>()
+                _decodeStateFlow.emit(
+                    DecodeState(
+                        outputPath = imagePath
                     )
-                }
+                )
                 var frameCount = 0
-                WebPDecoder.extractImages(imagePath, object : WebPDecoderListener {
-                    override fun onReceiveInfo(info: WebPInfo) {
-                        frameCount = info.frameCount
-                        _decodeStateFlow.update { state ->
-                            state.copy(
-                                imageInfo = info
-                            )
-                        }
-                    }
-
-                    override fun onReceiveFrame(frame: Bitmap, index: Int, timestamp: Int) {
-                        if (frameCount != 0) {
-                            _decodeStateFlow.update { state ->
-                                state.copy(
-                                    progress = 100 * (index + 1) / frameCount
+                WebPDecoder.extractImages(
+                    imagePath,
+                    object : WebPDecoderListener {
+                        override fun onReceiveInfo(info: WebPInfo) {
+                            frameCount = info.frameCount
+                            viewModelScope.launch {
+                                _decodeStateFlow.emit(
+                                    DecodeState(
+                                        outputPath = imagePath,
+                                        imageInfo = info
+                                    )
                                 )
                             }
                         }
-                        frames.add(frame.copy() to timestamp)
+
+                        override fun onReceiveFrame(frame: Bitmap, index: Int, timestamp: Int) {
+                            if (frameCount != 0) {
+                                val progress = 100 * (index + 1) / frameCount
+                                viewModelScope.launch {
+                                    _decodeStateFlow.emit(
+                                        DecodeState(
+                                            outputPath = imagePath,
+                                            progress = progress
+                                        )
+                                    )
+                                }
+                            }
+                            val file = saveImage(frame, index)
+                            frames.add(file.toUri() to timestamp)
+                        }
                     }
-                })
-                _decodeStateFlow.update { state ->
-                    state.copy(
+                )
+                _decodeStateFlow.emit(
+                    DecodeState(
+                        outputPath = imagePath,
                         isFinished = true,
+                        progress = 100,
                         frames = frames
                     )
-                }
+                )
 
             } catch (e: Exception) {
-                _decodeStateFlow.update { state ->
-                    state.copy(
-                        hasError = true, errorMessage = e.message
+                _decodeStateFlow.emit(
+                    DecodeState(
+                        outputPath = imagePath,
+                        hasError = true,
+                        errorMessage = e.message
                     )
-                }
+                )
             }
+        }
+    }
+
+    private fun saveImage(bitmap: Bitmap, index: Int): File {
+        val context = getApplication<Application>().applicationContext
+        val file = File(context.cacheDir, "image$index.png")
+        val outputStream = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        outputStream.flush()
+        outputStream.close()
+        return file
+    }
+
+    private fun deleteCache() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>().applicationContext
+            Fresco.getImagePipeline().clearCaches()
+            context.cacheDir
+                .listFiles()
+                ?.filter {
+                    it.isFile
+                }
+                ?.forEach {
+                    it.delete()
+                }
+            _uiEventFlow.emit(UiEvent.DeleteCacheEvent)
         }
     }
 

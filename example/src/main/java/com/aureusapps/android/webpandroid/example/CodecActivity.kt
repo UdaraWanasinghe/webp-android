@@ -8,7 +8,6 @@ import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.net.toUri
 import androidx.core.view.setMargins
 import androidx.lifecycle.lifecycleScope
 import com.aureusapps.android.extensions.addView
@@ -18,6 +17,7 @@ import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
 import com.aureusapps.android.webpandroid.encoder.WebPConfig
 import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
 import com.aureusapps.android.webpandroid.example.actions.UiAction
+import com.aureusapps.android.webpandroid.example.events.UiEvent
 import com.aureusapps.android.webpandroid.example.models.CodecViewModel
 import com.aureusapps.android.webpandroid.example.states.DecodeState
 import com.aureusapps.android.webpandroid.example.states.EncodeState
@@ -77,6 +77,15 @@ class CodecActivity : AppCompatActivity() {
                 }
             }
         }
+        lifecycleScope.launch {
+            codecViewModel.uiEventFlow.collect { event ->
+                when (event) {
+                    is UiEvent.DeleteCacheEvent -> {
+                        showSnackbar("Cache files deleted")
+                    }
+                }
+            }
+        }
     }
 
     private fun createContent() {
@@ -95,7 +104,7 @@ class CodecActivity : AppCompatActivity() {
                             gravity = Gravity.CENTER_HORIZONTAL
                             setMargins(8.dp)
                         }
-                        text = context.getString(R.string.encode)
+                        text = context.getString(R.string.encode_images)
                         setOnClickListener {
                             submitEncodeAction()
                         }
@@ -110,7 +119,7 @@ class CodecActivity : AppCompatActivity() {
                             gravity = Gravity.CENTER_HORIZONTAL
                             setMargins(8.dp, 0, 8.dp, 8.dp)
                         }
-                        text = context.getString(R.string.decode)
+                        text = context.getString(R.string.extract_images)
                         setOnClickListener {
                             submitDecodeAction()
                         }
@@ -155,17 +164,11 @@ class CodecActivity : AppCompatActivity() {
                             gravity = Gravity.CENTER_HORIZONTAL
                             setMargins(8.dp, 0, 8.dp, 8.dp)
                         }
-                        text = context.getString(R.string.clear)
+                        text = context.getString(R.string.clear_cache)
                         setOnClickListener {
-                            Fresco.getImagePipeline().clearCaches()
-                            cacheDir
-                                .listFiles()
-                                ?.filter {
-                                    it.isFile
-                                }
-                                ?.forEach {
-                                    it.delete()
-                                }
+                            codecViewModel.submitAction(
+                                UiAction.DeleteCacheAction
+                            )
                             showSnackbar("Cache files deleted")
                         }
                     }
@@ -215,9 +218,9 @@ class CodecActivity : AppCompatActivity() {
     }
 
     private fun submitDecodeAction() {
-        val imageUri = File(cacheDir, "image.webp").toUri()
+        val imageFile = File(cacheDir, "image.webp")
         codecViewModel.submitAction(
-            UiAction.DecodeAction(imageUri)
+            UiAction.ExtractImagesAction(imageFile.absolutePath)
         )
     }
 

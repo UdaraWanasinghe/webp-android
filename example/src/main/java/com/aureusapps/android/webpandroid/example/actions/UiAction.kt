@@ -16,8 +16,10 @@ internal sealed interface UiAction {
         val outputPath: String
     ) : UiAction
 
-    data class DecodeAction(
-        val imageUri: Uri
+    data class ExtractImagesAction(
+        val imagePath: String
     ) : UiAction
+
+    object DeleteCacheAction : UiAction
 
 }

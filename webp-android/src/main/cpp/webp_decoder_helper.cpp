@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 
 #include "include/webp_decoder_helper.h"
 
@@ -17,13 +18,25 @@ bool loadFileData(
     // get webp file path
     const char *nativePath = env->GetStringUTFChars(filePath, nullptr);
     if (nativePath == nullptr) {
-        jclass exceptionClass = env->FindClass("java/lang/NullPointerException");
-        env->ThrowNew(exceptionClass, "WebP file path cannot be null.");
+        env->ThrowNew(
+                env->FindClass("java/lang/NullPointerException"),
+                "File path cannot be null."
+        );
         return false;
     }
 
     // open file as a binary file for read
     FILE *file = fopen(nativePath, "rb");
+
+    if (file == nullptr) {
+        std::stringstream ss;
+        ss << "File cannot be opened {file: " << nativePath << "}";
+        env->ThrowNew(
+                env->FindClass("java/io/IOException"),
+                ss.str().c_str()
+        );
+        return false;
+    }
 
     // determine size of the webp file
     fseek(file, 0, SEEK_END);
@@ -34,8 +47,10 @@ bool loadFileData(
     auto *data = (uint8_t *) malloc(size);
     if (!data) {
         fclose(file);
-        jclass exceptionClass = env->FindClass("java/lang/IllegalStateException");
-        env->ThrowNew(exceptionClass, "Could not allocate buffer to store WebP data.");
+        env->ThrowNew(
+                env->FindClass("java/lang/IllegalStateException"),
+                "Could not allocate buffer to store file data."
+        );
         return false;
     }
 
@@ -43,8 +58,10 @@ bool loadFileData(
     if (fread(data, 1, size, file) != size) {
         fclose(file);
         free(data);
-        jclass exceptionClass = env->FindClass("java/lang/IllegalStateException");
-        env->ThrowNew(exceptionClass, "Error occurred while reading the WebP file data.");
+        env->ThrowNew(
+                env->FindClass("java/lang/IllegalStateException"),
+                "Error occurred while reading file data."
+        );
         return false;
     }
 

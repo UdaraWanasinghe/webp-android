@@ -2,10 +2,13 @@ package com.aureusapps.android.webpandroid.example.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.ImageView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ScrollingView
 import androidx.core.view.ViewCompat
@@ -18,6 +21,11 @@ import com.aureusapps.android.webpandroid.example.R
 import com.aureusapps.android.webpandroid.example.states.DecodeState
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.InputStream
 
 @SuppressLint("ViewConstructor")
 @Suppress("NestedLambdaShadowedImplicitParameter")
@@ -47,7 +55,7 @@ internal class DecodedImagePreview(
                         layoutParams = AppBarLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
                         )
-                        title = context.getString(R.string.decoded_image_preview)
+                        title = context.getString(R.string.decoded_images)
                         setBackgroundColor(
                             resolveColorAttribute(R.attr.colorSurface)
                         )
@@ -74,6 +82,7 @@ internal class DecodedImagePreview(
     ) : RecyclerView.Adapter<ViewHolder>() {
 
         private val aspectRatio: Float
+        private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
         init {
             val imageWidth = (decodeState.imageInfo?.width ?: 1)
@@ -95,7 +104,28 @@ internal class DecodedImagePreview(
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val imageView = holder.itemView as AspectRatioImageView
             val (frame, _) = decodeState.frames[position]
-            imageView.setImageBitmap(frame)
+            readImage(frame, imageView)
+        }
+
+        private fun readImage(imageUri: Uri, imageView: ImageView) {
+            coroutineScope.launch(Dispatchers.IO) {
+                var inputStream: InputStream? = null
+                try {
+                    inputStream = imageView
+                        .context
+                        .contentResolver
+                        .openInputStream(imageUri)
+                        ?.also {
+                            val bitmap = BitmapFactory.decodeStream(it)
+                            it.close()
+                            withContext(Dispatchers.Main) {
+                                imageView.setImageBitmap(bitmap)
+                            }
+                        }
+                } finally {
+                    inputStream?.close()
+                }
+            }
         }
     }
 

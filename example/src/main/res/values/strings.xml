@@ -1,10 +1,11 @@
 <resources>
     <string name="app_name">webp-android</string>
     <string name="start">Start</string>
-    <string name="encode">Encode</string>
-    <string name="decode">Decode</string>
-    <string name="clear">Clear</string>
+    <string name="encode_images">Encode Images</string>
+    <string name="extract_images">Extract Images</string>
+    <string name="clear_cache">Clear Cache</string>
     <string name="show_encoded_image">Show Encoded Image</string>
     <string name="show_decoded_images">Show Decoded Images</string>
-    <string name="decoded_image_preview">Decoded Image Preview</string>
+    <string name="decoded_images">Decoded Images</string>
+    <string name="encoded_image">Encoded Image</string>
 </resources>

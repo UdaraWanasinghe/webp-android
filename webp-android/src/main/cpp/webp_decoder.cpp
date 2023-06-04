@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <sstream>
 #include <webp/demux.h>
 
 #include "include/webp_decoder_helper.h"
@@ -19,10 +20,6 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_extractImages(
     uint8_t *fileData;
     size_t fileSize;
     if (!loadFileData(env, filePath, &fileData, &fileSize)) {
-        env->ThrowNew(
-                env->FindClass("java/io/IOException"),
-                "Error loading WebP file data."
-        );
         return;
     }
 
