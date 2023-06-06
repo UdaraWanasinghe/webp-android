@@ -8,7 +8,7 @@
 
 #include "include/string_formatter.h"
 
-static inline std::string formatString(const char *format, ...) {
+std::string formatString(const char *format, ...) {
     // Create a va_list to hold the variable arguments
     va_list args;
     va_start(args, format);

@@ -12,11 +12,13 @@ import com.aureusapps.android.webpandroid.decoder.WebPDecoder
 import com.aureusapps.android.webpandroid.decoder.WebPDecoderListener
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
+import com.aureusapps.android.webpandroid.encoder.WebPEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPFrame
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.events.UiEvent
 import com.aureusapps.android.webpandroid.example.states.DecodeState
 import com.aureusapps.android.webpandroid.example.states.EncodeState
+import com.aureusapps.android.webpandroid.example.states.StaticWebPEncodeState
 import com.facebook.drawee.backends.pipeline.Fresco
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -30,29 +32,35 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
 
     private val _encodeStateFlow = MutableSharedFlow<EncodeState>(replay = 1)
     private val _decodeStateFlow = MutableSharedFlow<DecodeState>(replay = 1)
+    private val _staticWebPEncodeStateFlow = MutableSharedFlow<StaticWebPEncodeState>(replay = 1)
     private val _uiEventFlow = MutableSharedFlow<UiEvent>(replay = 1)
 
     val encodeStateFlow: Flow<EncodeState> = _encodeStateFlow
     val decodeStateFlow: Flow<DecodeState> = _decodeStateFlow
+    val staticWebPEncodeStateFlow: Flow<StaticWebPEncodeState> = _staticWebPEncodeStateFlow
     val uiEventFlow: Flow<UiEvent> = _uiEventFlow
 
     fun submitAction(action: UiAction) {
         when (action) {
-            is UiAction.EncodeAction -> {
-                encodeImage(action)
+            is UiAction.ConvertBitmapToAnimatedWebPAction -> {
+                encodeAnimatedWebP(action)
             }
 
-            is UiAction.ExtractImagesAction -> {
+            is UiAction.ExtractBitmapImagesFromWebPAction -> {
                 extractImages(action)
             }
 
             is UiAction.DeleteCacheAction -> {
                 deleteCache()
             }
+
+            is UiAction.ConvertBitmapToWebPAction -> {
+                encodeStaticWeBPImage(action)
+            }
         }
     }
 
-    private fun encodeImage(action: UiAction.EncodeAction) {
+    private fun encodeAnimatedWebP(action: UiAction.ConvertBitmapToAnimatedWebPAction) {
         viewModelScope.launch(Dispatchers.IO) {
             val encoder = WebPAnimEncoder(
                 action.width,
@@ -117,7 +125,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         return BitmapFactory.decodeStream(inputStream)
     }
 
-    private fun extractImages(action: UiAction.ExtractImagesAction) {
+    private fun extractImages(action: UiAction.ExtractBitmapImagesFromWebPAction) {
         viewModelScope.launch(Dispatchers.IO) {
             val imagePath = action.imagePath
             try {
@@ -205,6 +213,30 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 }
             _uiEventFlow.emit(UiEvent.DeleteCacheEvent)
         }
+    }
+
+    private fun encodeStaticWeBPImage(action: UiAction.ConvertBitmapToWebPAction) {
+        val webPEncoder = WebPEncoder(512, 512)
+        val sourceImage = readBitmap(action.sourceUri)
+        val encodeState = StaticWebPEncodeState(
+            outputPath = action.outputPath,
+            imageWidth = sourceImage.width,
+            imageHeight = sourceImage.height
+        )
+        webPEncoder.addProgressListener {
+            viewModelScope.launch {
+                _staticWebPEncodeStateFlow.emit(
+                    encodeState.copy(
+                        encodeProgress = it
+                    )
+                )
+            }
+        }
+        if (action.webPConfig != null) {
+            webPEncoder.configure(action.webPConfig, action.webPPreset)
+        }
+        webPEncoder.encode(sourceImage, action.outputPath)
+        webPEncoder.release()
     }
 
 }

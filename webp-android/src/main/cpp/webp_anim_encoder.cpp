@@ -445,6 +445,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         jobject self,
         jobject frame
 ) {
+    // get frame and timestamp
     jclass frameClass = env->GetObjectClass(frame);
     jobject bitmap = env->GetObjectField(
             frame,
@@ -455,8 +456,9 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
             env->GetFieldID(frameClass, "timestamp", "J")
     );
 
-    AndroidBitmapInfo info;
-    if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
+    // get bitmap bitmapInfo
+    AndroidBitmapInfo bitmapInfo;
+    if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) < 0) {
         env->ThrowNew(
                 env->FindClass("java/lang/RuntimeException"),
                 "Failed to get bitmap info."
@@ -464,8 +466,18 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         return;
     }
 
-    void *pixels;
-    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
+    // ensure if bitmap is RGBA_8888 format
+    if (bitmapInfo.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        env->ThrowNew(
+                env->FindClass("java/lang/RuntimeException"),
+                "Bitmap is not formatted with RGBA_8888 format."
+        );
+        return;
+    }
+
+    // retrieve bitmap pixels
+    void *bitmapPixels;
+    if (AndroidBitmap_lockPixels(env, bitmap, &bitmapPixels) < 0) {
         env->ThrowNew(
                 env->FindClass("java/lang/RuntimeException"),
                 "Failed to get bitmap pixel data."
@@ -476,18 +488,12 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
     WebPPicture webPPicture;
     if (WebPPictureInit(&webPPicture)) {
         webPPicture.use_argb = true;
-        webPPicture.width = (int) info.width;
-        webPPicture.height = (int) info.height;
+        webPPicture.width = (int) bitmapInfo.width;
+        webPPicture.height = (int) bitmapInfo.height;
         webPPicture.colorspace = WEBP_YUV420;
         webPPicture.argb_stride = 4;
         if (WebPPictureAlloc(&webPPicture)) {
-            // copy pixel data from the bitmap
-            uint32_t *dst = webPPicture.argb;
-            for (int y = 0; y < info.height; ++y) {
-                memcpy(dst, pixels, info.width * 4);
-                pixels = (void *) ((uint8_t *) pixels + info.stride);
-                dst += webPPicture.argb_stride;
-            }
+            memcpy(webPPicture.argb, bitmapPixels, bitmapInfo.width * bitmapInfo.height * 4);
             AndroidBitmap_unlockPixels(env, bitmap);
             Encoder *encoder = Encoder::GetInstance(env, self);
             auto *userData = new FrameUserData;

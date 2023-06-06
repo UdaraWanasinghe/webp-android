@@ -7,7 +7,7 @@
 #include "include/string_formatter.h"
 #include "include/exception_helper.h"
 
-inline void throwException(JNIEnv *env, jclass *exceptionClass, const char *format, ...) {
+void throwException(JNIEnv *env, jclass *exceptionClass, const char *format, ...) {
     va_list args;
     va_start(args, format);
 
@@ -18,7 +18,7 @@ inline void throwException(JNIEnv *env, jclass *exceptionClass, const char *form
     va_end(args);
 }
 
-static inline void throwNullPointerException(JNIEnv *env, const char *format, ...) {
+void throwNullPointerException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/NullPointerException");
@@ -26,7 +26,7 @@ static inline void throwNullPointerException(JNIEnv *env, const char *format, ..
     va_end(args);
 }
 
-static inline void throwIllegalArgumentException(JNIEnv *env, const char *format, ...) {
+void throwIllegalArgumentException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/IllegalArgumentException");
@@ -34,7 +34,7 @@ static inline void throwIllegalArgumentException(JNIEnv *env, const char *format
     va_end(args);
 }
 
-static inline void throwArrayIndexOutOfBoundsException(JNIEnv *env, const char *format, ...) {
+void throwArrayIndexOutOfBoundsException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/ArrayIndexOutOfBoundsException");
@@ -42,7 +42,7 @@ static inline void throwArrayIndexOutOfBoundsException(JNIEnv *env, const char *
     va_end(args);
 }
 
-static inline void throwIOException(JNIEnv *env, const char *format, ...) {
+void throwIOException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/io/IOException");
@@ -50,7 +50,7 @@ static inline void throwIOException(JNIEnv *env, const char *format, ...) {
     va_end(args);
 }
 
-static inline void throwFileNotFoundException(JNIEnv *env, const char *format, ...) {
+void throwFileNotFoundException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/io/FileNotFoundException");
@@ -58,7 +58,7 @@ static inline void throwFileNotFoundException(JNIEnv *env, const char *format, .
     va_end(args);
 }
 
-static inline void throwArithmeticException(JNIEnv *env, const char *format, ...) {
+void throwArithmeticException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/ArithmeticException");
@@ -66,7 +66,7 @@ static inline void throwArithmeticException(JNIEnv *env, const char *format, ...
     va_end(args);
 }
 
-static inline void throwUnsupportedOperationException(JNIEnv *env, const char *format, ...) {
+void throwUnsupportedOperationException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/UnsupportedOperationException");
@@ -74,7 +74,7 @@ static inline void throwUnsupportedOperationException(JNIEnv *env, const char *f
     va_end(args);
 }
 
-static inline void throwIllegalStateException(JNIEnv *env, const char *format, ...) {
+void throwIllegalStateException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/IllegalStateException");
@@ -82,7 +82,7 @@ static inline void throwIllegalStateException(JNIEnv *env, const char *format, .
     va_end(args);
 }
 
-static inline void throwNoSuchElementException(JNIEnv *env, const char *format, ...) {
+void throwNoSuchElementException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/util/NoSuchElementException");
@@ -90,7 +90,7 @@ static inline void throwNoSuchElementException(JNIEnv *env, const char *format, 
     va_end(args);
 }
 
-static inline void throwNumberFormatException(JNIEnv *env, const char *format, ...) {
+void throwNumberFormatException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/NumberFormatException");
@@ -98,7 +98,7 @@ static inline void throwNumberFormatException(JNIEnv *env, const char *format, .
     va_end(args);
 }
 
-static inline void throwRuntimeException(JNIEnv *env, const char *format, ...) {
+void throwRuntimeException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exceptionClass = env->FindClass("java/lang/RuntimeException");

@@ -197,7 +197,7 @@ class CodecActivity : AppCompatActivity() {
     private fun submitEncodeAction() {
         val packageName = packageName
         codecViewModel.submitAction(
-            UiAction.EncodeAction(
+            UiAction.ConvertBitmapToAnimatedWebPAction(
                 width = 512,
                 height = 512,
                 frames = listOf(
@@ -220,7 +220,7 @@ class CodecActivity : AppCompatActivity() {
     private fun submitDecodeAction() {
         val imageFile = File(cacheDir, "image.webp")
         codecViewModel.submitAction(
-            UiAction.ExtractImagesAction(imageFile.absolutePath)
+            UiAction.ExtractBitmapImagesFromWebPAction(imageFile.absolutePath)
         )
     }
 

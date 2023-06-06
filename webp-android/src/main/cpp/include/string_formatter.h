@@ -6,4 +6,4 @@
 
 #include <string>
 
-static inline std::string formatString(const char *format, ...);
+std::string formatString(const char *format, ...);
