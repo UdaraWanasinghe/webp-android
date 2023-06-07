@@ -122,13 +122,14 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                     ).also { state = it }
                 )
                 webPAnimEncoder.configure(action.webPConfig)
-                webPAnimEncoder.addProgressListener { frameProgress, currentFrame ->
-                    val progress = (frameProgress + 100f * (currentFrame - 1)) / frameCount
+                webPAnimEncoder.addProgressListener { currentFrame, frameProgress ->
+                    val progress = (frameProgress + 100f * currentFrame) / frameCount
                     updateBitmapToAnimatedWebPConvertState(
                         state.copy(
                             progress = progress.roundToInt()
                         ).also { state = it }
                     )
+                    true
                 }
                 action.frames.forEach {
                     val (timestamp, uri) = it

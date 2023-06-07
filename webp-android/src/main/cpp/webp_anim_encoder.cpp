@@ -13,23 +13,12 @@
 #include "include/exception_helper.h"
 #include "include/string_formatter.h"
 
-// anim encoder
-namespace anime {
+namespace lib {
 
     struct ProgressHookData {
-        jobject progressListener;
-        jmethodID onProgressMethodID;
-
-        ProgressHookData() {
-            progressListener = nullptr;
-            onProgressMethodID = nullptr;
-        }
-
-        ~ProgressHookData() {
-            progressListener = nullptr;
-            onProgressMethodID = nullptr;
-        }
-
+        jweak progressObservable;
+        jmethodID notifyProgressMethodID;
+        bool flagCancel;
     };
 
     struct FrameData {
@@ -109,15 +98,15 @@ namespace anime {
 
 }
 
-JavaVM *anime::WebPEncoder::jvm = nullptr;
-anime::ProgressHookData *anime::WebPEncoder::progressHookData = nullptr;
+JavaVM *lib::WebPEncoder::jvm = nullptr;
+lib::ProgressHookData *lib::WebPEncoder::progressHookData = nullptr;
 
-anime::WebPEncoder::WebPEncoder(int width, int height, WebPAnimEncoderOptions options) {
+lib::WebPEncoder::WebPEncoder(int width, int height, WebPAnimEncoderOptions options) {
     this->frameCount = 0;
     this->webPAnimEncoder = WebPAnimEncoderNew(width, height, &options);
 }
 
-anime::WebPEncoder *anime::WebPEncoder::getInstance(JNIEnv *env, jobject *thiz) {
+lib::WebPEncoder *lib::WebPEncoder::getInstance(JNIEnv *env, jobject *thiz) {
     jclass encoderClass = env->GetObjectClass(*thiz);
     if (!encoderClass) {
         throwRuntimeException(env, "GetObjectClass failed");
@@ -130,32 +119,48 @@ anime::WebPEncoder *anime::WebPEncoder::getInstance(JNIEnv *env, jobject *thiz) 
     return reinterpret_cast<WebPEncoder *>(nativePointer);
 }
 
-int anime::WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *picture) {
+int lib::WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *picture) {
     if (progressHookData != nullptr) {
         JNIEnv *env;
-        if (jvm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
-            return 0;
+        int envStat = jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
+        switch (envStat) {
+            case JNI_EDETACHED:
+                if (jvm->AttachCurrentThread(&env, nullptr) != 0) {
+                    // failed to attach
+                    return 0;
+                }
+                break;
+            case JNI_EVERSION:
+                // version not supported
+                return 0;
+            case JNI_OK:
+                break;
+            default:
+                return 0;
         }
-        jobject encoder = progressHookData->progressListener;
-        jclass encoderClass = env->GetObjectClass(encoder);
-        jmethodID progressMethodID = env->GetMethodID(encoderClass, "notifyProgressChanged",
-                                                      "(II)V");
+        jweak progressObservable = progressHookData->progressObservable;
+        jmethodID notifyProgressMethodID = progressHookData->notifyProgressMethodID;
         auto *frameData = static_cast<FrameData *>(picture->user_data);
         int frameIndex = frameData->frameIndex;
-        env->CallVoidMethod(encoder, progressMethodID, frameIndex, percent);
-        jvm->DetachCurrentThread();
-        return 1;
+        jboolean encode = env->CallBooleanMethod(
+                progressObservable,
+                notifyProgressMethodID,
+                frameIndex,
+                percent
+        );
+        bool cancel = progressHookData->flagCancel;
+        return encode && !cancel;
 
     } else {
         return 0;
     }
 }
 
-void anime::WebPEncoder::configure(WebPConfig config) {
+void lib::WebPEncoder::configure(WebPConfig config) {
     webPConfig = config;
 }
 
-void anime::WebPEncoder::addFrame(
+void lib::WebPEncoder::addFrame(
         uint8_t *pixels,
         int bitmapWidth,
         int bitmapHeight,
@@ -197,7 +202,7 @@ void anime::WebPEncoder::addFrame(
     }
 }
 
-void anime::WebPEncoder::assemble(long timestamp, const char *outputPath) {
+void lib::WebPEncoder::assemble(long timestamp, const char *outputPath) {
     // Mark last timestamp
     if (!WebPAnimEncoderAdd(webPAnimEncoder, nullptr, timestamp, nullptr)) {
         throw std::runtime_error("Error occurred while assembling the animation.");
@@ -227,7 +232,7 @@ void anime::WebPEncoder::assemble(long timestamp, const char *outputPath) {
     WebPDataClear(&webPData);
 }
 
-void anime::WebPEncoder::release() {
+void lib::WebPEncoder::release() {
     WebPAnimEncoderDelete(webPAnimEncoder);
 }
 
@@ -249,21 +254,22 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
             // Set jvm instance
             JavaVM *jvm;
             env->GetJavaVM(&jvm);
-            anime::WebPEncoder::jvm = jvm;
+            lib::WebPEncoder::jvm = jvm;
 
             // Set progress hook data
-            auto *_progressHookData = new anime::ProgressHookData();
-            _progressHookData->progressListener = thiz;
+            auto *hookData = new lib::ProgressHookData();
             jclass encoderClass = env->GetObjectClass(thiz);
-            _progressHookData->onProgressMethodID = env->GetMethodID(
+            hookData->progressObservable = env->NewWeakGlobalRef(thiz);
+            hookData->notifyProgressMethodID = env->GetMethodID(
                     encoderClass,
                     "notifyProgressChanged",
-                    "(II)V"
+                    "(II)Z"
             );
-            anime::WebPEncoder::progressHookData = _progressHookData;
+            hookData->flagCancel = false;
+            lib::WebPEncoder::progressHookData = hookData;
 
             // Create encoder
-            auto *encoder = new anime::WebPEncoder(width, height, webPAnimEncoderOptions);
+            auto *encoder = new lib::WebPEncoder(width, height, webPAnimEncoderOptions);
 
             // Return pointer
             return reinterpret_cast<jlong>(encoder);
@@ -319,7 +325,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
         parseWebPConfig(env, &config, &webPConfig);
 
         // Apply config to the encoder
-        auto *encoder = anime::WebPEncoder::getInstance(env, &thiz);
+        auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
         encoder->configure(webPConfig);
 
     } catch (std::runtime_error &e) {
@@ -363,7 +369,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         }
 
         // Get encoder instance
-        auto *encoder = anime::WebPEncoder::getInstance(env, &thiz);
+        auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
 
         // Add frame
         encoder->addFrame(
@@ -397,7 +403,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
         jlong timestamp,
         jstring path
 ) {
-    auto *encoder = anime::WebPEncoder::getInstance(env, &thiz);
+    auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
     if (encoder != nullptr) {
         try {
             // Assemble animation
@@ -421,11 +427,23 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
 
 extern "C"
 JNIEXPORT void JNICALL
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_cancel(
+        JNIEnv *env,
+        jobject
+) {
+    lib::ProgressHookData *hookData = lib::WebPEncoder::progressHookData;
+    if (hookData != nullptr) {
+        hookData->flagCancel = true;
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
         JNIEnv *env,
         jobject thiz
 ) {
-    auto *encoder = anime::WebPEncoder::getInstance(env, &thiz);
+    auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
     if (encoder != nullptr) {
         // Release resources
         encoder->release();
@@ -437,7 +455,15 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
         env->DeleteLocalRef(encoderClass);
 
         // Delete progress hook data
-        delete anime::WebPEncoder::progressHookData;
+        lib::ProgressHookData *hookData = lib::WebPEncoder::progressHookData;
+        if (hookData != nullptr) {
+            jweak progressObservable = hookData->progressObservable;
+
+            // Delete progress hook data
+            delete lib::WebPEncoder::progressHookData;
+
+            env->DeleteWeakGlobalRef(progressObservable);
+        }
 
         // Delete encoder
         delete encoder;

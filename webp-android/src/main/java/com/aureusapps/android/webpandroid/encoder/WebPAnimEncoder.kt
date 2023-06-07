@@ -30,10 +30,14 @@ class WebPAnimEncoder(
         progressListeners.remove(listener)
     }
 
-    private fun notifyProgressChanged(currentFrame: Int, frameProgress: Int) {
+    private fun notifyProgressChanged(currentFrame: Int, frameProgress: Int): Boolean {
+        var encode = true
         progressListeners.forEach {
-            it.onProgressChanged(currentFrame, frameProgress)
+            if (!it.onProgressChanged(currentFrame, frameProgress)) {
+                encode = false
+            }
         }
+        return encode
     }
 
     private external fun create(
@@ -50,6 +54,8 @@ class WebPAnimEncoder(
     external fun addFrame(timestamp: Long, bitmap: Bitmap)
 
     external fun assemble(timestamp: Long, outputPath: String)
+
+    external fun cancel()
 
     external fun release()
 
