@@ -22,7 +22,7 @@ WebPPreset parseWebPPreset(JNIEnv *env, jobject *object) {
     return WebPPreset(ordinal);
 }
 
-inline void parseWebPConfig(JNIEnv *env, jobject *object, WebPConfig *config) {
+void parseWebPConfig(JNIEnv *env, jobject *object, WebPConfig *config) {
     // lossless
     jobject lossless = getObjectField(env, object, "lossless", "Ljava/lang/Integer;");
     if (lossless != nullptr) {
@@ -246,4 +246,86 @@ inline void parseWebPConfig(JNIEnv *env, jobject *object, WebPConfig *config) {
         config->qmax = getIntegerValue(env, &qmax);
     }
 
+}
+
+float parseWebPQuality(JNIEnv *env, jobject *config) {
+    jclass configClass = env->GetObjectClass(*config);
+    jfieldID qualityFieldID = env->GetFieldID(configClass, "quality", "Ljava/lang/Float;");
+    jobject qualityField = env->GetObjectField(*config, qualityFieldID);
+    float quality;
+    if (qualityField == nullptr) {
+        quality = 100.0f;
+    } else {
+        quality = getFloatValue(env, &qualityField);
+    }
+    env->DeleteLocalRef(configClass);
+    return quality;
+}
+
+void parseAnimEncoderOptions(JNIEnv *env, jobject *object, WebPAnimEncoderOptions *options) {
+    // minimizeSize
+    jobject minimizeSize = getObjectField(env, object, "minimizeSize", "Ljava/lang/Boolean;");
+    if (minimizeSize != nullptr) {
+        options->minimize_size = getBooleanValue(env, &minimizeSize);
+    }
+
+    // kmin
+    jobject kmin = getObjectField(env, object, "kmin", "Ljava/lang/Integer;");
+    if (kmin != nullptr) {
+        options->kmin = getIntegerValue(env, &kmin);
+    }
+
+    // kmax
+    jobject kmax = getObjectField(env, object, "kmax", "Ljava/lang/Integer;");
+    if (kmax != nullptr) {
+        options->kmax = getIntegerValue(env, &kmax);
+    }
+
+    // allowMixed
+    jobject allow_mixed = getObjectField(env, object, "allowMixed", "Ljava/lang/Boolean;");
+    if (allow_mixed != nullptr) {
+        options->allow_mixed = getBooleanValue(env, &allow_mixed);
+    }
+
+    // verbose
+    jobject verbose = getObjectField(env, object, "verbose", "Ljava/lang/Boolean;");
+    if (verbose != nullptr) {
+        options->verbose = getBooleanValue(env, &verbose);
+    }
+
+    // anim params
+    WebPMuxAnimParams webPMuxAnimParams;
+    jobject animParams = getObjectField(
+            env,
+            object,
+            "animParams",
+            "Lcom/aureusapps/android/webpandroid/encoder/WebPMuxAnimParams;"
+    );
+    if (animParams != nullptr) {
+        // bgColor
+        jobject backgroundColor = getObjectField(
+                env,
+                &animParams,
+                "backgroundColor",
+                "Ljava/lang/Integer;"
+        );
+        if (backgroundColor != nullptr) {
+            webPMuxAnimParams.bgcolor = getIntegerValue(env, &backgroundColor);
+        } else {
+            webPMuxAnimParams.bgcolor = 0;
+        }
+
+        // loopCount
+        jobject loopCount = getObjectField(env, &animParams, "loopCount", "Ljava/lang/Integer;");
+        if (loopCount != nullptr) {
+            webPMuxAnimParams.loop_count = getIntegerValue(env, &loopCount);
+        } else {
+            webPMuxAnimParams.loop_count = 1;
+        }
+
+    } else {
+        webPMuxAnimParams.bgcolor = 0;
+        webPMuxAnimParams.loop_count = 1;
+    }
+    options->anim_params = webPMuxAnimParams;
 }

@@ -11,7 +11,6 @@ import androidx.core.widget.NestedScrollView
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.webpandroid.example.R
-import com.aureusapps.android.webpandroid.example.states.EncodeState
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.view.SimpleDraweeView
 import com.facebook.imagepipeline.request.ImageRequestBuilder
@@ -21,9 +20,11 @@ import java.io.File
 
 @Suppress("NestedLambdaShadowedImplicitParameter")
 @SuppressLint("ViewConstructor")
-internal class EncodedImagePreview(
+internal class WebPPreview(
     context: Context,
-    private val encodeState: EncodeState
+    private val imagePath: String,
+    private val imageWidth: Int,
+    private val imageHeight: Int
 ) : CoordinatorLayout(context) {
 
     private lateinit var imageView: SimpleDraweeView
@@ -47,7 +48,7 @@ internal class EncodedImagePreview(
                         setBackgroundColor(
                             resolveColorAttribute(R.attr.colorSurface)
                         )
-                        title = context.getString(R.string.encoded_image)
+                        title = context.getString(R.string.preview)
                     }
                 }
             }
@@ -74,9 +75,8 @@ internal class EncodedImagePreview(
                                 layoutParams = FrameLayout.LayoutParams(
                                     MATCH_PARENT, WRAP_CONTENT
                                 )
-                                if (encodeState.imageHeight != 0) {
-                                    aspectRatio =
-                                        encodeState.imageWidth.toFloat() / encodeState.imageHeight
+                                if (imageHeight != 0) {
+                                    aspectRatio = imageWidth.toFloat() / imageHeight
                                 }
                             }
                         }
@@ -87,7 +87,6 @@ internal class EncodedImagePreview(
     }
 
     private fun loadImage() {
-        val imagePath = encodeState.outputPath ?: return
         val imageFile = File(imagePath)
         val imageUri = imageFile.toUri()
         val imageRequest = ImageRequestBuilder

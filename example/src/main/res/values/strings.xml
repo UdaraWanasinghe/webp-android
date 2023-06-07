@@ -1,11 +1,8 @@
 <resources>
     <string name="app_name">webp-android</string>
-    <string name="start">Start</string>
-    <string name="encode_images">Encode Images</string>
-    <string name="extract_images">Extract Images</string>
+    <string name="bitmap_to_webp">Bitmap to WebP</string>
+    <string name="bitmap_to_animated_webp">Bitmap to Animated WebP</string>
+    <string name="webp_to_bitmap">WebP to Bitmap</string>
     <string name="clear_cache">Clear Cache</string>
-    <string name="show_encoded_image">Show Encoded Image</string>
-    <string name="show_decoded_images">Show Decoded Images</string>
-    <string name="decoded_images">Decoded Images</string>
-    <string name="encoded_image">Encoded Image</string>
+    <string name="preview">Preview</string>
 </resources>

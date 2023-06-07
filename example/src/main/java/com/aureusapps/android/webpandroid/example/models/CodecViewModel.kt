@@ -13,91 +13,131 @@ import com.aureusapps.android.webpandroid.decoder.WebPDecoderListener
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPEncoder
-import com.aureusapps.android.webpandroid.encoder.WebPFrame
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.events.UiEvent
-import com.aureusapps.android.webpandroid.example.states.DecodeState
-import com.aureusapps.android.webpandroid.example.states.EncodeState
-import com.aureusapps.android.webpandroid.example.states.StaticWebPEncodeState
+import com.aureusapps.android.webpandroid.example.states.BitmapToAnimatedWebPConvertState
+import com.aureusapps.android.webpandroid.example.states.BitmapToWebPConvertState
+import com.aureusapps.android.webpandroid.example.states.WebPToBitmapConvertState
 import com.facebook.drawee.backends.pipeline.Fresco
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
+@Suppress("NestedLambdaShadowedImplicitParameter")
 internal class CodecViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _encodeStateFlow = MutableSharedFlow<EncodeState>(replay = 1)
-    private val _decodeStateFlow = MutableSharedFlow<DecodeState>(replay = 1)
-    private val _staticWebPEncodeStateFlow = MutableSharedFlow<StaticWebPEncodeState>(replay = 1)
+    private val _bitmapToWebPConvertStateFlow =
+        MutableSharedFlow<BitmapToWebPConvertState>(replay = 1)
+    private val _bitmapToAnimatedWebPConvertStateFlow =
+        MutableSharedFlow<BitmapToAnimatedWebPConvertState>(replay = 1)
+    private val _webPToBitmapConvertStateFlow =
+        MutableSharedFlow<WebPToBitmapConvertState>(replay = 1)
     private val _uiEventFlow = MutableSharedFlow<UiEvent>(replay = 1)
 
-    val encodeStateFlow: Flow<EncodeState> = _encodeStateFlow
-    val decodeStateFlow: Flow<DecodeState> = _decodeStateFlow
-    val staticWebPEncodeStateFlow: Flow<StaticWebPEncodeState> = _staticWebPEncodeStateFlow
-    val uiEventFlow: Flow<UiEvent> = _uiEventFlow
+    val bitmapToWebPConvertStateFlow = _bitmapToWebPConvertStateFlow.asSharedFlow()
+    val bitmapToAnimatedWebPConvertStateFlow = _bitmapToAnimatedWebPConvertStateFlow.asSharedFlow()
+    val webPToBitmapConvertStateFlow = _webPToBitmapConvertStateFlow.asSharedFlow()
+    val uiEventFlow = _uiEventFlow.asSharedFlow()
 
     fun submitAction(action: UiAction) {
         when (action) {
-            is UiAction.ConvertBitmapToAnimatedWebPAction -> {
-                encodeAnimatedWebP(action)
+            is UiAction.ConvertBitmapToWebPAction -> {
+                convertBitmapToWebP(action)
             }
 
-            is UiAction.ExtractBitmapImagesFromWebPAction -> {
-                extractImages(action)
+            is UiAction.ConvertBitmapToAnimatedWebPAction -> {
+                convertBitmapToAnimatedWebP(action)
+            }
+
+            is UiAction.ConvertWebPToBitmapAction -> {
+                convertWebPToBitmap(action)
             }
 
             is UiAction.DeleteCacheAction -> {
                 deleteCache()
             }
+        }
+    }
 
-            is UiAction.ConvertBitmapToWebPAction -> {
-                encodeStaticWeBPImage(action)
+    private fun convertBitmapToWebP(action: UiAction.ConvertBitmapToWebPAction) {
+        var state = BitmapToWebPConvertState(outputPath = action.outputPath)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val sourceImage = readBitmap(action.sourceUri)
+                val webPEncoder = WebPEncoder(sourceImage.width, sourceImage.height)
+                updateBitmapToWebPConvertState(
+                    state.copy(
+                        imageWidth = sourceImage.width,
+                        imageHeight = sourceImage.height
+                    ).also { state = it }
+                )
+                webPEncoder.addProgressListener {
+                    updateBitmapToWebPConvertState(
+                        state.copy(
+                            progress = it
+                        ).also { state = it }
+                    )
+                }
+                if (action.webPConfig != null) {
+                    webPEncoder.configure(action.webPConfig, action.webPPreset)
+                }
+                webPEncoder.encode(sourceImage, action.outputPath)
+                webPEncoder.release()
+                updateBitmapToWebPConvertState(
+                    state.copy(
+                        isFinished = true
+                    ).also { state = it }
+                )
+
+            } catch (e: Exception) {
+                updateBitmapToWebPConvertState(
+                    state.copy(
+                        hasError = true,
+                        errorMessage = e.message
+                    ).also { state = it }
+                )
             }
         }
     }
 
-    private fun encodeAnimatedWebP(action: UiAction.ConvertBitmapToAnimatedWebPAction) {
+    private fun convertBitmapToAnimatedWebP(action: UiAction.ConvertBitmapToAnimatedWebPAction) {
         viewModelScope.launch(Dispatchers.IO) {
-            val encoder = WebPAnimEncoder(
+            var state = BitmapToAnimatedWebPConvertState()
+            val webPAnimEncoder = WebPAnimEncoder(
                 action.width,
                 action.height,
                 action.encoderOptions
             )
             val frameCount = action.frames.size
-            var state = EncodeState()
             try {
-                _encodeStateFlow.emit(
+                updateBitmapToAnimatedWebPConvertState(
                     state.copy(
                         outputPath = action.outputPath,
                         imageWidth = action.width,
                         imageHeight = action.height
                     ).also { state = it }
                 )
-                encoder.configure(action.webPConfig)
-                encoder.addProgressListener { frameProgress, currentFrame ->
+                webPAnimEncoder.configure(action.webPConfig)
+                webPAnimEncoder.addProgressListener { frameProgress, currentFrame ->
                     val progress = (frameProgress + 100f * (currentFrame - 1)) / frameCount
-                    viewModelScope.launch {
-                        _encodeStateFlow.emit(
-                            state.copy(
-                                progress = progress.roundToInt()
-                            ).also { state = it }
-                        )
-                    }
+                    updateBitmapToAnimatedWebPConvertState(
+                        state.copy(
+                            progress = progress.roundToInt()
+                        ).also { state = it }
+                    )
                 }
                 action.frames.forEach {
                     val (timestamp, uri) = it
                     val bitmap = readBitmap(uri)
                     val scaledBitmap = bitmap.scale(action.width, action.height)
-                    encoder.addFrame(
-                        WebPFrame(scaledBitmap, timestamp)
-                    )
+                    webPAnimEncoder.addFrame(timestamp, scaledBitmap)
                 }
-                encoder.assemble(action.lastTime, action.outputPath)
-                _encodeStateFlow.emit(
+                webPAnimEncoder.assemble(action.lastTime, action.outputPath)
+                updateBitmapToAnimatedWebPConvertState(
                     state.copy(
                         progress = 100,
                         isFinished = true
@@ -105,7 +145,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 )
 
             } catch (e: Exception) {
-                _encodeStateFlow.emit(
+                updateBitmapToAnimatedWebPConvertState(
                     state.copy(
                         progress = 0,
                         hasError = true,
@@ -114,89 +154,65 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 )
 
             } finally {
-                encoder.release()
+                webPAnimEncoder.release()
             }
         }
     }
 
-    private fun readBitmap(bitmapUri: Uri): Bitmap {
-        val context = getApplication<Application>().applicationContext
-        val inputStream = context.contentResolver.openInputStream(bitmapUri)
-        return BitmapFactory.decodeStream(inputStream)
-    }
-
-    private fun extractImages(action: UiAction.ExtractBitmapImagesFromWebPAction) {
+    private fun convertWebPToBitmap(action: UiAction.ConvertWebPToBitmapAction) {
         viewModelScope.launch(Dispatchers.IO) {
-            val imagePath = action.imagePath
+            var state = WebPToBitmapConvertState()
             try {
                 val frames = mutableListOf<Pair<Uri, Int>>()
-                _decodeStateFlow.emit(
-                    DecodeState(
-                        outputPath = imagePath
-                    )
+                updateWebPToBitmapConvertState(
+                    state.copy(
+                        outputPath = action.imagePath
+                    ).also { state = it }
                 )
                 var frameCount = 0
                 WebPDecoder.extractImages(
-                    imagePath,
+                    action.imagePath,
                     object : WebPDecoderListener {
+
                         override fun onReceiveInfo(info: WebPInfo) {
                             frameCount = info.frameCount
-                            viewModelScope.launch {
-                                _decodeStateFlow.emit(
-                                    DecodeState(
-                                        outputPath = imagePath,
-                                        imageInfo = info
-                                    )
-                                )
-                            }
+                            updateWebPToBitmapConvertState(
+                                state.copy(
+                                    imageInfo = info
+                                ).also { state = it }
+                            )
                         }
 
                         override fun onReceiveFrame(frame: Bitmap, index: Int, timestamp: Int) {
                             if (frameCount != 0) {
                                 val progress = 100 * (index + 1) / frameCount
-                                viewModelScope.launch {
-                                    _decodeStateFlow.emit(
-                                        DecodeState(
-                                            outputPath = imagePath,
-                                            progress = progress
-                                        )
-                                    )
-                                }
+                                updateWebPToBitmapConvertState(
+                                    state.copy(
+                                        progress = progress
+                                    ).also { state = it }
+                                )
                             }
-                            val file = saveImage(frame, index)
+                            val file = saveBitmap(frame, index)
                             frames.add(file.toUri() to timestamp)
                         }
                     }
                 )
-                _decodeStateFlow.emit(
-                    DecodeState(
-                        outputPath = imagePath,
+                updateWebPToBitmapConvertState(
+                    state.copy(
                         isFinished = true,
-                        progress = 100,
                         frames = frames
-                    )
+                    ).also { state = it }
                 )
 
             } catch (e: Exception) {
-                _decodeStateFlow.emit(
-                    DecodeState(
-                        outputPath = imagePath,
+                updateWebPToBitmapConvertState(
+                    state.copy(
                         hasError = true,
                         errorMessage = e.message
-                    )
+                    ).also { state = it }
                 )
             }
         }
-    }
-
-    private fun saveImage(bitmap: Bitmap, index: Int): File {
-        val context = getApplication<Application>().applicationContext
-        val file = File(context.cacheDir, "image$index.png")
-        val outputStream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-        outputStream.flush()
-        outputStream.close()
-        return file
     }
 
     private fun deleteCache() {
@@ -215,28 +231,38 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    private fun encodeStaticWeBPImage(action: UiAction.ConvertBitmapToWebPAction) {
-        val webPEncoder = WebPEncoder(512, 512)
-        val sourceImage = readBitmap(action.sourceUri)
-        val encodeState = StaticWebPEncodeState(
-            outputPath = action.outputPath,
-            imageWidth = sourceImage.width,
-            imageHeight = sourceImage.height
-        )
-        webPEncoder.addProgressListener {
-            viewModelScope.launch {
-                _staticWebPEncodeStateFlow.emit(
-                    encodeState.copy(
-                        encodeProgress = it
-                    )
-                )
-            }
+    private fun updateBitmapToWebPConvertState(newState: BitmapToWebPConvertState) {
+        viewModelScope.launch {
+            _bitmapToWebPConvertStateFlow.emit(newState)
         }
-        if (action.webPConfig != null) {
-            webPEncoder.configure(action.webPConfig, action.webPPreset)
+    }
+
+    private fun updateBitmapToAnimatedWebPConvertState(newState: BitmapToAnimatedWebPConvertState) {
+        viewModelScope.launch {
+            _bitmapToAnimatedWebPConvertStateFlow.emit(newState)
         }
-        webPEncoder.encode(sourceImage, action.outputPath)
-        webPEncoder.release()
+    }
+
+    private fun updateWebPToBitmapConvertState(newState: WebPToBitmapConvertState) {
+        viewModelScope.launch {
+            _webPToBitmapConvertStateFlow.emit(newState)
+        }
+    }
+
+    private fun readBitmap(bitmapUri: Uri): Bitmap {
+        val context = getApplication<Application>().applicationContext
+        val inputStream = context.contentResolver.openInputStream(bitmapUri)
+        return BitmapFactory.decodeStream(inputStream)
+    }
+
+    private fun saveBitmap(bitmap: Bitmap, index: Int): File {
+        val context = getApplication<Application>().applicationContext
+        val file = File(context.cacheDir, "image$index.png")
+        val outputStream = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        outputStream.flush()
+        outputStream.close()
+        return file
     }
 
 }

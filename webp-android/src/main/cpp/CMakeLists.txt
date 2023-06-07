@@ -24,12 +24,12 @@ find_package(JNI REQUIRED)
 
 add_subdirectory(${LIBWEBP_PATH} ${CMAKE_CURRENT_BINARY_DIR}/libwebp)
 
-# libwebp jni bindings
+# libwebp lib bindings
 add_library(webp_jni SHARED ${LIBWEBP_PATH}/swig/libwebp_java_wrap.c)
 target_include_directories(webp_jni PRIVATE ${JAVA_INCLUDE_PATH} ${LIBWEBP_PATH}/src)
 target_link_libraries(webp_jni webp)
 
-# libwebp codec jni bindings
+# libwebp codec lib bindings
 add_library(webpcodec_jni SHARED ${SOURCES})
 target_include_directories(webpcodec_jni PRIVATE ${JAVA_INCLUDE_PATH} ${LIBWEBP_PATH}/src)
 find_library(bitmap-lib jnigraphics)

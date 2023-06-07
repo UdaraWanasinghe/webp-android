@@ -4,6 +4,12 @@ import android.graphics.Bitmap
 
 class WebPEncoder(width: Int, height: Int) {
 
+    companion object {
+        init {
+            System.loadLibrary("webpcodec_jni")
+        }
+    }
+
     private val progressListeners = mutableSetOf<WebPEncoderProgressListener>()
     private val nativePointer: Long
 

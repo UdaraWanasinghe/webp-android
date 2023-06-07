@@ -3,7 +3,7 @@ package com.aureusapps.android.webpandroid.example.states
 import android.net.Uri
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
 
-internal data class DecodeState(
+internal data class WebPToBitmapConvertState(
     val outputPath: String? = null,
     val imageInfo: WebPInfo? = null,
     val progress: Int = 0,

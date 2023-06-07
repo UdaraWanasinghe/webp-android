@@ -8,7 +8,6 @@ import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.setMargins
 import androidx.lifecycle.lifecycleScope
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.dp
@@ -16,13 +15,13 @@ import com.aureusapps.android.extensions.viewModels
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
 import com.aureusapps.android.webpandroid.encoder.WebPConfig
 import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
+import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.events.UiEvent
 import com.aureusapps.android.webpandroid.example.models.CodecViewModel
-import com.aureusapps.android.webpandroid.example.states.DecodeState
-import com.aureusapps.android.webpandroid.example.states.EncodeState
-import com.aureusapps.android.webpandroid.example.ui.DecodedImagePreview
-import com.aureusapps.android.webpandroid.example.ui.EncodedImagePreview
+import com.aureusapps.android.webpandroid.example.states.WebPToBitmapConvertState
+import com.aureusapps.android.webpandroid.example.ui.BitmapPreview
+import com.aureusapps.android.webpandroid.example.ui.WebPPreview
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
@@ -31,14 +30,11 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import java.io.File
 
-@Suppress("NestedLambdaShadowedImplicitParameter")
 class CodecActivity : AppCompatActivity() {
 
     private lateinit var progressIndicator: LinearProgressIndicator
 
     private val codecViewModel by viewModels<CodecViewModel>()
-    private var encodeState: EncodeState? = null
-    private var decodeState: DecodeState? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,25 +44,51 @@ class CodecActivity : AppCompatActivity() {
         createContent()
 
         lifecycleScope.launch {
-            codecViewModel.encodeStateFlow.collect { state ->
-                encodeState = state
-                if (state.isFinished) {
-                    showEncodedImage(state)
+            codecViewModel.bitmapToWebPConvertStateFlow.collect { state ->
+                when {
+                    state.isFinished -> {
+                        val imagePath = state.outputPath ?: return@collect
+                        val imageWidth = state.imageWidth
+                        val imageHeight = state.imageHeight
+                        showConvertedWebPPreview(imagePath, imageWidth, imageHeight)
+                    }
 
-                } else if (state.hasError) {
-                    state.errorMessage?.let { showSnackbar(it) }
-                    progressIndicator.progress = 0
+                    state.hasError -> {
+                        state.errorMessage?.let { showSnackbar(it) }
+                        progressIndicator.progress = 0
+                    }
 
-                } else {
-                    progressIndicator.progress = state.progress
+                    else -> {
+                        progressIndicator.progress = state.progress
+                    }
                 }
             }
         }
         lifecycleScope.launch {
-            codecViewModel.decodeStateFlow.collect { state ->
-                decodeState = state
+            codecViewModel.bitmapToAnimatedWebPConvertStateFlow.collect { state ->
+                when {
+                    state.isFinished -> {
+                        val imagePath = state.outputPath ?: return@collect
+                        val imageWidth = state.imageWidth
+                        val imageHeight = state.imageHeight
+                        showConvertedWebPPreview(imagePath, imageWidth, imageHeight)
+                    }
+
+                    state.hasError -> {
+                        state.errorMessage?.let { showSnackbar(it) }
+                        progressIndicator.progress = 0
+                    }
+
+                    else -> {
+                        progressIndicator.progress = state.progress
+                    }
+                }
+            }
+        }
+        lifecycleScope.launch {
+            codecViewModel.webPToBitmapConvertStateFlow.collect { state ->
                 if (state.isFinished) {
-                    showDecodedImage(state)
+                    showConvertedBitmapPreview(state)
 
                 } else if (state.hasError) {
                     state.errorMessage?.let { showSnackbar(it) }
@@ -102,11 +124,11 @@ class CodecActivity : AppCompatActivity() {
                             MATCH_PARENT, WRAP_CONTENT
                         ).apply {
                             gravity = Gravity.CENTER_HORIZONTAL
-                            setMargins(8.dp)
+                            setMargins(8.dp, 8.dp, 8.dp, 8.dp)
                         }
-                        text = context.getString(R.string.encode_images)
+                        text = context.getString(R.string.bitmap_to_webp)
                         setOnClickListener {
-                            submitEncodeAction()
+                            submitConvertBitmapToWebPAction()
                         }
                     }
                 }
@@ -119,9 +141,9 @@ class CodecActivity : AppCompatActivity() {
                             gravity = Gravity.CENTER_HORIZONTAL
                             setMargins(8.dp, 0, 8.dp, 8.dp)
                         }
-                        text = context.getString(R.string.extract_images)
+                        text = context.getString(R.string.bitmap_to_animated_webp)
                         setOnClickListener {
-                            submitDecodeAction()
+                            submitConvertBitmapToAnimatedWebPAction()
                         }
                     }
                 }
@@ -134,24 +156,9 @@ class CodecActivity : AppCompatActivity() {
                             gravity = Gravity.CENTER_HORIZONTAL
                             setMargins(8.dp, 0, 8.dp, 8.dp)
                         }
-                        text = context.getString(R.string.show_encoded_image)
+                        text = context.getString(R.string.webp_to_bitmap)
                         setOnClickListener {
-                            encodeState?.let { showEncodedImage(it) }
-                        }
-                    }
-                }
-
-                addView {
-                    MaterialButton(it.context).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            MATCH_PARENT, WRAP_CONTENT
-                        ).apply {
-                            gravity = Gravity.CENTER_HORIZONTAL
-                            setMargins(8.dp, 0, 8.dp, 8.dp)
-                        }
-                        text = context.getString(R.string.show_decoded_images)
-                        setOnClickListener {
-                            decodeState?.let { showDecodedImage(it) }
+                            submitWebPToBitmapConvertAction()
                         }
                     }
                 }
@@ -194,7 +201,21 @@ class CodecActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun submitEncodeAction() {
+    private fun submitConvertBitmapToWebPAction() {
+        codecViewModel.submitAction(
+            UiAction.ConvertBitmapToWebPAction(
+                sourceUri = Uri.parse("android.resource://$packageName/raw/image1"),
+                outputPath = File(cacheDir, "image.webp").absolutePath,
+                webPConfig = WebPConfig(
+                    lossless = WebPConfig.COMPRESSION_LOSSLESS,
+                    quality = 20f
+                ),
+                webPPreset = WebPPreset.WEBP_PRESET_PHOTO
+            )
+        )
+    }
+
+    private fun submitConvertBitmapToAnimatedWebPAction() {
         val packageName = packageName
         codecViewModel.submitAction(
             UiAction.ConvertBitmapToAnimatedWebPAction(
@@ -217,17 +238,18 @@ class CodecActivity : AppCompatActivity() {
         )
     }
 
-    private fun submitDecodeAction() {
-        val imageFile = File(cacheDir, "image.webp")
+    private fun submitWebPToBitmapConvertAction() {
         codecViewModel.submitAction(
-            UiAction.ExtractBitmapImagesFromWebPAction(imageFile.absolutePath)
+            UiAction.ConvertWebPToBitmapAction(
+                imagePath = File(cacheDir, "image.webp").absolutePath
+            )
         )
     }
 
-    private fun showEncodedImage(encodeState: EncodeState) {
+    private fun showConvertedWebPPreview(imagePath: String, imageWidth: Int, imageHeight: Int) {
         val dialog = BottomSheetDialog(this)
         dialog.setContentView(
-            EncodedImagePreview(this, encodeState).apply {
+            WebPPreview(this, imagePath, imageWidth, imageHeight).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     MATCH_PARENT, MATCH_PARENT
                 )
@@ -236,10 +258,10 @@ class CodecActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showDecodedImage(decodeState: DecodeState) {
+    private fun showConvertedBitmapPreview(webPToBitmapConvertState: WebPToBitmapConvertState) {
         val dialog = BottomSheetDialog(this)
         dialog.setContentView(
-            DecodedImagePreview(this, decodeState).apply {
+            BitmapPreview(this, webPToBitmapConvertState).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     MATCH_PARENT, MATCH_PARENT
                 )

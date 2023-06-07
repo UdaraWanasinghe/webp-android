@@ -1,6 +1,6 @@
 package com.aureusapps.android.webpandroid.example.states
 
-data class EncodeState(
+data class BitmapToAnimatedWebPConvertState(
     val outputPath: String? = null,
     val imageWidth: Int = 0,
     val imageHeight: Int = 0,

@@ -17,7 +17,7 @@ internal sealed interface UiAction {
         val outputPath: String
     ) : UiAction
 
-    data class ExtractBitmapImagesFromWebPAction(
+    data class ConvertWebPToBitmapAction(
         val imagePath: String
     ) : UiAction
 

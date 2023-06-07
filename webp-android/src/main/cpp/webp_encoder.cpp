@@ -12,18 +12,18 @@
 #include "include/webp_encoder_helper.h"
 #include "include/string_formatter.h"
 
-struct ProgressHook {
+struct ProgressHookData {
     JNIEnv *env;
     jobject progressListener;
     jmethodID onProgressMethodID;
 
-    ProgressHook() {
+    ProgressHookData() {
         env = nullptr;
         progressListener = nullptr;
         onProgressMethodID = nullptr;
     }
 
-    ~ProgressHook() {
+    ~ProgressHookData() {
         env = nullptr;
         progressListener = nullptr;
         onProgressMethodID = nullptr;
@@ -45,7 +45,7 @@ public:
         this->height = height;
     }
 
-    static ProgressHook *progressHook;
+    static ProgressHookData *progressHookData;
 
     static WebPEncoder *getInstance(JNIEnv *env, jobject *object) {
         jclass encoderClass = env->FindClass(
@@ -62,10 +62,10 @@ public:
     }
 
     static int notifyProgressChanged(int percent, const WebPPicture *) {
-        if (progressHook != nullptr) {
-            JNIEnv *env = progressHook->env;
-            jobject progressListener = progressHook->progressListener;
-            jmethodID progressMethodID = progressHook->onProgressMethodID;
+        if (progressHookData != nullptr) {
+            JNIEnv *env = progressHookData->env;
+            jobject progressListener = progressHookData->progressListener;
+            jmethodID progressMethodID = progressHookData->onProgressMethodID;
             env->CallVoidMethod(progressListener, progressMethodID, percent);
 
             return 1;
@@ -75,51 +75,51 @@ public:
     }
 
     void configure(WebPConfig config) {
-        memcpy(&webPConfig, &config, sizeof(WebPConfig));
+        webPConfig = config;
     }
 
-    void encode(uint8_t *pixels, const char *outputPath) {
+    void encode(uint8_t *pixels, int bitmapWidth, int bitmapHeight, const char *outputPath) {
         // Validate config (optional)
         if (!WebPValidateConfig(&webPConfig)) {
             throw std::runtime_error("Failed to validate WebPConfig.");
         }
 
         // Setup the input data
-        WebPPicture picture;
-        if (!WebPPictureInit(&picture)) {
+        WebPPicture webPPicture;
+        if (!WebPPictureInit(&webPPicture)) {
             throw std::runtime_error("Version mismatch.");
         }
 
-        // allocated picture of dimension width x height
-        picture.width = width;
-        picture.height = height;
-        picture.use_argb = true;
-        if (!WebPPictureAlloc(&picture)) {
+        // allocated webPPicture of dimension width x height
+        webPPicture.width = bitmapWidth;
+        webPPicture.height = bitmapHeight;
+        webPPicture.use_argb = true;
+        if (!WebPPictureAlloc(&webPPicture)) {
             throw std::runtime_error("Memory error.");
         }
 
-        // at this point, 'picture' has been initialized as a container,
+        // at this point, 'webPPicture' has been initialized as a container,
         // and can receive the Y/U/V samples.
         // Alternatively, one could use ready-made import functions like
         // WebPPictureImportRGB(), which will take care of memory allocation.
         // In any case, past this point, one will have to call
-        // WebPPictureFree(&picture) to reclaim memory.
-        memcpy(picture.argb, pixels, width * height * 4);
+        // WebPPictureFree(&webPPicture) to reclaim memory.
+        memcpy(webPPicture.argb, pixels, bitmapWidth * bitmapHeight * 4);
 
         // set progress hook
-        picture.progress_hook = &notifyProgressChanged;
+        webPPicture.progress_hook = &notifyProgressChanged;
 
         // Set up a byte-output write method. WebPMemoryWriter, for instance.
-        WebPMemoryWriter wrt;
-        WebPMemoryWriterInit(&wrt);     // initialize 'wrt'
+        WebPMemoryWriter webPMemoryWriter;
+        WebPMemoryWriterInit(&webPMemoryWriter);     // initialize 'webPMemoryWriter'
 
-        picture.writer = WebPMemoryWrite;
-        picture.custom_ptr = &wrt;
+        webPPicture.writer = WebPMemoryWrite;
+        webPPicture.custom_ptr = &webPMemoryWriter;
 
         // Compress!
         // encodeSuccess = 0 => error occurred!
-        bool encodeSuccess = WebPEncode(&webPConfig, &picture);
-        int errorCode = picture.error_code;
+        bool encodeSuccess = WebPEncode(&webPConfig, &webPPicture);
+        int errorCode = webPPicture.error_code;
 
         // Write encoded data to file
         bool writeSuccess = encodeSuccess;
@@ -128,22 +128,23 @@ public:
             if (file == nullptr) {
                 writeSuccess = false;
             } else {
-                size_t bytesWritten = fwrite(wrt.mem, 1, wrt.size, file);
+                size_t bytesWritten = fwrite(webPMemoryWriter.mem, 1, webPMemoryWriter.size, file);
                 fclose(file);
-                if (bytesWritten != wrt.size) {
+                if (bytesWritten != webPMemoryWriter.size) {
                     writeSuccess = false;
                 }
             }
         }
 
         // Release resources.
-        WebPPictureFree(&picture);  // must be called independently of the 'encodeSuccess' result.
+        WebPPictureFree(
+                &webPPicture);  // must be called independently of the 'encodeSuccess' result.
 
         // output data should have been handled by the writer at that point.
-        // -> compressed data is the memory buffer described by wrt.mem / wrt.size
+        // -> compressed data is the memory buffer described by webPMemoryWriter.mem / webPMemoryWriter.size
 
         // deallocate the memory used by compressed data.
-        WebPMemoryWriterClear(&wrt);
+        WebPMemoryWriterClear(&webPMemoryWriter);
 
         if (!encodeSuccess) {
             // Throw exception if failed to encode.
@@ -160,7 +161,7 @@ public:
 
 };
 
-ProgressHook *WebPEncoder::progressHook = nullptr;
+ProgressHookData *WebPEncoder::progressHookData = nullptr;
 
 extern "C"
 JNIEXPORT jlong JNICALL
@@ -182,16 +183,20 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
         jobject config,
         jobject preset
 ) {
+
     // Init new config
     WebPConfig webPConfig;
     if (!WebPConfigInit(&webPConfig)) {
         throw std::runtime_error("Version mismatch.");
     }
 
+    // Get quality
+    float quality = parseWebPQuality(env, &config);
+
     // Parse preset if available
     if (preset != nullptr) {
         WebPPreset webPPreset = parseWebPPreset(env, &preset);
-        if (!WebPConfigPreset(&webPConfig, webPPreset, 100.0f)) {
+        if (!WebPConfigPreset(&webPConfig, webPPreset, quality)) {
             throwIllegalArgumentException(env, "Failed to validate WebPConfig");
             return;
         }
@@ -219,7 +224,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         jobject bitmap,
         jstring outputPath
 ) {
-    auto *newProgressHook = new ProgressHook();
+    auto *newProgressHook = new ProgressHookData();
     void *bitmapPixels = nullptr;
     try {
         // set progress hook
@@ -232,7 +237,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         newProgressHook->env = env;
         newProgressHook->progressListener = thiz;
         newProgressHook->onProgressMethodID = notifyProgressMethodID;
-        WebPEncoder::progressHook = newProgressHook;
+        WebPEncoder::progressHookData = newProgressHook;
 
         // Get bitmap info
         AndroidBitmapInfo bitmapInfo;
@@ -253,7 +258,12 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         // Encode data
         const char *savePath = env->GetStringUTFChars(outputPath, nullptr);
         auto *webPEncoder = WebPEncoder::getInstance(env, &thiz);
-        webPEncoder->encode(static_cast<uint8_t *>(bitmapPixels), savePath);
+        webPEncoder->encode(
+                static_cast<uint8_t *>(bitmapPixels),
+                static_cast<int>(bitmapInfo.width),
+                static_cast<int>(bitmapInfo.height),
+                savePath
+        );
 
         // Release resources
         env->ReleaseStringUTFChars(outputPath, savePath);
@@ -273,7 +283,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         AndroidBitmap_unlockPixels(env, bitmap);
     }
     delete newProgressHook;
-    WebPEncoder::progressHook = nullptr;
+    WebPEncoder::progressHookData = nullptr;
 }
 
 extern "C"

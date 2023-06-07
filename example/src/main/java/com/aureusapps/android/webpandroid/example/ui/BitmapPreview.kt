@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.webpandroid.example.R
-import com.aureusapps.android.webpandroid.example.states.DecodeState
+import com.aureusapps.android.webpandroid.example.states.WebPToBitmapConvertState
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.CoroutineScope
@@ -29,8 +29,8 @@ import java.io.InputStream
 
 @SuppressLint("ViewConstructor")
 @Suppress("NestedLambdaShadowedImplicitParameter")
-internal class DecodedImagePreview(
-    context: Context, private val decodeState: DecodeState
+internal class BitmapPreview(
+    context: Context, private val webPToBitmapConvertState: WebPToBitmapConvertState
 ) : CoordinatorLayout(context) {
 
     init {
@@ -38,7 +38,10 @@ internal class DecodedImagePreview(
     }
 
     override fun onStartNestedScroll(child: View, target: View, axes: Int, type: Int): Boolean {
-        if (target is ScrollingView && axes == ViewCompat.SCROLL_AXIS_VERTICAL && target.computeVerticalScrollOffset() == 0) {
+        if (target is ScrollingView
+            && axes == ViewCompat.SCROLL_AXIS_VERTICAL
+            && target.computeVerticalScrollOffset() == 0
+        ) {
             return false
         }
         return super.onStartNestedScroll(child, target, axes, type)
@@ -55,7 +58,7 @@ internal class DecodedImagePreview(
                         layoutParams = AppBarLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
                         )
-                        title = context.getString(R.string.decoded_images)
+                        title = context.getString(R.string.preview)
                         setBackgroundColor(
                             resolveColorAttribute(R.attr.colorSurface)
                         )
@@ -72,26 +75,26 @@ internal class DecodedImagePreview(
                     behavior = AppBarLayout.ScrollingViewBehavior()
                 }
                 layoutManager = GridLayoutManager(context, 2)
-                adapter = ImageAdapter(decodeState)
+                adapter = ImageAdapter(webPToBitmapConvertState)
             }
         }
     }
 
     private class ImageAdapter(
-        private val decodeState: DecodeState
+        private val webPToBitmapConvertState: WebPToBitmapConvertState
     ) : RecyclerView.Adapter<ViewHolder>() {
 
         private val aspectRatio: Float
         private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
         init {
-            val imageWidth = (decodeState.imageInfo?.width ?: 1)
-            val imageHeight = (decodeState.imageInfo?.height ?: 1)
+            val imageWidth = (webPToBitmapConvertState.imageInfo?.width ?: 1)
+            val imageHeight = (webPToBitmapConvertState.imageInfo?.height ?: 1)
             aspectRatio = imageWidth.toFloat().div(imageHeight)
         }
 
         override fun getItemCount(): Int {
-            return decodeState.imageInfo?.frameCount ?: 0
+            return webPToBitmapConvertState.imageInfo?.frameCount ?: 0
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -103,7 +106,7 @@ internal class DecodedImagePreview(
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val imageView = holder.itemView as AspectRatioImageView
-            val (frame, _) = decodeState.frames[position]
+            val (frame, _) = webPToBitmapConvertState.frames[position]
             readImage(frame, imageView)
         }
 
