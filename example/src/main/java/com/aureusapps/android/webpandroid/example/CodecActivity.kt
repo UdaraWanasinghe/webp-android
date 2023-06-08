@@ -230,7 +230,7 @@ class CodecActivity : AppCompatActivity() {
                     animParams = WebPMuxAnimParams(loopCount = 0)
                 ),
                 webPConfig = WebPConfig(
-                    lossless = WebPConfig.COMPRESSION_LOSSY,
+                    lossless = WebPConfig.COMPRESSION_LOSSLESS,
                     quality = 20f
                 ),
                 outputPath = File(cacheDir, "image.webp").absolutePath

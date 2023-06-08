@@ -3,7 +3,6 @@
 //
 
 #include <jni.h>
-#include <sstream>
 #include <android/bitmap.h>
 #include <webp/encode.h>
 #include <webp/mux.h>
@@ -12,122 +11,133 @@
 #include "include/type_helper.h"
 #include "include/exception_helper.h"
 #include "include/string_formatter.h"
+#include "include/bitmap_operations.h"
 
-namespace lib {
+class WebPAnimationEncoder {
+
+private:
+    int frameCount;
+    WebPAnimEncoder *webPAnimEncoder;
+    WebPConfig webPConfig{};
+
+public:
 
     struct ProgressHookData {
-        jweak progressObservable;
-        jmethodID notifyProgressMethodID;
-        bool flagCancel;
+        jweak progressObservable = nullptr;
+        jmethodID notifyProgressMethodID = nullptr;
+        bool flagCancel = false;
     };
 
     struct FrameData {
         int frameIndex;
     };
 
-    class WebPEncoder {
+    static JavaVM *jvm;
+    static ProgressHookData *progressHookData;
 
-    private:
-        int frameCount;
-        WebPAnimEncoder *webPAnimEncoder;
-        WebPConfig webPConfig{};
+    int imageWidth;
+    int imageHeight;
 
-    public:
+    /**
+     * Constructs a new instance of the WebPAnimationEncoder class with the specified width, height, and options.
+     *
+     * @param jvm The Java virtual machine pointer.
+     * @param width The width of the animation frames in pixels.
+     * @param height The height of the animation frames in pixels.
+     * @param options The options for configuring the WebP animation encoder.
+     */
+    WebPAnimationEncoder(int width, int height, WebPAnimEncoderOptions options);
 
-        static JavaVM *jvm;
-        static ProgressHookData *progressHookData;
+    /**
+     * Retrieves the instance of the WebPAnimationEncoder associated with the given Java object.
+     *
+     * @param env The JNI environment.
+     * @param thiz The Java object representing the WebPAnimationEncoder.
+     * @return A pointer to the WebPAnimationEncoder instance.
+     */
+    static WebPAnimationEncoder *getInstance(JNIEnv *env, jobject *thiz);
 
-        /**
-         * Constructs a new instance of the WebPEncoder class with the specified width, height, and options.
-         *
-         * @param jvm The Java virtual machine pointer.
-         * @param width The width of the animation frames in pixels.
-         * @param height The height of the animation frames in pixels.
-         * @param options The options for configuring the WebP animation encoder.
-         */
-        WebPEncoder(int width, int height, WebPAnimEncoderOptions options);
+    /**
+     * Notifies the progress change during the encoding process.
+     *
+     * @param percent The progress percentage (0-100).
+     * @param picture A pointer to the WebPPicture object representing the current picture being encoded.
+     * @return 0 if successful, or a non-zero value if an error occurred.
+     */
+    static int notifyProgressChanged(int percent, const WebPPicture *picture);
 
-        /**
-         * Retrieves the instance of the WebPEncoder associated with the given Java object.
-         *
-         * @param env The JNI environment.
-         * @param thiz The Java object representing the WebPEncoder.
-         * @return A pointer to the WebPEncoder instance.
-         */
-        static WebPEncoder *getInstance(JNIEnv *env, jobject *thiz);
+    /**
+     * Configures the WebP encoder with the specified configuration.
+     *
+     * @param config The WebPConfig object containing the configuration settings.
+     */
+    void configure(WebPConfig config);
 
-        /**
-         * Notifies the progress change during the encoding process.
-         *
-         * @param percent The progress percentage (0-100).
-         * @param picture A pointer to the WebPPicture object representing the current picture being encoded.
-         * @return 0 if successful, or a non-zero value if an error occurred.
-         */
-        static int notifyProgressChanged(int percent, const WebPPicture *picture);
+    /**
+     * Adds a frame to the animation sequence with the specified pixel data, bitmap dimensions, and timestamp.
+     *
+     * @param pixels Pointer to the pixel data of the frame.
+     * @param bitmapWidth The width of the frame bitmap in pixels.
+     * @param bitmapHeight The height of the frame bitmap in pixels.
+     * @param timestamp The timestamp of the frame in milliseconds.
+     */
+    void addFrame(uint8_t *pixels, int bitmapWidth, int bitmapHeight, long timestamp);
 
-        /**
-         * Configures the WebP encoder with the specified configuration.
-         *
-         * @param config The WebPConfig object containing the configuration settings.
-         */
-        void configure(WebPConfig config);
+    /**
+     * Assembles the animation with the provided timestamp and saves it to the specified output path.
+     *
+     * @param timestamp The timestamp to assign to the assembled animation in milliseconds.
+     * @param outputPath The file path to save the assembled animation.
+     */
+    void assemble(long timestamp, const char *outputPath);
 
-        /**
-         * Adds a frame to the animation sequence with the specified pixel data, bitmap dimensions, and timestamp.
-         *
-         * @param pixels Pointer to the pixel data of the frame.
-         * @param bitmapWidth The width of the frame bitmap in pixels.
-         * @param bitmapHeight The height of the frame bitmap in pixels.
-         * @param timestamp The timestamp of the frame in milliseconds.
-         */
-        void addFrame(uint8_t *pixels, int bitmapWidth, int bitmapHeight, long timestamp);
+    /**
+     * Release resources associated with this encoder.
+     */
+    void release();
+};
 
-        /**
-         * Assembles the animation with the provided timestamp and saves it to the specified output path.
-         *
-         * @param timestamp The timestamp to assign to the assembled animation in milliseconds.
-         * @param outputPath The file path to save the assembled animation.
-         */
-        void assemble(long timestamp, const char *outputPath);
+JavaVM *WebPAnimationEncoder::jvm = nullptr;
+WebPAnimationEncoder::ProgressHookData *WebPAnimationEncoder::progressHookData = nullptr;
 
-        /**
-         * Release resources associated with this encoder.
-         */
-        void release();
-    };
-
-}
-
-JavaVM *lib::WebPEncoder::jvm = nullptr;
-lib::ProgressHookData *lib::WebPEncoder::progressHookData = nullptr;
-
-lib::WebPEncoder::WebPEncoder(int width, int height, WebPAnimEncoderOptions options) {
+WebPAnimationEncoder::WebPAnimationEncoder(
+        int width,
+        int height,
+        WebPAnimEncoderOptions options
+) {
+    this->imageWidth = width;
+    this->imageHeight = height;
     this->frameCount = 0;
     this->webPAnimEncoder = WebPAnimEncoderNew(width, height, &options);
 }
 
-lib::WebPEncoder *lib::WebPEncoder::getInstance(JNIEnv *env, jobject *thiz) {
-    jclass encoderClass = env->GetObjectClass(*thiz);
-    if (!encoderClass) {
-        throwRuntimeException(env, "GetObjectClass failed");
+WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject *thiz) {
+    jclass encoderClass = env->FindClass(
+            "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder"
+    );
+    if (!env->IsInstanceOf(*thiz, encoderClass)) {
+        throw std::runtime_error("Given object is not an instance of WebPAnimEncoder.");
     }
-    jfieldID nativePointerID = env->GetFieldID(encoderClass, "nativePointer", "J");
-    if (!nativePointerID) {
-        throwRuntimeException(env, "GetFieldID failed");
-    }
-    jlong nativePointer = env->GetLongField(*thiz, nativePointerID);
-    return reinterpret_cast<WebPEncoder *>(nativePointer);
+    jfieldID nativePointerFieldID = env->GetFieldID(encoderClass, "nativePointer", "J");
+    jlong nativePointer = env->GetLongField(*thiz, nativePointerFieldID);
+    return reinterpret_cast<WebPAnimationEncoder *>(nativePointer);
 }
 
-int lib::WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *picture) {
+int WebPAnimationEncoder::notifyProgressChanged(int percent, const WebPPicture *picture) {
     if (progressHookData != nullptr) {
+        // Get current jvm environment
         JNIEnv *env;
         int envStat = jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
+
+        // Attach to the current thread if not attached.
+        bool isAttached = false;
         switch (envStat) {
             case JNI_EDETACHED:
                 if (jvm->AttachCurrentThread(&env, nullptr) != 0) {
                     // failed to attach
                     return 0;
+                } else {
+                    isAttached = true;
                 }
                 break;
             case JNI_EVERSION:
@@ -138,29 +148,38 @@ int lib::WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *pict
             default:
                 return 0;
         }
+
+        // Update the progress
         jweak progressObservable = progressHookData->progressObservable;
         jmethodID notifyProgressMethodID = progressHookData->notifyProgressMethodID;
         auto *frameData = static_cast<FrameData *>(picture->user_data);
         int frameIndex = frameData->frameIndex;
-        jboolean encode = env->CallBooleanMethod(
+        jboolean continueEncode = env->CallBooleanMethod(
                 progressObservable,
                 notifyProgressMethodID,
                 frameIndex,
                 percent
         );
-        bool cancel = progressHookData->flagCancel;
-        return encode && !cancel;
+
+        // Detach from current thread if attached.
+        if (isAttached) {
+            jvm->DetachCurrentThread();
+        }
+
+        // Check continue and cancel flags.
+        bool cancelEncode = progressHookData->flagCancel;
+        return continueEncode && !cancelEncode;
 
     } else {
         return 0;
     }
 }
 
-void lib::WebPEncoder::configure(WebPConfig config) {
+void WebPAnimationEncoder::configure(WebPConfig config) {
     webPConfig = config;
 }
 
-void lib::WebPEncoder::addFrame(
+void WebPAnimationEncoder::addFrame(
         uint8_t *pixels,
         int bitmapWidth,
         int bitmapHeight,
@@ -187,13 +206,17 @@ void lib::WebPEncoder::addFrame(
 
     // Set additional data and progress hook
     auto *frameData = new FrameData();
-    frameData->frameIndex = frameCount;
-    frameCount++;
+    frameData->frameIndex = frameCount++;
     webPPicture.user_data = frameData;
     webPPicture.progress_hook = notifyProgressChanged;
 
     // Add frame
-    if (!WebPAnimEncoderAdd(webPAnimEncoder, &webPPicture, timestamp, &webPConfig)) {
+    bool pictureAdded = WebPAnimEncoderAdd(webPAnimEncoder, &webPPicture, timestamp, &webPConfig);
+
+    // Release resources
+    WebPPictureFree(&webPPicture);
+
+    if (!pictureAdded) {
         std::string msg = formatString(
                 "Failed to add frame to the WebPPicture {errorCode: %d}",
                 webPPicture.error_code
@@ -202,37 +225,48 @@ void lib::WebPEncoder::addFrame(
     }
 }
 
-void lib::WebPEncoder::assemble(long timestamp, const char *outputPath) {
+void WebPAnimationEncoder::assemble(long timestamp, const char *outputPath) {
     // Mark last timestamp
     if (!WebPAnimEncoderAdd(webPAnimEncoder, nullptr, timestamp, nullptr)) {
-        throw std::runtime_error("Error occurred while assembling the animation.");
+        throw std::runtime_error("Error occurred while marking end of the animation.");
     }
 
     // Assemble webp image
     WebPData webPData;
     WebPDataInit(&webPData);
+    bool success = true;
+    const char *errorMessage;
     if (!WebPAnimEncoderAssemble(webPAnimEncoder, &webPData)) {
-        WebPDataClear(&webPData);
-        throw std::runtime_error("Error occurred while assembling the animation.");
+        success = false;
+        errorMessage = "Error occurred while assembling the animation.";
     }
 
-    // Write data to the given file
-    FILE *file = fopen(outputPath, "w+");
-    if (file != nullptr) {
-        int ret = (int) fwrite(webPData.bytes, 1, webPData.size, file);
-        fclose(file);
-        if (ret != webPData.size) {
-            throw std::runtime_error("Error occurred while writing to the output file.");
+    if (success) {
+        // Write data to the given file
+        FILE *file = fopen(outputPath, "w+");
+        if (file != nullptr) {
+            int byteCount = (int) fwrite(webPData.bytes, 1, webPData.size, file);
+            fclose(file);
+            if (byteCount != webPData.size) {
+                success = false;
+                errorMessage = "Error occurred while writing to the output file.";
+            }
+        } else {
+            success = false;
+            errorMessage = "Could not open output path.";
         }
-    } else {
-        throw std::runtime_error("Could not open output path.");
     }
 
     // Release resources
     WebPDataClear(&webPData);
+
+    if (!success) {
+        throw std::runtime_error(errorMessage);
+    }
+
 }
 
-void lib::WebPEncoder::release() {
+void WebPAnimationEncoder::release() {
     WebPAnimEncoderDelete(webPAnimEncoder);
 }
 
@@ -246,18 +280,16 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
         jobject options
 ) {
     try {
-        // Create encoder
+        // Create encoder options
         WebPAnimEncoderOptions webPAnimEncoderOptions;
         if (WebPAnimEncoderOptionsInit(&webPAnimEncoderOptions)) {
             parseAnimEncoderOptions(env, &options, &webPAnimEncoderOptions);
 
             // Set jvm instance
-            JavaVM *jvm;
-            env->GetJavaVM(&jvm);
-            lib::WebPEncoder::jvm = jvm;
+            env->GetJavaVM(&WebPAnimationEncoder::jvm);
 
             // Set progress hook data
-            auto *hookData = new lib::ProgressHookData();
+            auto *hookData = new WebPAnimationEncoder::ProgressHookData();
             jclass encoderClass = env->GetObjectClass(thiz);
             hookData->progressObservable = env->NewWeakGlobalRef(thiz);
             hookData->notifyProgressMethodID = env->GetMethodID(
@@ -265,11 +297,10 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
                     "notifyProgressChanged",
                     "(II)Z"
             );
-            hookData->flagCancel = false;
-            lib::WebPEncoder::progressHookData = hookData;
+            WebPAnimationEncoder::progressHookData = hookData;
 
             // Create encoder
-            auto *encoder = new lib::WebPEncoder(width, height, webPAnimEncoderOptions);
+            auto *encoder = new WebPAnimationEncoder(width, height, webPAnimEncoderOptions);
 
             // Return pointer
             return reinterpret_cast<jlong>(encoder);
@@ -325,7 +356,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
         parseWebPConfig(env, &config, &webPConfig);
 
         // Apply config to the encoder
-        auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
+        auto *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
         encoder->configure(webPConfig);
 
     } catch (std::runtime_error &e) {
@@ -348,6 +379,8 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         jobject bitmap
 ) {
     try {
+        WebPAnimationEncoder *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
+
         // Get bitmap bitmapInfo
         AndroidBitmapInfo bitmapInfo;
         if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) < 0) {
@@ -361,15 +394,20 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
             return;
         }
 
+        // Ensure if the bitmap size is matching
+        bool bitmapResized = false;
+        if (bitmapInfo.width != encoder->imageWidth || bitmapInfo.height != encoder->imageHeight) {
+            bitmap = resizeBitmap(env, &bitmap, encoder->imageWidth, encoder->imageHeight);
+            AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
+            bitmapResized = true;
+        }
+
         // Retrieve bitmap pixels
         void *bitmapPixels;
         if (AndroidBitmap_lockPixels(env, bitmap, &bitmapPixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
             throwRuntimeException(env, "Failed to get bitmap pixel data.");
             return;
         }
-
-        // Get encoder instance
-        auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
 
         // Add frame
         encoder->addFrame(
@@ -382,6 +420,11 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         // Unlock pixels
         if (AndroidBitmap_unlockPixels(env, bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
             throwRuntimeException(env, "Failed to release bitmap pixels.");
+        }
+
+        // Recycler resized bitmap
+        if (bitmapResized) {
+            recycleBitmap(env, &bitmap);
         }
 
     } catch (std::runtime_error &e) {
@@ -403,7 +446,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
         jlong timestamp,
         jstring path
 ) {
-    auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
+    auto *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
     if (encoder != nullptr) {
         try {
             // Assemble animation
@@ -428,10 +471,10 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_cancel(
-        JNIEnv *env,
+        JNIEnv *,
         jobject
 ) {
-    lib::ProgressHookData *hookData = lib::WebPEncoder::progressHookData;
+    WebPAnimationEncoder::ProgressHookData *hookData = WebPAnimationEncoder::progressHookData;
     if (hookData != nullptr) {
         hookData->flagCancel = true;
     }
@@ -443,7 +486,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
         JNIEnv *env,
         jobject thiz
 ) {
-    auto *encoder = lib::WebPEncoder::getInstance(env, &thiz);
+    auto *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
     if (encoder != nullptr) {
         // Release resources
         encoder->release();
@@ -455,12 +498,12 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
         env->DeleteLocalRef(encoderClass);
 
         // Delete progress hook data
-        lib::ProgressHookData *hookData = lib::WebPEncoder::progressHookData;
+        WebPAnimationEncoder::ProgressHookData *hookData = WebPAnimationEncoder::progressHookData;
         if (hookData != nullptr) {
             jweak progressObservable = hookData->progressObservable;
 
             // Delete progress hook data
-            delete lib::WebPEncoder::progressHookData;
+            delete WebPAnimationEncoder::progressHookData;
 
             env->DeleteWeakGlobalRef(progressObservable);
         }

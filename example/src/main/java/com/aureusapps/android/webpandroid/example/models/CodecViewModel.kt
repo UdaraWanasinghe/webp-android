@@ -4,7 +4,6 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -134,8 +133,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 action.frames.forEach {
                     val (timestamp, uri) = it
                     val bitmap = readBitmap(uri)
-                    val scaledBitmap = bitmap.scale(action.width, action.height)
-                    webPAnimEncoder.addFrame(timestamp, scaledBitmap)
+                    webPAnimEncoder.addFrame(timestamp, bitmap)
                 }
                 webPAnimEncoder.assemble(action.lastTime, action.outputPath)
                 updateBitmapToAnimatedWebPConvertState(
