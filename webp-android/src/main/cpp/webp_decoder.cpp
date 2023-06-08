@@ -7,19 +7,21 @@
 #include <webp/demux.h>
 
 #include "include/webp_decoder_helper.h"
+#include "include/file_utils.h"
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_extractImages(
         JNIEnv *env,
         jobject,
-        jstring filePath,
+        jobject context,
+        jobject sourceUri,
         jobject decodeListener
 ) {
     // load webp file data
     uint8_t *fileData;
     size_t fileSize;
-    if (!loadFileData(env, filePath, &fileData, &fileSize)) {
+    if (Android_readFromUri(env, context, sourceUri, &fileData, &fileSize)) {
         return;
     }
 

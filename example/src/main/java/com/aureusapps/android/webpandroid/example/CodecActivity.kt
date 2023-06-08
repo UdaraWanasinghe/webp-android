@@ -8,6 +8,7 @@ import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.dp
@@ -41,6 +42,8 @@ class CodecActivity : AppCompatActivity() {
         Fresco.initialize(this)
 
         createContent()
+
+        contentResolver
 
         lifecycleScope.launch {
             codecViewModel.bitmapToWebPConvertStateFlow.collect { state ->
@@ -241,7 +244,7 @@ class CodecActivity : AppCompatActivity() {
     private fun submitWebPToBitmapConvertAction() {
         codecViewModel.submitAction(
             UiAction.ConvertWebPToBitmapAction(
-                imagePath = File(cacheDir, "image.webp").absolutePath
+                sourceUri = File(cacheDir, "image.webp").toUri()
             )
         )
     }

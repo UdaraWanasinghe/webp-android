@@ -158,18 +158,20 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     }
 
     private fun convertWebPToBitmap(action: UiAction.ConvertWebPToBitmapAction) {
+        val context = getApplication<Application>().applicationContext
         viewModelScope.launch(Dispatchers.IO) {
             var state = WebPToBitmapConvertState()
             try {
                 val frames = mutableListOf<Pair<Uri, Int>>()
                 updateWebPToBitmapConvertState(
                     state.copy(
-                        outputPath = action.imagePath
+                        outputPath = context.cacheDir.absolutePath
                     ).also { state = it }
                 )
                 var frameCount = 0
                 WebPDecoder.extractImages(
-                    action.imagePath,
+                    context,
+                    action.sourceUri,
                     object : WebPDecoderListener {
 
                         override fun onReceiveInfo(info: WebPInfo) {

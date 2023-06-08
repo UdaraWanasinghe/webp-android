@@ -19,7 +19,7 @@ internal sealed interface UiAction {
     ) : UiAction
 
     data class ConvertWebPToBitmapAction(
-        val imagePath: String
+        val sourceUri: Uri
     ) : UiAction
 
     object DeleteCacheAction : UiAction
