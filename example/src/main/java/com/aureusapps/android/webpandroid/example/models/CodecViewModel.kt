@@ -67,11 +67,11 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val sourceImage = readBitmap(action.sourceUri)
-                val webPEncoder = WebPEncoder(sourceImage.width, sourceImage.height)
+                val webPEncoder = WebPEncoder(action.width, action.height)
                 updateBitmapToWebPConvertState(
                     state.copy(
-                        imageWidth = sourceImage.width,
-                        imageHeight = sourceImage.height
+                        imageWidth = action.width,
+                        imageHeight = action.height
                     ).also { state = it }
                 )
                 webPEncoder.addProgressListener {
@@ -81,14 +81,13 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         ).also { state = it }
                     )
                 }
-                if (action.webPConfig != null) {
-                    webPEncoder.configure(action.webPConfig, action.webPPreset)
-                }
+                webPEncoder.configure(action.webPConfig, action.webPPreset)
                 webPEncoder.encode(sourceImage, action.outputPath)
                 webPEncoder.release()
                 updateBitmapToWebPConvertState(
                     state.copy(
-                        isFinished = true
+                        isFinished = true,
+                        progress = 100
                     ).also { state = it }
                 )
 
@@ -120,7 +119,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         imageHeight = action.height
                     ).also { state = it }
                 )
-                webPAnimEncoder.configure(action.webPConfig)
+                webPAnimEncoder.configure(action.webPConfig, action.webPPreset)
                 webPAnimEncoder.addProgressListener { currentFrame, frameProgress ->
                     val progress = (frameProgress + 100f * currentFrame) / frameCount
                     updateBitmapToAnimatedWebPConvertState(

@@ -15,7 +15,6 @@ import com.aureusapps.android.extensions.viewModels
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
 import com.aureusapps.android.webpandroid.encoder.WebPConfig
 import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
-import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.events.UiEvent
 import com.aureusapps.android.webpandroid.example.models.CodecViewModel
@@ -204,13 +203,14 @@ class CodecActivity : AppCompatActivity() {
     private fun submitConvertBitmapToWebPAction() {
         codecViewModel.submitAction(
             UiAction.ConvertBitmapToWebPAction(
+                width = 512,
+                height = 512,
                 sourceUri = Uri.parse("android.resource://$packageName/raw/image1"),
                 outputPath = File(cacheDir, "image.webp").absolutePath,
                 webPConfig = WebPConfig(
                     lossless = WebPConfig.COMPRESSION_LOSSLESS,
                     quality = 20f
-                ),
-                webPPreset = WebPPreset.WEBP_PRESET_PHOTO
+                )
             )
         )
     }

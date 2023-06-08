@@ -11,38 +11,27 @@
 #include "include/type_helper.h"
 #include "include/webp_encoder_helper.h"
 #include "include/string_formatter.h"
-
-struct ProgressHookData {
-    JNIEnv *env;
-    jobject progressListener;
-    jmethodID onProgressMethodID;
-
-    ProgressHookData() {
-        env = nullptr;
-        progressListener = nullptr;
-        onProgressMethodID = nullptr;
-    }
-
-    ~ProgressHookData() {
-        env = nullptr;
-        progressListener = nullptr;
-        onProgressMethodID = nullptr;
-    }
-
-};
+#include "include/bitmap_operations.h"
 
 class WebPEncoder {
 
 private:
-    int width;
-    int height;
     WebPConfig webPConfig{};
 
 public:
 
+    struct ProgressHookData {
+        JNIEnv *env;
+        jobject progressListener;
+        jmethodID onProgressMethodID;
+    };
+
+    int imageWidth;
+    int imageHeight;
+
     WebPEncoder(int width, int height) {
-        this->width = width;
-        this->height = height;
+        this->imageWidth = width;
+        this->imageHeight = height;
     }
 
     static ProgressHookData *progressHookData;
@@ -137,8 +126,8 @@ public:
         }
 
         // Release resources.
-        WebPPictureFree(
-                &webPPicture);  // must be called independently of the 'encodeSuccess' result.
+        // must be called independently of the 'encodeSuccess' result.
+        WebPPictureFree(&webPPicture);
 
         // output data should have been handled by the writer at that point.
         // -> compressed data is the memory buffer described by webPMemoryWriter.mem / webPMemoryWriter.size
@@ -161,7 +150,7 @@ public:
 
 };
 
-ProgressHookData *WebPEncoder::progressHookData = nullptr;
+WebPEncoder::ProgressHookData *WebPEncoder::progressHookData = nullptr;
 
 extern "C"
 JNIEXPORT jlong JNICALL
@@ -222,11 +211,16 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         JNIEnv *env,
         jobject thiz,
         jobject bitmap,
-        jstring outputPath
+        jstring path
 ) {
-    auto *newProgressHook = new ProgressHookData();
-    void *bitmapPixels = nullptr;
+    delete WebPEncoder::progressHookData;
+    auto *newProgressHookData = new WebPEncoder::ProgressHookData();
+    bool unlockBitmap = false;
+    bool bitmapResized = false;
+
     try {
+        auto *encoder = WebPEncoder::getInstance(env, &thiz);
+
         // set progress hook
         jclass progressListenerClass = env->GetObjectClass(thiz);
         jmethodID notifyProgressMethodID = env->GetMethodID(
@@ -234,10 +228,10 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
                 "notifyProgressChanged",
                 "(I)V"
         );
-        newProgressHook->env = env;
-        newProgressHook->progressListener = thiz;
-        newProgressHook->onProgressMethodID = notifyProgressMethodID;
-        WebPEncoder::progressHookData = newProgressHook;
+        newProgressHookData->env = env;
+        newProgressHookData->progressListener = thiz;
+        newProgressHookData->onProgressMethodID = notifyProgressMethodID;
+        WebPEncoder::progressHookData = newProgressHookData;
 
         // Get bitmap info
         AndroidBitmapInfo bitmapInfo;
@@ -250,23 +244,31 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
             throw std::runtime_error("Only RGBA_8888 formatted bitmaps are accepted.");
         }
 
+        // Resize if bitmap size is not matching
+        if (bitmapInfo.width != encoder->imageWidth || bitmapInfo.height != encoder->imageHeight) {
+            bitmap = resizeBitmap(env, &bitmap, encoder->imageWidth, encoder->imageHeight);
+            AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
+            bitmapResized = true;
+        }
+
         // Get bitmap pixels
+        void *bitmapPixels;
         if (AndroidBitmap_lockPixels(env, bitmap, &bitmapPixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
             throw std::runtime_error("Failed to lock bitmap pixels.");
         }
+        unlockBitmap = true;
 
         // Encode data
-        const char *savePath = env->GetStringUTFChars(outputPath, nullptr);
-        auto *webPEncoder = WebPEncoder::getInstance(env, &thiz);
-        webPEncoder->encode(
+        const char *outputPath = env->GetStringUTFChars(path, nullptr);
+        encoder->encode(
                 static_cast<uint8_t *>(bitmapPixels),
                 static_cast<int>(bitmapInfo.width),
                 static_cast<int>(bitmapInfo.height),
-                savePath
+                outputPath
         );
 
         // Release resources
-        env->ReleaseStringUTFChars(outputPath, savePath);
+        env->ReleaseStringUTFChars(path, outputPath);
 
     } catch (std::runtime_error &e) {
         throwRuntimeException(env, e.what());
@@ -279,10 +281,13 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
     }
 
     // Release resources
-    if (bitmapPixels != nullptr) {
+    if (unlockBitmap) {
         AndroidBitmap_unlockPixels(env, bitmap);
     }
-    delete newProgressHook;
+    if (bitmapResized) {
+        recycleBitmap(env, &bitmap);
+    }
+    delete newProgressHookData;
     WebPEncoder::progressHookData = nullptr;
 }
 

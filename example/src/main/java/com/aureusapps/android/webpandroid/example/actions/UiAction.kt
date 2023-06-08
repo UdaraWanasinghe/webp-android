@@ -11,10 +11,11 @@ internal sealed interface UiAction {
         val width: Int,
         val height: Int,
         val frames: List<Pair<Long, Uri>>,
+        val outputPath: String,
         val lastTime: Long,
         val encoderOptions: WebPAnimEncoderOptions?,
         val webPConfig: WebPConfig,
-        val outputPath: String
+        val webPPreset: WebPPreset? = null
     ) : UiAction
 
     data class ConvertWebPToBitmapAction(
@@ -24,10 +25,12 @@ internal sealed interface UiAction {
     object DeleteCacheAction : UiAction
 
     data class ConvertBitmapToWebPAction(
+        val width: Int,
+        val height: Int,
         val sourceUri: Uri,
         val outputPath: String,
-        val webPConfig: WebPConfig?,
-        val webPPreset: WebPPreset?
+        val webPConfig: WebPConfig,
+        val webPPreset: WebPPreset? = null
     ) : UiAction
 
 }

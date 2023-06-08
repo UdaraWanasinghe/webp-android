@@ -289,15 +289,16 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
             env->GetJavaVM(&WebPAnimationEncoder::jvm);
 
             // Set progress hook data
-            auto *hookData = new WebPAnimationEncoder::ProgressHookData();
+            auto *newProgressHookData = new WebPAnimationEncoder::ProgressHookData();
             jclass encoderClass = env->GetObjectClass(thiz);
-            hookData->progressObservable = env->NewWeakGlobalRef(thiz);
-            hookData->notifyProgressMethodID = env->GetMethodID(
+            newProgressHookData->progressObservable = env->NewWeakGlobalRef(thiz);
+            newProgressHookData->notifyProgressMethodID = env->GetMethodID(
                     encoderClass,
                     "notifyProgressChanged",
                     "(II)Z"
             );
-            WebPAnimationEncoder::progressHookData = hookData;
+            delete WebPAnimationEncoder::progressHookData;
+            WebPAnimationEncoder::progressHookData = newProgressHookData;
 
             // Create encoder
             auto *encoder = new WebPAnimationEncoder(width, height, webPAnimEncoderOptions);
