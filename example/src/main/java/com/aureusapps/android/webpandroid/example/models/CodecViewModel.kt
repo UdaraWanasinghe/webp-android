@@ -1,268 +1,170 @@
 package com.aureusapps.android.webpandroid.example.models
 
 import android.app.Application
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.aureusapps.android.webpandroid.decoder.WebPDecoder
-import com.aureusapps.android.webpandroid.decoder.WebPDecoderListener
-import com.aureusapps.android.webpandroid.decoder.WebPInfo
-import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPEncoder
 import com.aureusapps.android.webpandroid.example.actions.UiAction
+import com.aureusapps.android.webpandroid.example.data.ConvertData
+import com.aureusapps.android.webpandroid.example.events.DataCollectEvent
 import com.aureusapps.android.webpandroid.example.events.UiEvent
-import com.aureusapps.android.webpandroid.example.states.BitmapToAnimatedWebPConvertState
-import com.aureusapps.android.webpandroid.example.states.BitmapToWebPConvertState
-import com.aureusapps.android.webpandroid.example.states.WebPToBitmapConvertState
-import com.facebook.drawee.backends.pipeline.Fresco
+import com.aureusapps.android.webpandroid.example.states.ConvertState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.FileOutputStream
-import kotlin.math.roundToInt
 
-@Suppress("NestedLambdaShadowedImplicitParameter")
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class CodecViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _bitmapToWebPConvertStateFlow =
-        MutableSharedFlow<BitmapToWebPConvertState>(replay = 1)
-    private val _bitmapToAnimatedWebPConvertStateFlow =
-        MutableSharedFlow<BitmapToAnimatedWebPConvertState>(replay = 1)
-    private val _webPToBitmapConvertStateFlow =
-        MutableSharedFlow<WebPToBitmapConvertState>(replay = 1)
-    private val _uiEventFlow = MutableSharedFlow<UiEvent>(replay = 1)
+    private val _imageToWebPConvertDataCollectEventFlow =
+        MutableSharedFlow<DataCollectEvent.ImageToWebP>()
 
-    val bitmapToWebPConvertStateFlow = _bitmapToWebPConvertStateFlow.asSharedFlow()
-    val bitmapToAnimatedWebPConvertStateFlow = _bitmapToAnimatedWebPConvertStateFlow.asSharedFlow()
-    val webPToBitmapConvertStateFlow = _webPToBitmapConvertStateFlow.asSharedFlow()
+    private val _uiEventFlow = MutableSharedFlow<UiEvent>()
+
     val uiEventFlow = _uiEventFlow.asSharedFlow()
+
+    val imageToWebPConvertDataCollectEventFlow =
+        _imageToWebPConvertDataCollectEventFlow.asSharedFlow()
+
+    val imageToWebPConvertStateFlow = _imageToWebPConvertDataCollectEventFlow
+        .scan(ConvertData.ImageToWebP()) { data, event ->
+            when (event) {
+                is DataCollectEvent.ImageToWebP.StartCollect -> {
+                    ConvertData.ImageToWebP()
+                }
+
+                is DataCollectEvent.ImageToWebP.SelectSrcUri -> {
+                    data.copy(srcUri = event.srcUri)
+                }
+
+                is DataCollectEvent.ImageToWebP.SelectDstUri -> {
+                    data.copy(dstUri = event.dstUri)
+                }
+
+                is DataCollectEvent.ImageToWebP.SelectDstImgSize -> {
+                    data.copy(
+                        dstImageWidth = event.imgWidth,
+                        dstImageHeight = event.imgHeight
+                    )
+                }
+
+                is DataCollectEvent.ImageToWebP.StartConvert -> {
+                    data.copy(startConvert = true)
+                }
+            }
+        }
+        .filter {
+            it.srcUri != Uri.EMPTY
+                    && it.dstUri != Uri.EMPTY
+                    && it.dstImageWidth > 0
+                    && it.dstImageHeight > 0
+                    && it.startConvert
+        }
+        .transformLatest<ConvertData.ImageToWebP, ConvertState.ImageToWebP> {
+            convertImageToWebP(it)
+        }
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.Lazily,
+            replay = 1
+        )
+
+    fun submitEvent(event: DataCollectEvent.ImageToWebP) {
+        viewModelScope.launch {
+            _imageToWebPConvertDataCollectEventFlow.emit(event)
+        }
+    }
 
     fun submitAction(action: UiAction) {
         when (action) {
-            is UiAction.ConvertBitmapToWebPAction -> {
-                convertBitmapToWebP(action)
-            }
-
-            is UiAction.ConvertBitmapToAnimatedWebPAction -> {
-                convertBitmapToAnimatedWebP(action)
-            }
-
-            is UiAction.ConvertWebPToBitmapAction -> {
-                convertWebPToBitmap(action)
+            is UiAction.ImageToWebPSourceUriSelectAction -> {
+                viewModelScope.launch {
+                    _uiEventFlow.emit(
+                        UiEvent.ImageToWebPSourceUriSelectEvent
+                    )
+                }
             }
 
             is UiAction.DeleteCacheAction -> {
-                deleteCache()
+                // TODO
+            }
+
+            else -> {
+
             }
         }
     }
 
-    private fun convertBitmapToWebP(action: UiAction.ConvertBitmapToWebPAction) {
-        var state = BitmapToWebPConvertState(outputPath = action.outputPath)
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val sourceImage = readBitmap(action.sourceUri)
-                val webPEncoder = WebPEncoder(action.width, action.height)
-                updateBitmapToWebPConvertState(
-                    state.copy(
-                        imageWidth = action.width,
-                        imageHeight = action.height
-                    ).also { state = it }
-                )
-                webPEncoder.addProgressListener {
-                    updateBitmapToWebPConvertState(
-                        state.copy(
-                            progress = it
-                        ).also { state = it }
-                    )
+    private suspend fun convertImageToWebP(
+        data: ConvertData.ImageToWebP
+    ): Flow<ConvertState.ImageToWebP> {
+        val sharedFlow = MutableSharedFlow<ConvertState.ImageToWebP>()
+        var lastState: ConvertState.ImageToWebP = ConvertState.ImageToWebP.OnConvertStarted(
+            srcUri = data.srcUri,
+            dstUri = data.dstUri,
+            dstImageWidth = data.dstImageWidth,
+            dstImageHeight = data.dstImageHeight
+        )
+        sharedFlow.emit(lastState)
+        val mutex = Object()
+        val emitState: ((ConvertState.ImageToWebP) -> ConvertState.ImageToWebP) -> Unit =
+            { action ->
+                val newState = synchronized(mutex) {
+                    action(lastState).also { lastState = it }
                 }
-                webPEncoder.configure(action.webPConfig, action.webPPreset)
-                webPEncoder.encode(sourceImage, action.outputPath)
-                webPEncoder.release()
-                updateBitmapToWebPConvertState(
-                    state.copy(
-                        isFinished = true,
-                        progress = 100
-                    ).also { state = it }
-                )
-
-            } catch (e: Exception) {
-                updateBitmapToWebPConvertState(
-                    state.copy(
-                        hasError = true,
-                        errorMessage = e.message
-                    ).also { state = it }
-                )
+                viewModelScope.launch {
+                    sharedFlow.emit(newState)
+                }
             }
-        }
-    }
-
-    private fun convertBitmapToAnimatedWebP(action: UiAction.ConvertBitmapToAnimatedWebPAction) {
         viewModelScope.launch(Dispatchers.IO) {
-            var state = BitmapToAnimatedWebPConvertState()
-            val webPAnimEncoder = WebPAnimEncoder(
-                action.width,
-                action.height,
-                action.encoderOptions
-            )
-            val frameCount = action.frames.size
             try {
-                updateBitmapToAnimatedWebPConvertState(
-                    state.copy(
-                        outputPath = action.outputPath,
-                        imageWidth = action.width,
-                        imageHeight = action.height
-                    ).also { state = it }
-                )
-                webPAnimEncoder.configure(action.webPConfig, action.webPPreset)
-                webPAnimEncoder.addProgressListener { currentFrame, frameProgress ->
-                    val progress = (frameProgress + 100f * currentFrame) / frameCount
-                    updateBitmapToAnimatedWebPConvertState(
-                        state.copy(
-                            progress = progress.roundToInt()
-                        ).also { state = it }
-                    )
+                val webPEncoder = WebPEncoder(data.dstImageWidth, data.dstImageHeight)
+                webPEncoder.addProgressListener { uri, index, timestamp ->
+                    emitState { state ->
+                        ConvertState
+                            .ImageToWebP
+                            .OnConvertProgress
+                            .from(
+                                state,
+                                frameUri = uri,
+                                frameIndex = index,
+                                frameTimestamp = timestamp
+                            )
+                    }
                     true
                 }
-                action.frames.forEach {
-                    val (timestamp, uri) = it
-                    val bitmap = readBitmap(uri)
-                    webPAnimEncoder.addFrame(timestamp, bitmap)
+                webPEncoder.configure(data.webPConfig, data.webPPreset)
+                webPEncoder.encode(data.srcUri, data.dstUri)
+                webPEncoder.release()
+                emitState { state ->
+                    ConvertState
+                        .ImageToWebP
+                        .OnConvertFinished
+                        .from(state)
                 }
-                webPAnimEncoder.assemble(action.lastTime, action.outputPath)
-                updateBitmapToAnimatedWebPConvertState(
-                    state.copy(
-                        progress = 100,
-                        isFinished = true
-                    ).also { state = it }
-                )
 
             } catch (e: Exception) {
-                updateBitmapToAnimatedWebPConvertState(
-                    state.copy(
-                        progress = 0,
-                        hasError = true,
-                        errorMessage = e.message
-                    ).also { state = it }
-                )
-
-            } finally {
-                webPAnimEncoder.release()
+                emitState { state ->
+                    ConvertState
+                        .ImageToWebP
+                        .OnConvertError
+                        .from(
+                            state,
+                            errorMessage = e.message ?: "Unknown error."
+                        )
+                }
             }
         }
-    }
-
-    private fun convertWebPToBitmap(action: UiAction.ConvertWebPToBitmapAction) {
-        val context = getApplication<Application>().applicationContext
-        viewModelScope.launch(Dispatchers.IO) {
-            var state = WebPToBitmapConvertState()
-            try {
-                val frames = mutableListOf<Pair<Uri, Int>>()
-                updateWebPToBitmapConvertState(
-                    state.copy(
-                        outputPath = context.cacheDir.absolutePath
-                    ).also { state = it }
-                )
-                var frameCount = 0
-                WebPDecoder.extractImages(
-                    context,
-                    action.sourceUri,
-                    object : WebPDecoderListener {
-
-                        override fun onReceiveInfo(info: WebPInfo) {
-                            frameCount = info.frameCount
-                            updateWebPToBitmapConvertState(
-                                state.copy(
-                                    imageInfo = info
-                                ).also { state = it }
-                            )
-                        }
-
-                        override fun onReceiveFrame(frame: Bitmap, index: Int, timestamp: Int) {
-                            if (frameCount != 0) {
-                                val progress = 100 * (index + 1) / frameCount
-                                updateWebPToBitmapConvertState(
-                                    state.copy(
-                                        progress = progress
-                                    ).also { state = it }
-                                )
-                            }
-                            val file = saveBitmap(frame, index)
-                            frames.add(file.toUri() to timestamp)
-                        }
-                    }
-                )
-                updateWebPToBitmapConvertState(
-                    state.copy(
-                        isFinished = true,
-                        frames = frames
-                    ).also { state = it }
-                )
-
-            } catch (e: Exception) {
-                updateWebPToBitmapConvertState(
-                    state.copy(
-                        hasError = true,
-                        errorMessage = e.message
-                    ).also { state = it }
-                )
-            }
-        }
-    }
-
-    private fun deleteCache() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val context = getApplication<Application>().applicationContext
-            Fresco.getImagePipeline().clearCaches()
-            context.cacheDir
-                .listFiles()
-                ?.filter {
-                    it.isFile
-                }
-                ?.forEach {
-                    it.delete()
-                }
-            _uiEventFlow.emit(UiEvent.DeleteCacheEvent)
-        }
-    }
-
-    private fun updateBitmapToWebPConvertState(newState: BitmapToWebPConvertState) {
-        viewModelScope.launch {
-            _bitmapToWebPConvertStateFlow.emit(newState)
-        }
-    }
-
-    private fun updateBitmapToAnimatedWebPConvertState(newState: BitmapToAnimatedWebPConvertState) {
-        viewModelScope.launch {
-            _bitmapToAnimatedWebPConvertStateFlow.emit(newState)
-        }
-    }
-
-    private fun updateWebPToBitmapConvertState(newState: WebPToBitmapConvertState) {
-        viewModelScope.launch {
-            _webPToBitmapConvertStateFlow.emit(newState)
-        }
-    }
-
-    private fun readBitmap(bitmapUri: Uri): Bitmap {
-        val context = getApplication<Application>().applicationContext
-        val inputStream = context.contentResolver.openInputStream(bitmapUri)
-        return BitmapFactory.decodeStream(inputStream)
-    }
-
-    private fun saveBitmap(bitmap: Bitmap, index: Int): File {
-        val context = getApplication<Application>().applicationContext
-        val file = File(context.cacheDir, "image$index.png")
-        val outputStream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-        outputStream.flush()
-        outputStream.close()
-        return file
+        return sharedFlow
     }
 
 }
