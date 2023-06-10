@@ -21,7 +21,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_extractImages(
     // load webp file data
     uint8_t *fileData;
     size_t fileSize;
-    if (Android_readFromUri(env, context, sourceUri, &fileData, &fileSize)) {
+    if (readFromUri(env, &context, &sourceUri, &fileData, &fileSize)) {
         return;
     }
 

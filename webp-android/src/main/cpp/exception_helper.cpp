@@ -105,3 +105,28 @@ void throwRuntimeException(JNIEnv *env, const char *format, ...) {
     throwException(env, &exceptionClass, format, args);
     va_end(args);
 }
+
+std::string getExceptionMessage(JNIEnv *env, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    jthrowable exception = env->ExceptionOccurred();
+    jclass throwableClass = env->FindClass("java/lang/Throwable");
+    jmethodID messageMethodID = env->GetMethodID(
+            throwableClass,
+            "getMessage",
+            "()Ljava/lang/String;"
+    );
+
+    auto messageString = (jstring) env->CallObjectMethod(exception, messageMethodID);
+    const char *messageChars = env->GetStringUTFChars(messageString, nullptr);
+    std::string message = formatString(format, messageChars, args);
+
+    env->DeleteLocalRef(exception);
+    env->DeleteLocalRef(throwableClass);
+    env->ReleaseStringUTFChars(messageString, messageChars);
+    env->DeleteLocalRef(messageString);
+    va_end(args);
+
+    return message;
+}

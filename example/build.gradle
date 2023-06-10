@@ -44,6 +44,7 @@ dependencies {
     implementation libs.fresco.webpsupport
     implementation libs.lifecycle.runtime.ktx
     implementation libs.aureusapps.extensions
+    implementation libs.aureusapps.styles
     implementation libs.lifecycle.viewmodel.ktx
     implementation project(":webp-android")
 

@@ -1,6 +1,7 @@
 package com.aureusapps.android.webpandroid.encoder
 
-import android.graphics.Bitmap
+import android.content.Context
+import android.net.Uri
 
 class WebPEncoder(width: Int, height: Int) {
 
@@ -35,7 +36,7 @@ class WebPEncoder(width: Int, height: Int) {
         }
     }
 
-    external fun encode(bitmap: Bitmap, outputPath: String)
+    external fun encode(context: Context, srcUri: Uri, dstUri: Uri)
 
     external fun release()
 

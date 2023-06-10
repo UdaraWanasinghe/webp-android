@@ -1,36 +1,21 @@
 package com.aureusapps.android.webpandroid.example.actions
 
 import android.net.Uri
-import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
-import com.aureusapps.android.webpandroid.encoder.WebPConfig
-import com.aureusapps.android.webpandroid.encoder.WebPPreset
 
+// Actions are executed by user.
+// For an example: clicking a button.
 internal sealed interface UiAction {
-
-    data class ConvertBitmapToAnimatedWebPAction(
-        val width: Int,
-        val height: Int,
-        val frames: List<Pair<Long, Uri>>,
-        val outputPath: String,
-        val lastTime: Long,
-        val encoderOptions: WebPAnimEncoderOptions?,
-        val webPConfig: WebPConfig,
-        val webPPreset: WebPPreset? = null
-    ) : UiAction
-
-    data class ConvertWebPToBitmapAction(
-        val sourceUri: Uri
-    ) : UiAction
-
     object DeleteCacheAction : UiAction
 
-    data class ConvertBitmapToWebPAction(
-        val width: Int,
-        val height: Int,
-        val sourceUri: Uri,
-        val outputPath: String,
-        val webPConfig: WebPConfig,
-        val webPPreset: WebPPreset? = null
-    ) : UiAction
+    sealed interface ImageToWebP : UiAction {
+        object OpenDataCollectBottomSheet : ImageToWebP
+        object OpenSrcUriPicker : ImageToWebP
+        object OpenDstUriPicker : ImageToWebP
+        object RequestStartConvert : ImageToWebP
+        data class SelectSrcUri(val srcUri: Uri) : ImageToWebP
+        data class SelectDstUri(val dstUri: Uri) : ImageToWebP
+        data class SelectDstImageWidth(val imageWidth: Int) : ImageToWebP
+        data class SelectDstImageHeight(val imageHeight: Int) : ImageToWebP
+    }
 
 }
