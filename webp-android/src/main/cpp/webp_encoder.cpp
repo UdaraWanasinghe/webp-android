@@ -3,9 +3,9 @@
 //
 
 #include <jni.h>
-#include <webp/encode.h>
 #include <fstream>
 #include <android/bitmap.h>
+#include <webp/encode.h>
 
 #include "include/exception_helper.h"
 #include "include/type_helper.h"
@@ -17,7 +17,31 @@
 class WebPEncoder {
 
 private:
+
     WebPConfig webPConfig{};
+
+    inline static void copyPixels(uint8_t *src, WebPPicture *pic) {
+        // Need to swap rb channels
+        // Android bitmap -> int color = (A & 0xff) << 24 | (B & 0xff) << 16 | (G & 0xff) << 8 | (R & 0xff)
+        // Encoder pixels -> int color = (A & 0xFF) << 24 | (R & 0xFF) << 16 | (G & 0xFF) << 8 | (B & 0xFF)
+        auto *dst = reinterpret_cast<uint8_t *>(pic->argb);
+        uint8_t *end = src + pic->width * pic->height * 4;
+        while (src < end) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+            *dst++ = src[0];
+            *dst++ = src[3];
+            *dst++ = src[2];
+            *dst++ = src[1];
+            src += 4;
+#else
+            *dst++ = src[2];
+            *dst++ = src[1];
+            *dst++ = src[0];
+            *dst++ = src[3];
+            src += 4;
+#endif
+        }
+    }
 
 public:
 
@@ -70,10 +94,10 @@ public:
 
     void encode(
             uint8_t *pixels,
-            int bitmapWidth,
-            int bitmapHeight,
-            uint8_t **webPData,
-            size_t *webPSize
+            int width,
+            int height,
+            uint8_t **webp_data,
+            size_t *webp_size
     ) {
         // Validate config (optional)
         if (!WebPValidateConfig(&webPConfig)) {
@@ -87,8 +111,8 @@ public:
         }
 
         // allocated pic of dimension width x height
-        pic.width = bitmapWidth;
-        pic.height = bitmapHeight;
+        pic.width = width;
+        pic.height = height;
         pic.use_argb = true;
         if (!WebPPictureAlloc(&pic)) {
             throw std::runtime_error("Memory error.");
@@ -100,7 +124,7 @@ public:
         // WebPPictureImportRGB(), which will take care of memory allocation.
         // In any case, past this point, one will have to call
         // WebPPictureFree(&pic) to reclaim memory.
-        memcpy(pic.argb, pixels, bitmapWidth * bitmapHeight * 4);
+        copyPixels(pixels, &pic);
 
         // set progress hook
         pic.progress_hook = &notifyProgressChanged;
@@ -119,12 +143,12 @@ public:
             // Throw exception if failed to encode.
             auto msg = formatString("Failed to encode image {errorCode: %d}", errorCode);
             throw std::runtime_error(msg);
-            
+
         } else {
             // output data should have been handled by the wtr at that point.
             // -> compressed data is the memory buffer described by wtr.mem / wtr.size
-            *webPData = wtr.mem;
-            *webPSize = wtr.size;
+            *webp_data = wtr.mem;
+            *webp_size = wtr.size;
         }
 
         // Release resources.
