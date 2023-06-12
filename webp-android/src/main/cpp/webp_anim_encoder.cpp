@@ -11,7 +11,7 @@
 #include "include/type_helper.h"
 #include "include/exception_helper.h"
 #include "include/string_formatter.h"
-#include "include/bitmap_operations.h"
+#include "include/bitmap_utils.h"
 
 class WebPAnimationEncoder {
 
@@ -283,7 +283,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
         // Create encoder options
         WebPAnimEncoderOptions webPAnimEncoderOptions;
         if (WebPAnimEncoderOptionsInit(&webPAnimEncoderOptions)) {
-            parseAnimEncoderOptions(env, &options, &webPAnimEncoderOptions);
+            parseEncoderOptions(env, &options, &webPAnimEncoderOptions);
 
             // Set jvm instance
             env->GetJavaVM(&WebPAnimationEncoder::jvm);

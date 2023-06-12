@@ -11,7 +11,7 @@
 #include "include/type_helper.h"
 #include "include/webp_encoder_helper.h"
 #include "include/string_formatter.h"
-#include "include/bitmap_operations.h"
+#include "include/bitmap_utils.h"
 #include "include/file_utils.h"
 
 class WebPEncoder {
@@ -20,156 +20,279 @@ private:
 
     WebPConfig webPConfig{};
 
-    inline static void copyPixels(uint8_t *src, WebPPicture *pic) {
-        // Need to swap rb channels
-        // Android bitmap -> int color = (A & 0xff) << 24 | (B & 0xff) << 16 | (G & 0xff) << 8 | (R & 0xff)
-        // Encoder pixels -> int color = (A & 0xFF) << 24 | (R & 0xFF) << 16 | (G & 0xFF) << 8 | (B & 0xFF)
-        auto *dst = reinterpret_cast<uint8_t *>(pic->argb);
-        uint8_t *end = src + pic->width * pic->height * 4;
-        while (src < end) {
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-            *dst++ = src[0];
-            *dst++ = src[3];
-            *dst++ = src[2];
-            *dst++ = src[1];
-            src += 4;
-#else
-            *dst++ = src[2];
-            *dst++ = src[1];
-            *dst++ = src[0];
-            *dst++ = src[3];
-            src += 4;
-#endif
-        }
-    }
-
 public:
 
     struct ProgressHookData {
-        JNIEnv *env;
-        jobject progressListener;
-        jmethodID onProgressMethodID;
+        jweak progress_observable = nullptr;
+        jmethodID progress_method_id = nullptr;
+        bool cancel_flag = false;
     };
+
+    static JavaVM *jvm;
+    static ProgressHookData *progressHookData;
 
     int imageWidth;
     int imageHeight;
 
-    WebPEncoder(int width, int height) {
-        this->imageWidth = width;
-        this->imageHeight = height;
-    }
+    /**
+     * Constructs a WebPEncoder object with the specified width and height.
+     *
+     * @param width The width of the image.
+     * @param height The height of the image.
+     */
+    WebPEncoder(int width, int height);
 
-    static ProgressHookData *progressHookData;
+    /**
+     * Returns the instance of WebPEncoder.
+     *
+     * @param env Pointer to the JNI environment.
+     * @param jencoder Pointer to the Java WebPEncoder object.
+     *
+     * @return The instance of WebPEncoder.
+     */
+    static WebPEncoder *getInstance(JNIEnv *env, jobject *jencoder);
 
-    static WebPEncoder *getInstance(JNIEnv *env, jobject *object) {
-        jclass encoderClass = env->FindClass(
-                "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
-        );
-        // Check if an instance of WebPEncoder
-        if (!env->IsInstanceOf(*object, encoderClass)) {
-            throw std::runtime_error("Given object is not of type WebPEncoder.");
-        }
-        // Get encoder pointer
-        jfieldID pointerFieldID = env->GetFieldID(encoderClass, "nativePointer", "J");
-        jlong encoderPointer = env->GetLongField(*object, pointerFieldID);
-        return reinterpret_cast<WebPEncoder *>(encoderPointer);
-    }
+    static void setProgressHookData(JNIEnv *env, jobject *jencoder);
 
-    static int notifyProgressChanged(int percent, const WebPPicture *) {
-        if (progressHookData != nullptr) {
-            JNIEnv *env = progressHookData->env;
-            jobject progressListener = progressHookData->progressListener;
-            jmethodID progressMethodID = progressHookData->onProgressMethodID;
-            env->CallVoidMethod(progressListener, progressMethodID, percent);
+    static void clearProgressHookData(JNIEnv *env);
 
-            return 1;
-        } else {
-            return 0;
-        }
-    }
+    /**
+     * Notifies the progress change of encoding.
+     *
+     * @param percent The percentage progress of encoding.
+     * @param pic Pointer to the WebPPicture object.
+     *
+     * @return true if want to continue encoding or false to cancel it.
+     */
+    static int notifyProgressChanged(int percent, const WebPPicture *pic);
 
-    void configure(WebPConfig config) {
-        webPConfig = config;
-    }
+    /**
+     * Configures the WebP encoding parameters.
+     *
+     * @param config The WebP configuration.
+     */
+    void configure(WebPConfig config);
 
+    /**
+     * Encodes the image into WebP format.
+     *
+     * @param pixels Pointer to the input pixel data from Android bitmap.
+     * @param width The width of the input image.
+     * @param height The height of the input image.
+     * @param webp_data Pointer to the output buffer for the WebP data.
+     * @param webp_size Pointer to store the size of the WebP data.
+     */
     void encode(
             uint8_t *pixels,
             int width,
             int height,
             uint8_t **webp_data,
             size_t *webp_size
-    ) {
-        // Validate config (optional)
-        if (!WebPValidateConfig(&webPConfig)) {
-            throw std::runtime_error("Failed to validate WebPConfig.");
-        }
+    );
 
-        // Setup the input data
-        WebPPicture pic;
-        if (!WebPPictureInit(&pic)) {
-            throw std::runtime_error("Version mismatch.");
-        }
+    /**
+     * Cancels ongoing encode process
+     */
+    static void cancel();
 
-        // allocated pic of dimension width x height
-        pic.width = width;
-        pic.height = height;
-        pic.use_argb = true;
-        if (!WebPPictureAlloc(&pic)) {
-            throw std::runtime_error("Memory error.");
-        }
-
-        // at this point, 'pic' has been initialized as a container,
-        // and can receive the Y/U/V samples.
-        // Alternatively, one could use ready-made import functions like
-        // WebPPictureImportRGB(), which will take care of memory allocation.
-        // In any case, past this point, one will have to call
-        // WebPPictureFree(&pic) to reclaim memory.
-        copyPixels(pixels, &pic);
-
-        // set progress hook
-        pic.progress_hook = &notifyProgressChanged;
-
-        // Set up a byte-output write method. WebPMemoryWriter, for instance.
-        WebPMemoryWriter wtr;
-        WebPMemoryWriterInit(&wtr);     // initialize 'wtr'
-
-        pic.writer = WebPMemoryWrite;
-        pic.custom_ptr = &wtr;
-
-        // Compress!
-        // encodeSuccess = 0 => error occurred!
-        if (!WebPEncode(&webPConfig, &pic)) {
-            int errorCode = pic.error_code;
-            // Throw exception if failed to encode.
-            auto msg = formatString("Failed to encode image {errorCode: %d}", errorCode);
-            throw std::runtime_error(msg);
-
-        } else {
-            // output data should have been handled by the wtr at that point.
-            // -> compressed data is the memory buffer described by wtr.mem / wtr.size
-            *webp_data = wtr.mem;
-            *webp_size = wtr.size;
-        }
-
-        // Release resources.
-        // must be called independently of the 'encodeSuccess' result.
-        WebPPictureFree(&pic);
-    }
+    /**
+    * Releases any resources held by the WebPEncoder object.
+    */
+    void release();
 
 };
 
+JavaVM *WebPEncoder::jvm = nullptr;
 WebPEncoder::ProgressHookData *WebPEncoder::progressHookData = nullptr;
+
+WebPEncoder::WebPEncoder(int width, int height) {
+    this->imageWidth = width;
+    this->imageHeight = height;
+}
+
+WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject *jencoder) {
+    jclass clazz = env->FindClass(
+            "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
+    );
+    // Check if an instance of WebPEncoder
+    if (!env->IsInstanceOf(*jencoder, clazz)) {
+        throw std::runtime_error("Given jencoder is not of type WebPEncoder.");
+    }
+    // Get encoder pointer
+    jfieldID pointer_field_id = env->GetFieldID(clazz, "nativePointer", "J");
+    jlong encoder_pointer = env->GetLongField(*jencoder, pointer_field_id);
+    return reinterpret_cast<WebPEncoder *>(encoder_pointer);
+}
+
+int WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *) {
+    // Get current jvm environment
+    JNIEnv *env;
+    int envStat = jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
+
+    // Attach to the current thread if not attached.
+    bool isAttached = false;
+    switch (envStat) {
+        case JNI_EDETACHED:
+            if (jvm->AttachCurrentThread(&env, nullptr) != 0) {
+                // failed to attach
+                return 0;
+            } else {
+                isAttached = true;
+            }
+            break;
+        case JNI_EVERSION:
+            // version not supported
+            return 0;
+        case JNI_OK:
+            break;
+        default:
+            return 0;
+    }
+
+    int ret;
+    if (progressHookData != nullptr) {
+        jobject observable = progressHookData->progress_observable;
+        jmethodID progress_method_id = progressHookData->progress_method_id;
+        env->CallVoidMethod(observable, progress_method_id, percent);
+        ret = !progressHookData->cancel_flag;
+    } else {
+        ret = 0;
+    }
+
+    // Detach current thread if attached
+    if (isAttached) {
+        jvm->DetachCurrentThread();
+    }
+    return ret;
+}
+
+void WebPEncoder::setProgressHookData(JNIEnv *env, jobject *jencoder) {
+    // Delete previous progress data
+    delete progressHookData;
+
+    // Create new progress data
+    auto *data = new ProgressHookData();
+    data->progress_observable = env->NewWeakGlobalRef(*jencoder);
+    jclass jencoder_class = env->FindClass(
+            "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
+    );
+    if (!env->IsInstanceOf(*jencoder, jencoder_class)) {
+        throw std::runtime_error("Given jencoder is not an instance of WebPEncoder.");
+    }
+    jmethodID progress_method_id = env->GetMethodID(
+            jencoder_class,
+            "notifyProgressChanged",
+            "(I)V"
+    );
+    data->progress_method_id = progress_method_id;
+    progressHookData = data;
+
+    // Delete local ref
+    env->DeleteLocalRef(jencoder_class);
+}
+
+void WebPEncoder::clearProgressHookData(JNIEnv *env) {
+    ProgressHookData *data = progressHookData;
+    if (data != nullptr) {
+        data->progress_method_id = nullptr;
+        env->DeleteWeakGlobalRef(data->progress_observable);
+        data->progress_observable = nullptr;
+        delete progressHookData;
+    }
+}
+
+void WebPEncoder::configure(WebPConfig config) {
+    webPConfig = config;
+}
+
+void WebPEncoder::encode(
+        uint8_t *pixels,
+        int width,
+        int height,
+        uint8_t **webp_data,
+        size_t *webp_size
+) {
+    // Validate config (optional)
+    if (!WebPValidateConfig(&webPConfig)) {
+        throw std::runtime_error("Failed to validate WebPConfig.");
+    }
+
+    // Setup the input data
+    WebPPicture pic;
+    if (!WebPPictureInit(&pic)) {
+        throw std::runtime_error("Version mismatch.");
+    }
+
+    // allocated pic of dimension width x height
+    pic.width = width;
+    pic.height = height;
+    pic.use_argb = true;
+    if (!WebPPictureAlloc(&pic)) {
+        throw std::runtime_error("Memory error.");
+    }
+
+    // at this point, 'pic' has been initialized as a container,
+    // and can receive the Y/U/V samples.
+    // Alternatively, one could use ready-made import functions like
+    // WebPPictureImportRGB(), which will take care of memory allocation.
+    // In any case, past this point, one will have to call
+    // WebPPictureFree(&pic) to reclaim memory.
+    copyPixels(pixels, &pic);
+
+    // set progress hook
+    pic.progress_hook = &notifyProgressChanged;
+
+    // Set up a byte-output write method. WebPMemoryWriter, for instance.
+    WebPMemoryWriter wtr;
+    WebPMemoryWriterInit(&wtr);     // initialize 'wtr'
+
+    pic.writer = WebPMemoryWrite;
+    pic.custom_ptr = &wtr;
+
+    // Compress!
+    // encodeSuccess = 0 => error occurred!
+    if (!WebPEncode(&webPConfig, &pic)) {
+        int error_code = pic.error_code;
+        auto message = formatString("Failed to encode image {error_code: %d}", error_code);
+        throw std::runtime_error(message);
+
+    } else {
+        // output data should have been handled by the wtr at that point.
+        // -> compressed data is the memory buffer described by wtr.mem / wtr.size
+        *webp_data = wtr.mem;
+        *webp_size = wtr.size;
+    }
+
+    // Release resources.
+    // must be called independently of the 'encodeSuccess' result.
+    WebPPictureFree(&pic);
+}
+
+void WebPEncoder::cancel() {
+    ProgressHookData *data = WebPEncoder::progressHookData;
+    if (data != nullptr) {
+        data->cancel_flag = true;
+    }
+}
+
+void WebPEncoder::release() {
+    //
+}
 
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_create(
-        JNIEnv *,
-        jobject,
+        JNIEnv *env,
+        jobject thiz,
         jint width,
         jint height
 ) {
-    auto *webPEncoder = new WebPEncoder(width, height);
-    return reinterpret_cast<jlong>(webPEncoder);
+    // Set jvm instance
+    env->GetJavaVM(&WebPEncoder::jvm);
+
+    // Create native encoder
+    auto *encoder = new WebPEncoder(width, height);
+    return reinterpret_cast<jlong>(encoder);
 }
 
 extern "C"
@@ -177,40 +300,48 @@ JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
         JNIEnv *env,
         jobject thiz,
-        jobject config,
-        jobject preset
+        jobject jconfig,
+        jobject jpreset
 ) {
-
-    // Init new config
-    WebPConfig webPConfig;
-    if (!WebPConfigInit(&webPConfig)) {
-        throw std::runtime_error("Version mismatch.");
-    }
-
-    // Get quality
-    float quality = parseWebPQuality(env, &config);
-
-    // Parse preset if available
-    if (preset != nullptr) {
-        WebPPreset webPPreset = parseWebPPreset(env, &preset);
-        if (!WebPConfigPreset(&webPConfig, webPPreset, quality)) {
-            throwIllegalArgumentException(env, "Failed to validate WebPConfig");
-            return;
+    try {
+        // Init new WebPConfig
+        WebPConfig config;
+        if (!WebPConfigInit(&config)) {
+            throw std::runtime_error("Version mismatch.");
         }
+
+        // Get quality
+        float quality = parseWebPQuality(env, &jconfig);
+
+        // Parse WebPPreset if not null
+        if (jpreset != nullptr) {
+            WebPPreset preset = parseWebPPreset(env, &jpreset);
+            if (!WebPConfigPreset(&config, preset, quality)) {
+                throw std::runtime_error("Failed to validate WebPConfig");
+            }
+        }
+
+        // Parse WebPConfig values
+        parseWebPConfig(env, &jconfig, &config);
+
+        // Validate WebPConfig
+        if (!WebPValidateConfig(&config)) {
+            throw std::runtime_error("Failed to validate WebPConfig");
+        }
+
+        // Set new WebPConfig
+        WebPEncoder *encoder = WebPEncoder::getInstance(env, &thiz);
+        encoder->configure(config);
+
+    } catch (std::runtime_error &e) {
+        throwRuntimeException(env, e.what());
+
+    } catch (std::exception &e) {
+        throwRuntimeException(env, e.what());
+
+    } catch (...) {
+        throwRuntimeException(env, "Unknown failure occurred.");
     }
-
-    // Parse config values
-    parseWebPConfig(env, &config, &webPConfig);
-
-    // Validate config
-    if (!WebPValidateConfig(&webPConfig)) {
-        throwIllegalArgumentException(env, "Failed to validate WebPConfig");
-        return;
-    }
-
-    // Set new config
-    WebPEncoder *webPEncoder = WebPEncoder::getInstance(env, &thiz);
-    webPEncoder->configure(webPConfig);
 }
 
 extern "C"
@@ -218,98 +349,78 @@ JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         JNIEnv *env,
         jobject thiz,
-        jobject context,
-        jobject srcUri,
-        jobject dstUri
+        jobject jcontext,
+        jobject jsrc_uri,
+        jobject jdst_uri
 ) {
-    delete WebPEncoder::progressHookData;
-    auto *newProgressHookData = new WebPEncoder::ProgressHookData();
-    bool unlockBitmap = false;
-    bool bitmapResized = false;
-    jobject bitmap = nullptr;
-    uint8_t *webPData = nullptr;
+    jobject jbitmap = nullptr;
+    uint8_t *webp_data = nullptr;
+
+    // Set progress hook
+    WebPEncoder::setProgressHookData(env, &thiz);
 
     try {
         auto *encoder = WebPEncoder::getInstance(env, &thiz);
 
-        // set progress hook
-        jclass progressListenerClass = env->GetObjectClass(thiz);
-        jmethodID notifyProgressMethodID = env->GetMethodID(
-                progressListenerClass,
-                "notifyProgressChanged",
-                "(I)V"
-        );
-        newProgressHookData->env = env;
-        newProgressHookData->progressListener = thiz;
-        newProgressHookData->onProgressMethodID = notifyProgressMethodID;
-        WebPEncoder::progressHookData = newProgressHookData;
-
-        // Get bitmap from src uri
-        jclass bitmapFactoryExtendedClass = env->FindClass(
-                "com/aureusapps/android/webpandroid/utils/BitmapFactoryExtended"
-        );
-        jmethodID decodeUriMethodID = env->GetStaticMethodID(
-                bitmapFactoryExtendedClass,
-                "decodeUri",
-                "(Landroid/content/Context;Landroid/net/Uri;)Landroid/graphics/Bitmap;"
-        );
-        bitmap = env->CallStaticObjectMethod(
-                bitmapFactoryExtendedClass,
-                decodeUriMethodID,
-                context,
-                srcUri
-        );
-
-        if (bitmap == nullptr) {
-            throw std::runtime_error("Image data could not be decoded.");
-        }
+        jbitmap = decodeBitmapUri(env, &jcontext, &jsrc_uri);
 
         // Check for exception
         if (env->ExceptionCheck()) {
             std::string message = getExceptionMessage(
                     env,
-                    "Error occurred while decoding bitmap from the uri: %s"
+                    "Image data could not be decoded: %s"
             );
+            env->ExceptionClear();
             throw std::runtime_error(message);
         }
 
+        if (jbitmap == nullptr) {
+            throw std::runtime_error("Image data could not be decoded.");
+        }
+
         // Get bitmap info
-        AndroidBitmapInfo bitmapInfo;
-        if (AndroidBitmap_getInfo(env, bitmap, &bitmapInfo) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        AndroidBitmapInfo info;
+        if (AndroidBitmap_getInfo(env, jbitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
             throw std::runtime_error("Failed to get bitmap info.");
         }
 
         // Resize if bitmap size is not matching
-        if (bitmapInfo.width != encoder->imageWidth || bitmapInfo.height != encoder->imageHeight) {
-            bitmap = resizeBitmap(env, &bitmap, encoder->imageWidth, encoder->imageHeight);
-            AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
-            bitmapResized = true;
+        if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
+            jobject resized_bitmap = resizeBitmap(
+                    env,
+                    &jbitmap,
+                    encoder->imageWidth,
+                    encoder->imageHeight
+            );
+            recycleBitmap(env, &jbitmap);
+            env->DeleteLocalRef(jbitmap);
+            jbitmap = resized_bitmap;
+            AndroidBitmap_getInfo(env, resized_bitmap, &info);
         }
 
         // Check if ARGB_8888 formatted
-        if (bitmapInfo.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-            throw std::runtime_error("Only RGBA_8888 formatted bitmaps are accepted.");
+        if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+            throw std::runtime_error("Only ARGB_8888 formatted bitmaps are accepted.");
         }
 
         // Get bitmap pixels
         void *pixels;
-        if (AndroidBitmap_lockPixels(env, bitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        if (AndroidBitmap_lockPixels(env, jbitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
             throw std::runtime_error("Failed to lock bitmap pixels.");
         }
-        unlockBitmap = true;
 
         // Encode data
-        size_t webPSize;
+        size_t webp_size;
         encoder->encode(
                 static_cast<uint8_t *>(pixels),
-                static_cast<int>(bitmapInfo.width),
-                static_cast<int>(bitmapInfo.height),
-                &webPData,
-                &webPSize
+                static_cast<int>(info.width),
+                static_cast<int>(info.height),
+                &webp_data,
+                &webp_size
         );
 
         // Write to dst uri
-        writeToUri(env, &context, &dstUri, &webPData, &webPSize);
+        writeToUri(env, &jcontext, &jdst_uri, &webp_data, &webp_size);
 
     } catch (std::runtime_error &e) {
         throwRuntimeException(env, e.what());
@@ -322,22 +433,35 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
     }
 
     // Release resources
-    if (webPData != nullptr) {
-        free(webPData);
+    if (jbitmap != nullptr) {
+        AndroidBitmap_unlockPixels(env, jbitmap);
+        recycleBitmap(env, &jbitmap);
+        env->DeleteLocalRef(jbitmap);
     }
-    if (unlockBitmap) {
-        AndroidBitmap_unlockPixels(env, bitmap);
-    }
-    if (bitmapResized) {
-        recycleBitmap(env, &bitmap);
-    }
-    delete newProgressHookData;
-    WebPEncoder::progressHookData = nullptr;
+    WebPFree(webp_data);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_cancel(JNIEnv *, jobject) {
+    WebPEncoder::cancel();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_release(JNIEnv *env, jobject thiz) {
-    WebPEncoder *webPEncoder = WebPEncoder::getInstance(env, &thiz);
-    delete webPEncoder;
+    // Set java pointer to null
+    jclass encoder_class = env->GetObjectClass(thiz);
+    jfieldID pointer_field_id = env->GetFieldID(encoder_class, "nativePointer", "J");
+    env->SetLongField(thiz, pointer_field_id, (jlong) 0);
+
+    // Delete local ref
+    env->DeleteLocalRef(encoder_class);
+
+    // Delete encoder
+    WebPEncoder *encoder = WebPEncoder::getInstance(env, &thiz);
+    encoder->release();
+    delete encoder;
+
+    WebPEncoder::clearProgressHookData(env);
 }

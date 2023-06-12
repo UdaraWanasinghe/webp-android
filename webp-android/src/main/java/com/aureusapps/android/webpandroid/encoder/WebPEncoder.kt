@@ -38,6 +38,8 @@ class WebPEncoder(width: Int, height: Int) {
 
     external fun encode(context: Context, srcUri: Uri, dstUri: Uri)
 
+    external fun cancel()
+
     external fun release()
 
 }

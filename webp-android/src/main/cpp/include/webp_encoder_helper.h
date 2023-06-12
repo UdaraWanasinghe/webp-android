@@ -10,10 +10,41 @@
 #include <webp/encode.h>
 #include <webp/mux.h>
 
-WebPPreset parseWebPPreset(JNIEnv *env, jobject *object);
+/**
+ * Parses the WebPPreset enum value from a Java preset enum.
+ *
+ * @param env Pointer to the JNI environment.
+ * @param jpreset Pointer to the Java preset enum representing the WebPPreset.
+ *
+ * @return The parsed WebPPreset enum value.
+ */
+WebPPreset parseWebPPreset(JNIEnv *env, jobject *jpreset);
 
-void parseWebPConfig(JNIEnv *env, jobject *object, WebPConfig *config);
+/**
+ * Parses the WebPConfig struct from a Java webp config.
+ *
+ * @param env Pointer to the JNI environment.
+ * @param jconfig Pointer to the Java config object representing the WebPConfig.
+ * @param config Pointer to the WebPConfig struct to be populated.
+ */
+void parseWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config);
 
-float parseWebPQuality(JNIEnv *env, jobject *config);
+/**
+ * Parses the WebP quality value from a Java webp config object.
+ *
+ * @param env Pointer to the JNI environment.
+ * @param jconfig Pointer to the Java object representing the WebP configuration.
+ *
+ * @return The parsed WebP quality value as a float.
+ */
+float parseWebPQuality(JNIEnv *env, jobject *jconfig);
 
-void parseAnimEncoderOptions(JNIEnv *env, jobject *object, WebPAnimEncoderOptions *options);
+void parseEncoderOptions(JNIEnv *env, jobject *joptions, WebPAnimEncoderOptions *options);
+
+/**
+ * Copies pixels from the source buffer to the WebPPicture.
+ *
+ * @param src Pointer to the source buffer containing the pixel data.
+ * @param pic Pointer to the WebPPicture object.
+ */
+void copyPixels(uint8_t *src, WebPPicture *pic);

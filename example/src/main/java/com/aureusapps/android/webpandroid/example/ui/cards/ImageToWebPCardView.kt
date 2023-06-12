@@ -36,16 +36,16 @@ internal class ImageToWebPCardView(
 
     private lateinit var progressIndicator: LinearProgressIndicator
     private lateinit var startButton: MaterialButton
-    private var converting = false
+    private var currentState: ConvertState.ImageToWebP? = null
 
     init {
         createContent()
     }
 
     fun setConvertState(state: ConvertState.ImageToWebP) {
+        currentState = state
         when (state) {
             is ConvertState.ImageToWebP.OnConvertStarted -> {
-                converting = true
                 updateStartButton()
             }
 
@@ -55,12 +55,10 @@ internal class ImageToWebPCardView(
 
             is ConvertState.ImageToWebP.OnConvertFinished -> {
                 progressIndicator.progress = 100
-                converting = false
                 updateStartButton()
             }
 
             is ConvertState.ImageToWebP.OnConvertError -> {
-                converting = false
                 updateStartButton()
                 Snackbar.make(
                     findViewById(android.R.id.content),
@@ -119,9 +117,13 @@ internal class ImageToWebPCardView(
                     }
                     setIconResource(R.drawable.ic_play)
                     setOnClickListener {
-                        submitAction(
-                            UiAction.ImageToWebP.OpenDataCollectBottomSheet
-                        )
+                        if (isConverting()) {
+                            currentState?.cancelCallback?.invoke()
+                        } else {
+                            submitAction(
+                                UiAction.ImageToWebP.OpenDataCollectBottomSheet
+                            )
+                        }
                     }
                 }
 
@@ -138,12 +140,17 @@ internal class ImageToWebPCardView(
 
     private fun updateStartButton() {
         startButton.setIconResource(
-            if (converting) {
+            if (isConverting()) {
                 R.drawable.ic_stop
             } else {
                 R.drawable.ic_play
             }
         )
+    }
+
+    private fun isConverting(): Boolean {
+        return currentState is ConvertState.ImageToWebP.OnConvertStarted
+                || currentState is ConvertState.ImageToWebP.OnConvertProgress
     }
 
 }

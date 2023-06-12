@@ -59,6 +59,7 @@ android {
 dependencies {
     implementation libs.kotlin.stdlib
     implementation libs.annotation
+    implementation libs.okhttp
 
     testImplementation libs.junit
 

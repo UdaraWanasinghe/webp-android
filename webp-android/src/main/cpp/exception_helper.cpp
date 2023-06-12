@@ -111,21 +111,21 @@ std::string getExceptionMessage(JNIEnv *env, const char *format, ...) {
     va_start(args, format);
 
     jthrowable exception = env->ExceptionOccurred();
-    jclass throwableClass = env->FindClass("java/lang/Throwable");
-    jmethodID messageMethodID = env->GetMethodID(
-            throwableClass,
+    jclass throwable_class = env->FindClass("java/lang/Throwable");
+    jmethodID message_method_id = env->GetMethodID(
+            throwable_class,
             "getMessage",
             "()Ljava/lang/String;"
     );
 
-    auto messageString = (jstring) env->CallObjectMethod(exception, messageMethodID);
-    const char *messageChars = env->GetStringUTFChars(messageString, nullptr);
-    std::string message = formatString(format, messageChars, args);
+    auto message_string = (jstring) env->CallObjectMethod(exception, message_method_id);
+    const char *message_chars = env->GetStringUTFChars(message_string, nullptr);
+    std::string message = formatString(format, message_chars, args);
 
     env->DeleteLocalRef(exception);
-    env->DeleteLocalRef(throwableClass);
-    env->ReleaseStringUTFChars(messageString, messageChars);
-    env->DeleteLocalRef(messageString);
+    env->DeleteLocalRef(throwable_class);
+    env->ReleaseStringUTFChars(message_string, message_chars);
+    env->DeleteLocalRef(message_string);
     va_end(args);
 
     return message;

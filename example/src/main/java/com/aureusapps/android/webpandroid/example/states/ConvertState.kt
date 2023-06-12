@@ -8,35 +8,40 @@ internal interface ConvertState {
         val srcUri: Uri,
         val dstUri: Uri,
         val dstImageWidth: Int,
-        val dstImageHeight: Int
+        val dstImageHeight: Int,
+        val cancelCallback: () -> Unit = {}
     ) {
 
         class OnConvertStarted(
             srcUri: Uri,
             dstUri: Uri,
             dstImageWidth: Int,
-            dstImageHeight: Int
-        ) : ImageToWebP(srcUri, dstUri, dstImageWidth, dstImageHeight)
+            dstImageHeight: Int,
+            cancelCallback: () -> Unit
+        ) : ImageToWebP(srcUri, dstUri, dstImageWidth, dstImageHeight, cancelCallback)
 
         class OnConvertProgress private constructor(
             srcUri: Uri,
             dstUri: Uri,
             dstImageWidth: Int,
             dstImageHeight: Int,
-            val progress: Int
-        ) : ImageToWebP(srcUri, dstUri, dstImageWidth, dstImageHeight) {
+            val progress: Int,
+            cancelCallback: () -> Unit
+        ) : ImageToWebP(srcUri, dstUri, dstImageWidth, dstImageHeight, cancelCallback) {
 
             companion object {
                 fun from(
                     parent: ImageToWebP,
-                    progress: Int
+                    progress: Int,
+                    cancelCallback: () -> Unit
                 ): OnConvertProgress {
                     return OnConvertProgress(
                         parent.srcUri,
                         parent.dstUri,
                         parent.dstImageWidth,
                         parent.dstImageHeight,
-                        progress
+                        progress,
+                        cancelCallback
                     )
                 }
             }

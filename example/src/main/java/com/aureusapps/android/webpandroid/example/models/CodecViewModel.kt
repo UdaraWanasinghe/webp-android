@@ -133,12 +133,15 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     ): Flow<ConvertState.ImageToWebP> {
         val context = getApplication<Application>().applicationContext
         val sharedFlow = MutableSharedFlow<ConvertState.ImageToWebP>()
+        val webPEncoder = WebPEncoder(data.dstImageWidth, data.dstImageHeight)
         var lastState: ConvertState.ImageToWebP = ConvertState.ImageToWebP.OnConvertStarted(
             srcUri = data.srcUri,
             dstUri = data.dstUri,
             dstImageWidth = data.dstImageWidth,
             dstImageHeight = data.dstImageHeight
-        )
+        ) {
+            webPEncoder.cancel()
+        }
         val mutex = Object()
         val emitState: ((ConvertState.ImageToWebP) -> ConvertState.ImageToWebP) -> Unit =
             { action ->
@@ -152,18 +155,18 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         emitState { lastState }
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val webPEncoder = WebPEncoder(data.dstImageWidth, data.dstImageHeight)
                 webPEncoder.addProgressListener { progress ->
                     emitState { state ->
                         ConvertState.ImageToWebP.OnConvertProgress.from(
                             state, progress
-                        )
+                        ) {
+                            webPEncoder.cancel()
+                        }
                     }
                     true
                 }
                 webPEncoder.configure(data.webPConfig, data.webPPreset)
                 webPEncoder.encode(context, data.srcUri, data.dstUri)
-                webPEncoder.release()
                 emitState { state ->
                     ConvertState.ImageToWebP.OnConvertFinished.from(state)
                 }
@@ -174,6 +177,8 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         state, errorMessage = e.message ?: "Unknown error."
                     )
                 }
+            } finally {
+                webPEncoder.release()
             }
         }
         return sharedFlow
