@@ -2,11 +2,11 @@ package com.aureusapps.android.webpandroid.example.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.net.toUri
 import androidx.core.widget.NestedScrollView
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolveColorAttribute
@@ -16,13 +16,12 @@ import com.facebook.drawee.view.SimpleDraweeView
 import com.facebook.imagepipeline.request.ImageRequestBuilder
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
-import java.io.File
 
 @Suppress("NestedLambdaShadowedImplicitParameter")
 @SuppressLint("ViewConstructor")
 internal class WebPPreview(
     context: Context,
-    private val imagePath: String,
+    private val imageUri: Uri,
     private val imageWidth: Int,
     private val imageHeight: Int
 ) : CoordinatorLayout(context) {
@@ -87,8 +86,6 @@ internal class WebPPreview(
     }
 
     private fun loadImage() {
-        val imageFile = File(imagePath)
-        val imageUri = imageFile.toUri()
         val imageRequest = ImageRequestBuilder
             .newBuilderWithSource(imageUri)
             .build()

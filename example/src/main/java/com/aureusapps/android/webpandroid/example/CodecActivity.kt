@@ -1,5 +1,6 @@
 package com.aureusapps.android.webpandroid.example
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -18,10 +19,13 @@ import com.aureusapps.android.extensions.viewModels
 import com.aureusapps.android.styles.extensions.withBaseStyle
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.models.CodecViewModel
+import com.aureusapps.android.webpandroid.example.states.ConvertState
 import com.aureusapps.android.webpandroid.example.ui.ImageToWebPDataCollectView
+import com.aureusapps.android.webpandroid.example.ui.WebPPreview
 import com.aureusapps.android.webpandroid.example.ui.cards.ImageToWebPCardView
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
 @Suppress("NestedLambdaShadowedImplicitParameter")
@@ -117,6 +121,23 @@ class CodecActivity : AppCompatActivity() {
                 .convertStateFlow
                 .collect { state ->
                     imageToWebPCardView.setConvertState(state)
+                    when (state) {
+                        is ConvertState.ImageToWebP.OnConvertFinished -> {
+                            showWebPPreview(
+                                state.dstUri,
+                                state.dstImageWidth,
+                                state.dstImageHeight
+                            )
+                        }
+
+                        is ConvertState.ImageToWebP.OnConvertError -> {
+                            showSnackbar(state.errorMessage)
+                        }
+
+                        else -> {
+
+                        }
+                    }
                 }
         }
     }
@@ -154,6 +175,22 @@ class CodecActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    private fun showSnackbar(message: String) {
+        Snackbar.make(
+            findViewById(android.R.id.content),
+            message,
+            Snackbar.LENGTH_LONG
+        ).show()
+    }
+
+    private fun showWebPPreview(uri: Uri, width: Int, height: Int) {
+        val dialog = BottomSheetDialog(this)
+        dialog.setContentView(
+            WebPPreview(this, uri, width, height)
+        )
+        dialog.show()
     }
 
 }
