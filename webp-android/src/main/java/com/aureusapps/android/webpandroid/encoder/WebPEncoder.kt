@@ -30,10 +30,14 @@ class WebPEncoder(width: Int, height: Int) {
         progressListeners.remove(listener)
     }
 
-    private fun notifyProgressChanged(progress: Int) {
+    private fun notifyProgressChanged(progress: Int): Boolean {
+        var encode = true
         progressListeners.forEach {
-            it.onProgressChanged(progress)
+            if (!it.onProgressChanged(progress)) {
+                encode = false
+            }
         }
+        return encode
     }
 
     external fun encode(context: Context, srcUri: Uri, dstUri: Uri)

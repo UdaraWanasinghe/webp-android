@@ -19,15 +19,15 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_extractImages(
         jobject decodeListener
 ) {
     // load webp file data
-    uint8_t *fileData;
-    size_t fileSize;
-    if (readFromUri(env, &context, &sourceUri, &fileData, &fileSize)) {
+    uint8_t *file_data;
+    size_t file_size;
+    if (readFromUri(env, &context, &sourceUri, &file_data, &file_size)) {
         return;
     }
 
     // get webp file features
     WebPBitstreamFeatures features;
-    WebPGetFeatures(fileData, fileSize, &features);
+    WebPGetFeatures(file_data, file_size, &features);
 
     // get decode listener
     jclass decodeListenerClass = env->GetObjectClass(decodeListener);
@@ -57,8 +57,8 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_extractImages(
         // create decoder
         WebPData webPData;
         WebPDataInit(&webPData);
-        webPData.size = fileSize;
-        webPData.bytes = fileData;
+        webPData.size = file_size;
+        webPData.bytes = file_data;
         WebPAnimDecoder *animDecoder = WebPAnimDecoderNew(&webPData, &decoderOptions);
 
         // get extended info
@@ -110,7 +110,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_extractImages(
         // decode image
         int width;
         int height;
-        uint8_t *pixelData = WebPDecodeRGBA(fileData, fileSize, &width, &height);
+        uint8_t *pixelData = WebPDecodeRGBA(file_data, file_size, &width, &height);
         // create bitmap
         jobject bitmap = createBitmap(env, width, height, &pixelData);
         // submit frame
@@ -118,7 +118,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_extractImages(
         // release resources
         WebPFree(pixelData);
     }
-    free(fileData);
+    free(file_data);
 }
 
 extern "C"

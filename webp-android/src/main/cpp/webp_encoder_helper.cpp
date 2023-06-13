@@ -12,7 +12,7 @@ WebPPreset parseWebPPreset(JNIEnv *env, jobject *jpreset) {
 
     // check instance
     if (!env->IsInstanceOf(*jpreset, preset_class)) {
-        throw std::runtime_error("Given jpreset is not of type WebPPreset");
+        throw std::runtime_error("Given preset object is not of type WebPPreset");
     }
 
     // get ordinal
@@ -25,7 +25,7 @@ WebPPreset parseWebPPreset(JNIEnv *env, jobject *jpreset) {
     return WebPPreset(ordinal);
 }
 
-void parseWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config) {
+void applyWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config) {
     // lossless
     jobject lossless = getObjectField(env, jconfig, "lossless", "Ljava/lang/Integer;");
     if (lossless != nullptr) {
@@ -45,15 +45,15 @@ void parseWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config) {
     }
 
     // target size
-    jobject targetSize = getObjectField(env, jconfig, "targetSize", "Ljava/lang/Integer;");
-    if (targetSize != nullptr) {
-        config->target_size = getIntegerValue(env, &targetSize);
+    jobject target_size = getObjectField(env, jconfig, "targetSize", "Ljava/lang/Integer;");
+    if (target_size != nullptr) {
+        config->target_size = getIntegerValue(env, &target_size);
     }
 
     // target PSNR
-    jobject targetPSNR = getObjectField(env, jconfig, "targetPSNR", "Ljava/lang/Float;");
-    if (targetPSNR != nullptr) {
-        config->target_PSNR = getFloatValue(env, &targetPSNR);
+    jobject target_psnr = getObjectField(env, jconfig, "targetPSNR", "Ljava/lang/Float;");
+    if (target_psnr != nullptr) {
+        config->target_PSNR = getFloatValue(env, &target_psnr);
     }
 
     // segments
@@ -62,77 +62,77 @@ void parseWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config) {
         config->segments = getIntegerValue(env, &segments);
     }
 
-    // snsStrength
-    jobject snsStrength = getObjectField(env, jconfig, "snsStrength", "Ljava/lang/Integer;");
-    if (snsStrength != nullptr) {
-        config->sns_strength = getIntegerValue(env, &snsStrength);
+    // sns_strength
+    jobject sns_strength = getObjectField(env, jconfig, "snsStrength", "Ljava/lang/Integer;");
+    if (sns_strength != nullptr) {
+        config->sns_strength = getIntegerValue(env, &sns_strength);
     }
 
-    // filterStrength
-    jobject filterStrength = getObjectField(
+    // filter_strength
+    jobject filter_strength = getObjectField(
             env,
             jconfig,
             "filterStrength",
             "Ljava/lang/Integer;"
     );
-    if (filterStrength != nullptr) {
-        config->filter_strength = getIntegerValue(env, &filterStrength);
+    if (filter_strength != nullptr) {
+        config->filter_strength = getIntegerValue(env, &filter_strength);
     }
 
-    // filterSharpness
-    jobject filterSharpness = getObjectField(
+    // filter_sharpness
+    jobject filter_sharpness = getObjectField(
             env,
             jconfig,
             "filterSharpness",
             "Ljava/lang/Integer;"
     );
-    if (filterSharpness != nullptr) {
-        config->filter_sharpness = getIntegerValue(env, &filterSharpness);
+    if (filter_sharpness != nullptr) {
+        config->filter_sharpness = getIntegerValue(env, &filter_sharpness);
     }
 
-    // filterType
-    jobject filterType = getObjectField(env, jconfig, "filterType", "Ljava/lang/Integer;");
-    if (filterType != nullptr) {
-        config->filter_type = getIntegerValue(env, &filterType);
+    // filter_type
+    jobject filter_type = getObjectField(env, jconfig, "filterType", "Ljava/lang/Integer;");
+    if (filter_type != nullptr) {
+        config->filter_type = getIntegerValue(env, &filter_type);
     }
 
-    // autoFilter
-    jobject autoFilter = getObjectField(env, jconfig, "autoFilter", "Ljava/lang/Boolean;");
-    if (autoFilter != nullptr) {
-        config->autofilter = getBooleanValue(env, &autoFilter);
+    // auto_filter
+    jobject auto_filter = getObjectField(env, jconfig, "autoFilter", "Ljava/lang/Boolean;");
+    if (auto_filter != nullptr) {
+        config->autofilter = getBooleanValue(env, &auto_filter);
     }
 
-    // alphaCompression
-    jobject alphaCompression = getObjectField(
+    // alpha_compression
+    jobject alpha_compression = getObjectField(
             env,
             jconfig,
             "alphaCompression",
             "Ljava/lang/Integer;"
     );
-    if (alphaCompression != nullptr) {
-        config->alpha_compression = getIntegerValue(env, &alphaCompression);
+    if (alpha_compression != nullptr) {
+        config->alpha_compression = getIntegerValue(env, &alpha_compression);
     }
 
-    // alphaFiltering
-    jobject alphaFiltering = getObjectField(
+    // alpha_filtering
+    jobject alpha_filtering = getObjectField(
             env,
             jconfig,
             "alphaFiltering",
             "Ljava/lang/Integer;"
     );
-    if (alphaFiltering != nullptr) {
-        config->alpha_filtering = getIntegerValue(env, &alphaFiltering);
+    if (alpha_filtering != nullptr) {
+        config->alpha_filtering = getIntegerValue(env, &alpha_filtering);
     }
 
-    // alphaQuality
-    jobject alphaQuality = getObjectField(
+    // alpha_quality
+    jobject alpha_quality = getObjectField(
             env,
             jconfig,
             "alphaQuality",
             "Ljava/lang/Integer;"
     );
-    if (alphaQuality != nullptr) {
-        config->alpha_quality = getIntegerValue(env, &alphaQuality);
+    if (alpha_quality != nullptr) {
+        config->alpha_quality = getIntegerValue(env, &alpha_quality);
     }
 
     // pass
@@ -141,15 +141,15 @@ void parseWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config) {
         config->pass = getIntegerValue(env, &pass);
     }
 
-    // showCompressed
-    jobject showCompressed = getObjectField(
+    // show_compressed
+    jobject show_compressed = getObjectField(
             env,
             jconfig,
             "showCompressed",
             "Ljava/lang/Boolean;"
     );
-    if (showCompressed != nullptr) {
-        config->show_compressed = getBooleanValue(env, &showCompressed);
+    if (show_compressed != nullptr) {
+        config->show_compressed = getBooleanValue(env, &show_compressed);
     }
 
     // preprocessing
@@ -169,49 +169,49 @@ void parseWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config) {
         config->partitions = getIntegerValue(env, &partitions);
     }
 
-    // partitionLimit
-    jobject partitionLimit = getObjectField(
+    // partition_limit
+    jobject partition_limit = getObjectField(
             env,
             jconfig,
             "partitionLimit",
             "Ljava/lang/Integer;"
     );
-    if (partitionLimit != nullptr) {
-        config->partition_limit = getIntegerValue(env, &partitionLimit);
+    if (partition_limit != nullptr) {
+        config->partition_limit = getIntegerValue(env, &partition_limit);
     }
 
-    // emulateJPEGSize
-    jobject emulateJPEGSize = getObjectField(
+    // emulate_jpeg_size
+    jobject emulate_jpeg_size = getObjectField(
             env,
             jconfig,
             "emulateJPEGSize",
             "Ljava/lang/Boolean;"
     );
-    if (emulateJPEGSize != nullptr) {
-        config->emulate_jpeg_size = getBooleanValue(env, &emulateJPEGSize);
+    if (emulate_jpeg_size != nullptr) {
+        config->emulate_jpeg_size = getBooleanValue(env, &emulate_jpeg_size);
     }
 
-    // threadLevel
-    jobject threadLevel = getObjectField(env, jconfig, "threadLevel", "Ljava/lang/Integer;");
-    if (threadLevel != nullptr) {
-        config->thread_level = getIntegerValue(env, &threadLevel);
+    // thread_level
+    jobject thread_level = getObjectField(env, jconfig, "threadLevel", "Ljava/lang/Integer;");
+    if (thread_level != nullptr) {
+        config->thread_level = getIntegerValue(env, &thread_level);
     }
 
-    // lowMemory
-    jobject lowMemory = getObjectField(env, jconfig, "lowMemory", "Ljava/lang/Boolean;");
-    if (lowMemory != nullptr) {
-        config->low_memory = getBooleanValue(env, &lowMemory);
+    // low_memory
+    jobject low_memory = getObjectField(env, jconfig, "lowMemory", "Ljava/lang/Boolean;");
+    if (low_memory != nullptr) {
+        config->low_memory = getBooleanValue(env, &low_memory);
     }
 
-    // nearLossless
-    jobject nearLossless = getObjectField(
+    // near_lossless
+    jobject near_lossless = getObjectField(
             env,
             jconfig,
             "nearLossless",
             "Ljava/lang/Integer;"
     );
-    if (nearLossless != nullptr) {
-        config->near_lossless = getIntegerValue(env, &nearLossless);
+    if (near_lossless != nullptr) {
+        config->near_lossless = getIntegerValue(env, &near_lossless);
     }
 
     // exact
@@ -220,21 +220,21 @@ void parseWebPConfig(JNIEnv *env, jobject *jconfig, WebPConfig *config) {
         config->exact = getBooleanValue(env, &exact);
     }
 
-    // useDeltaPalette
-    jobject useDeltaPalette = getObjectField(
+    // use_delta_palette
+    jobject use_delta_palette = getObjectField(
             env,
             jconfig,
             "useDeltaPalette",
             "Ljava/lang/Boolean;"
     );
-    if (useDeltaPalette != nullptr) {
-        config->use_delta_palette = getBooleanValue(env, &useDeltaPalette);
+    if (use_delta_palette != nullptr) {
+        config->use_delta_palette = getBooleanValue(env, &use_delta_palette);
     }
 
-    // useSharpYUV
-    jobject useSharpYUV = getObjectField(env, jconfig, "useSharpYUV", "Ljava/lang/Boolean;");
-    if (useSharpYUV != nullptr) {
-        config->use_sharp_yuv = getBooleanValue(env, &useSharpYUV);
+    // use_sharp_yuv
+    jobject use_sharp_yuv = getObjectField(env, jconfig, "useSharpYUV", "Ljava/lang/Boolean;");
+    if (use_sharp_yuv != nullptr) {
+        config->use_sharp_yuv = getBooleanValue(env, &use_sharp_yuv);
     }
 
     // qmin
@@ -265,11 +265,15 @@ float parseWebPQuality(JNIEnv *env, jobject *jconfig) {
     return quality;
 }
 
-void parseEncoderOptions(JNIEnv *env, jobject *joptions, WebPAnimEncoderOptions *options) {
-    // minimizeSize
-    jobject minimizeSize = getObjectField(env, joptions, "minimizeSize", "Ljava/lang/Boolean;");
-    if (minimizeSize != nullptr) {
-        options->minimize_size = getBooleanValue(env, &minimizeSize);
+void parseEncoderOptions(
+        JNIEnv *env,
+        jobject *joptions,
+        WebPAnimEncoderOptions *options
+) {
+    // minimize_size
+    jobject minimize_size = getObjectField(env, joptions, "minimizeSize", "Ljava/lang/Boolean;");
+    if (minimize_size != nullptr) {
+        options->minimize_size = getBooleanValue(env, &minimize_size);
     }
 
     // kmin
@@ -297,55 +301,58 @@ void parseEncoderOptions(JNIEnv *env, jobject *joptions, WebPAnimEncoderOptions 
     }
 
     // anim params
-    WebPMuxAnimParams webPMuxAnimParams;
-    jobject animParams = getObjectField(
+    WebPMuxAnimParams params;
+    jobject jparams = getObjectField(
             env,
             joptions,
             "animParams",
             "Lcom/aureusapps/android/webpandroid/encoder/WebPMuxAnimParams;"
     );
-    if (animParams != nullptr) {
+    if (jparams != nullptr) {
         // bgColor
-        jobject backgroundColor = getObjectField(
+        jobject bg_color = getObjectField(
                 env,
-                &animParams,
+                &jparams,
                 "backgroundColor",
                 "Ljava/lang/Integer;"
         );
-        if (backgroundColor != nullptr) {
-            webPMuxAnimParams.bgcolor = getIntegerValue(env, &backgroundColor);
+        if (bg_color != nullptr) {
+            params.bgcolor = getIntegerValue(env, &bg_color);
         } else {
-            webPMuxAnimParams.bgcolor = 0;
+            params.bgcolor = 0;
         }
 
-        // loopCount
-        jobject loopCount = getObjectField(env, &animParams, "loopCount", "Ljava/lang/Integer;");
-        if (loopCount != nullptr) {
-            webPMuxAnimParams.loop_count = getIntegerValue(env, &loopCount);
+        // loop_count
+        jobject loop_count = getObjectField(env, &jparams, "loopCount", "Ljava/lang/Integer;");
+        if (loop_count != nullptr) {
+            params.loop_count = getIntegerValue(env, &loop_count);
         } else {
-            webPMuxAnimParams.loop_count = 1;
+            params.loop_count = 1;
         }
 
     } else {
-        webPMuxAnimParams.bgcolor = 0;
-        webPMuxAnimParams.loop_count = 1;
+        params.bgcolor = 0;
+        params.loop_count = 1;
     }
-    options->anim_params = webPMuxAnimParams;
+    options->anim_params = params;
 }
 
-void copyPixels(uint8_t *src, WebPPicture *pic) {
+void copyPixels(
+        const uint8_t *src,
+        WebPPicture *pic
+) {
     // Need to swap rb channels
     // Android bitmap -> int color = (A & 0xff) << 24 | (B & 0xff) << 16 | (G & 0xff) << 8 | (R & 0xff)
     // Encoder pixels -> int color = (A & 0xFF) << 24 | (R & 0xFF) << 16 | (G & 0xFF) << 8 | (B & 0xFF)
     auto *dst = reinterpret_cast<uint8_t *>(pic->argb);
-    uint8_t *end = src + pic->width * pic->height * 4;
+    const uint8_t *end = src + pic->width * pic->height * 4;
     while (src < end) {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
         *dst++ = src[0];
-            *dst++ = src[3];
-            *dst++ = src[2];
-            *dst++ = src[1];
-            src += 4;
+        *dst++ = src[3];
+        *dst++ = src[2];
+        *dst++ = src[1];
+        src += 4;
 #else
         *dst++ = src[2];
         *dst++ = src[1];

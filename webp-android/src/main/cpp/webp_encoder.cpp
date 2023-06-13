@@ -83,7 +83,7 @@ public:
      * @param webp_size Pointer to store the size of the WebP data.
      */
     void encode(
-            uint8_t *pixels,
+            const uint8_t *pixels,
             int width,
             int height,
             uint8_t **webp_data,
@@ -125,19 +125,22 @@ WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject *jencoder) {
 }
 
 int WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *) {
+    auto progress_hook_data = WebPEncoder::progressHookData;
+    if (progress_hook_data == nullptr) return 1;
+
     // Get current jvm environment
     JNIEnv *env;
-    int envStat = jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
+    int env_stat = jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
 
     // Attach to the current thread if not attached.
-    bool isAttached = false;
-    switch (envStat) {
+    bool is_attached = false;
+    switch (env_stat) {
         case JNI_EDETACHED:
             if (jvm->AttachCurrentThread(&env, nullptr) != 0) {
                 // failed to attach
                 return 0;
             } else {
-                isAttached = true;
+                is_attached = true;
             }
             break;
         case JNI_EVERSION:
@@ -149,46 +152,44 @@ int WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *) {
             return 0;
     }
 
-    int ret;
-    if (progressHookData != nullptr) {
-        jobject observable = progressHookData->progress_observable;
-        jmethodID progress_method_id = progressHookData->progress_method_id;
-        env->CallVoidMethod(observable, progress_method_id, percent);
-        ret = !progressHookData->cancel_flag;
-    } else {
-        ret = 0;
-    }
+    jobject observable = progress_hook_data->progress_observable;
+    jmethodID progress_method_id = progress_hook_data->progress_method_id;
+    jboolean continue_encoding = env->CallBooleanMethod(observable, progress_method_id, percent);
 
     // Detach current thread if attached
-    if (isAttached) {
+    if (is_attached) {
         jvm->DetachCurrentThread();
     }
-    return ret;
+
+    bool cancel_encode = progress_hook_data->cancel_flag;
+    return continue_encoding && !cancel_encode;
 }
 
 void WebPEncoder::setProgressHookData(JNIEnv *env, jobject *jencoder) {
     // Delete previous progress data
     delete progressHookData;
 
+    jclass encoder_class = env->FindClass(
+            "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
+    );
+    if (!env->IsInstanceOf(*jencoder, encoder_class)) {
+        env->DeleteLocalRef(encoder_class);
+        throw std::runtime_error("Given encoder object is not an instance of WebPEncoder.");
+    }
+    jmethodID progress_method_id = env->GetMethodID(
+            encoder_class,
+            "notifyProgressChanged",
+            "(I)Z"
+    );
+
     // Create new progress data
     auto *data = new ProgressHookData();
     data->progress_observable = env->NewWeakGlobalRef(*jencoder);
-    jclass jencoder_class = env->FindClass(
-            "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
-    );
-    if (!env->IsInstanceOf(*jencoder, jencoder_class)) {
-        throw std::runtime_error("Given jencoder is not an instance of WebPEncoder.");
-    }
-    jmethodID progress_method_id = env->GetMethodID(
-            jencoder_class,
-            "notifyProgressChanged",
-            "(I)V"
-    );
     data->progress_method_id = progress_method_id;
     progressHookData = data;
 
     // Delete local ref
-    env->DeleteLocalRef(jencoder_class);
+    env->DeleteLocalRef(encoder_class);
 }
 
 void WebPEncoder::clearProgressHookData(JNIEnv *env) {
@@ -206,11 +207,11 @@ void WebPEncoder::configure(WebPConfig config) {
 }
 
 void WebPEncoder::encode(
-        uint8_t *pixels,
-        int width,
-        int height,
-        uint8_t **webp_data,
-        size_t *webp_size
+        const uint8_t *const pixels,
+        const int width,
+        const int height,
+        uint8_t **const webp_data,
+        size_t *const webp_size
 ) {
     // Validate config (optional)
     if (!WebPValidateConfig(&webPConfig)) {
@@ -283,7 +284,7 @@ extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_create(
         JNIEnv *env,
-        jobject thiz,
+        jobject,
         jint width,
         jint height
 ) {
@@ -322,7 +323,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
         }
 
         // Parse WebPConfig values
-        parseWebPConfig(env, &jconfig, &config);
+        applyWebPConfig(env, &jconfig, &config);
 
         // Validate WebPConfig
         if (!WebPValidateConfig(&config)) {
@@ -420,7 +421,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         );
 
         // Write to dst uri
-        writeToUri(env, &jcontext, &jdst_uri, &webp_data, &webp_size);
+        writeToUri(env, &jcontext, &jdst_uri, webp_data, webp_size);
 
     } catch (std::runtime_error &e) {
         throwRuntimeException(env, e.what());
@@ -430,6 +431,10 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
 
     } catch (...) {
         throwRuntimeException(env, "Unknown failure occurred.");
+    }
+
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
     }
 
     // Release resources

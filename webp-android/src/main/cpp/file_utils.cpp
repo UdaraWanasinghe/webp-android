@@ -10,15 +10,20 @@
 #include <android/log.h>
 
 #include "include/file_utils.h"
+#include "include/exception_helper.h"
 
 #define LOG_TAG "FileUtils"
 
-int openFileDescriptor(JNIEnv *env, jobject *context, jobject *uri, const char *mode) {
-    jclass contextClass = env->FindClass("android/content/Context");
-    jclass uriClass = env->FindClass("android/net/Uri");
-
+int openFileDescriptor(
+        JNIEnv *env,
+        jobject *jcontext,
+        jobject *juri,
+        const char *mode
+) {
     // Verify context instance
-    if (!env->IsInstanceOf(*context, contextClass)) {
+    jclass context_class = env->FindClass("android/content/Context");
+    if (!env->IsInstanceOf(*jcontext, context_class)) {
+        env->DeleteLocalRef(context_class);
         __android_log_print(
                 ANDROID_LOG_ERROR,
                 LOG_TAG,
@@ -28,7 +33,10 @@ int openFileDescriptor(JNIEnv *env, jobject *context, jobject *uri, const char *
     }
 
     // Verify uri instance
-    if (!env->IsInstanceOf(*uri, uriClass)) {
+    jclass uri_class = env->FindClass("android/net/Uri");
+    if (!env->IsInstanceOf(*juri, uri_class)) {
+        env->DeleteLocalRef(context_class);
+        env->DeleteLocalRef(uri_class);
         __android_log_print(
                 ANDROID_LOG_ERROR,
                 LOG_TAG,
@@ -36,121 +44,110 @@ int openFileDescriptor(JNIEnv *env, jobject *context, jobject *uri, const char *
         );
         return -1;
     }
-    env->DeleteLocalRef(uriClass);
+    env->DeleteLocalRef(uri_class);
 
     // Get content resolver
-    jclass contentResolverClass = env->FindClass("android/content/ContentResolver");
-    jmethodID getContentResolverMethodID = env->GetMethodID(
-            contextClass,
+    jclass content_resolver_class = env->FindClass("android/content/ContentResolver");
+    jmethodID get_content_resolver_method_id = env->GetMethodID(
+            context_class,
             "getContentResolver",
             "()Landroid/content/ContentResolver;"
     );
-    env->DeleteLocalRef(contextClass);
-    jobject contentResolver = env->CallObjectMethod(*context, getContentResolverMethodID);
+    env->DeleteLocalRef(context_class);
+    jobject content_resolver = env->CallObjectMethod(*jcontext, get_content_resolver_method_id);
 
     // Open file descriptor
-    jmethodID openFileDescriptorMethodID = env->GetMethodID(
-            contentResolverClass,
+    jmethodID open_file_descriptor_method_id = env->GetMethodID(
+            content_resolver_class,
             "openFileDescriptor",
             "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
     );
-    env->DeleteLocalRef(contentResolverClass);
-    jstring readMode = env->NewStringUTF(mode);
-    jobject parcelFileDescriptor = env->CallObjectMethod(
-            contentResolver,
-            openFileDescriptorMethodID,
-            *uri,
-            readMode
+    env->DeleteLocalRef(content_resolver_class);
+    jstring read_mode = env->NewStringUTF(mode);
+    jobject parcel_file_descriptor = env->CallObjectMethod(
+            content_resolver,
+            open_file_descriptor_method_id,
+            *juri,
+            read_mode
     );
-    env->DeleteLocalRef(readMode);
+    env->DeleteLocalRef(read_mode);
 
     // Check for exception
     if (env->ExceptionCheck()) {
-        jthrowable exception = env->ExceptionOccurred();
-        jclass throwableClass = env->FindClass("java/lang/Throwable");
-        jmethodID messageMethodID = env->GetMethodID(
-                throwableClass,
-                "getMessage",
-                "()Ljava/lang/String;"
-        );
-        env->DeleteLocalRef(throwableClass);
-        auto messageString = (jstring) env->CallObjectMethod(exception, messageMethodID);
-        env->DeleteLocalRef(exception);
-        const char *messageChars = env->GetStringUTFChars(messageString, nullptr);
+        std::string message = getExceptionMessage(env, "%s");
         __android_log_print(
                 ANDROID_LOG_ERROR,
                 LOG_TAG,
                 "Failed to open file descriptor: %s",
-                messageChars
+                message.c_str()
         );
         env->ExceptionClear();
-        env->ReleaseStringUTFChars(messageString, messageChars);
-        env->DeleteLocalRef(messageString);
+        env->DeleteLocalRef(content_resolver);
         return -1;
     }
 
     // Get file descriptor
-    jclass fileDescriptorClass = env->FindClass("android/os/ParcelFileDescriptor");
-    jmethodID getFdMethodID = env->GetMethodID(fileDescriptorClass, "getFd", "()I");
-    jint fileDescriptor = env->CallIntMethod(parcelFileDescriptor, getFdMethodID);
-    env->DeleteLocalRef(fileDescriptorClass);
-    return fileDescriptor;
+    jclass file_descriptor_class = env->FindClass("android/os/ParcelFileDescriptor");
+    jmethodID get_fd_method_id = env->GetMethodID(file_descriptor_class, "getFd", "()I");
+    jint file_descriptor = env->CallIntMethod(parcel_file_descriptor, get_fd_method_id);
+    env->DeleteLocalRef(file_descriptor_class);
+
+    return file_descriptor;
 }
 
 int readFromUri(
         JNIEnv *env,
-        jobject *context,
-        jobject *uri,
-        uint8_t **fileData,
-        size_t *fileSize
+        jobject *jcontext,
+        jobject *juri,
+        uint8_t **const file_data,
+        size_t *const file_size
 ) {
-
-    jint fileDescriptor = openFileDescriptor(env, context, uri, "r");
-    if (fileDescriptor == -1) {
+    jint file_descriptor = openFileDescriptor(env, jcontext, juri, "r");
+    if (file_descriptor == -1) {
         return -1;
     }
 
     // Get file size
-    struct stat fileStat{};
-    if (fstat(fileDescriptor, &fileStat) == -1) {
-        close(fileDescriptor);
+    struct stat file_stat{};
+    if (fstat(file_descriptor, &file_stat) == -1) {
+        close(file_descriptor);
         return -1;
     }
 
     // Read from file descriptor
-    auto *buffer = reinterpret_cast<uint8_t *>(malloc(*fileSize));
-    ssize_t bytesRead = read(fileDescriptor, buffer, *fileSize);
-    close(fileDescriptor);
-    if (bytesRead != fileStat.st_size) {
+    auto *const buffer = reinterpret_cast<uint8_t *>(malloc(file_stat.st_size));
+    ssize_t bytes_read = read(file_descriptor, buffer, file_stat.st_size);
+    close(file_descriptor);
+    if (bytes_read != file_stat.st_size) {
         free(buffer);
         return -1;
     }
 
-    *fileData = buffer;
-    *fileSize = fileStat.st_size;
+    *file_data = buffer;
+    *file_size = file_stat.st_size;
     return 0;
 }
 
 int writeToUri(
         JNIEnv *env,
-        jobject *context,
-        jobject *uri,
-        uint8_t **fileData,
-        size_t *fileSize
+        jobject *jcontext,
+        jobject *juri,
+        const uint8_t *file_data,
+        size_t file_size
 ) {
-    int fileDescriptor = openFileDescriptor(env, context, uri, "w");
-    if (fileDescriptor == -1) {
+    int descriptor = openFileDescriptor(env, jcontext, juri, "w");
+    if (descriptor == -1) {
         return -1;
     }
 
-    int bytesWritten = write(fileDescriptor, *fileData, *fileSize);
-    close(fileDescriptor);
-    if (bytesWritten != *fileSize) {
+    int written = write(descriptor, file_data, file_size);
+    close(descriptor);
+    if (written != file_size) {
         __android_log_print(
                 ANDROID_LOG_ERROR,
                 LOG_TAG,
-                "Failed to write complete file to the given uri {bytesWritten: %d}",
-                bytesWritten
+                "Failed to write complete file to the given juri {written: %d}",
+                written
         );
         return -1;
     }
