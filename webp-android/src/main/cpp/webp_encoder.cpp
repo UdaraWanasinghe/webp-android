@@ -124,6 +124,44 @@ WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject *jencoder) {
     return reinterpret_cast<WebPEncoder *>(encoder_pointer);
 }
 
+void WebPEncoder::setProgressHookData(JNIEnv *env, jobject *jencoder) {
+    // Delete previous progress data
+    delete progressHookData;
+
+    jclass encoder_class = env->FindClass(
+            "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
+    );
+    if (!env->IsInstanceOf(*jencoder, encoder_class)) {
+        env->DeleteLocalRef(encoder_class);
+        throw std::runtime_error("Given encoder object is not an instance of WebPEncoder.");
+    }
+    jmethodID progress_method_id = env->GetMethodID(
+            encoder_class,
+            "notifyProgressChanged",
+            "(I)Z"
+    );
+
+    // Create new progress data
+    auto *data = new ProgressHookData();
+    data->progress_observable = env->NewWeakGlobalRef(*jencoder);
+    data->progress_method_id = progress_method_id;
+    progressHookData = data;
+
+    // Delete local ref
+    env->DeleteLocalRef(encoder_class);
+}
+
+void WebPEncoder::clearProgressHookData(JNIEnv *env) {
+    ProgressHookData *data = progressHookData;
+    if (data != nullptr) {
+        data->progress_method_id = nullptr;
+        env->DeleteWeakGlobalRef(data->progress_observable);
+        data->progress_observable = nullptr;
+        delete data;
+        progressHookData = nullptr;
+    }
+}
+
 int WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *) {
     auto progress_hook_data = WebPEncoder::progressHookData;
     if (progress_hook_data == nullptr) return 1;
@@ -163,43 +201,6 @@ int WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *) {
 
     bool cancel_encode = progress_hook_data->cancel_flag;
     return continue_encoding && !cancel_encode;
-}
-
-void WebPEncoder::setProgressHookData(JNIEnv *env, jobject *jencoder) {
-    // Delete previous progress data
-    delete progressHookData;
-
-    jclass encoder_class = env->FindClass(
-            "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
-    );
-    if (!env->IsInstanceOf(*jencoder, encoder_class)) {
-        env->DeleteLocalRef(encoder_class);
-        throw std::runtime_error("Given encoder object is not an instance of WebPEncoder.");
-    }
-    jmethodID progress_method_id = env->GetMethodID(
-            encoder_class,
-            "notifyProgressChanged",
-            "(I)Z"
-    );
-
-    // Create new progress data
-    auto *data = new ProgressHookData();
-    data->progress_observable = env->NewWeakGlobalRef(*jencoder);
-    data->progress_method_id = progress_method_id;
-    progressHookData = data;
-
-    // Delete local ref
-    env->DeleteLocalRef(encoder_class);
-}
-
-void WebPEncoder::clearProgressHookData(JNIEnv *env) {
-    ProgressHookData *data = progressHookData;
-    if (data != nullptr) {
-        data->progress_method_id = nullptr;
-        env->DeleteWeakGlobalRef(data->progress_observable);
-        data->progress_observable = nullptr;
-        delete progressHookData;
-    }
 }
 
 void WebPEncoder::configure(WebPConfig config) {
@@ -469,4 +470,5 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_release(JNIEnv *env,
     delete encoder;
 
     WebPEncoder::clearProgressHookData(env);
+    WebPEncoder::jvm = nullptr;
 }
