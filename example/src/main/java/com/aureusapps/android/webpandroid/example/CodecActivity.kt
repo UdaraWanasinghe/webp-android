@@ -21,8 +21,10 @@ import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.models.CodecViewModel
 import com.aureusapps.android.webpandroid.example.states.ConvertState
 import com.aureusapps.android.webpandroid.example.ui.ImageToWebPDataCollectView
+import com.aureusapps.android.webpandroid.example.ui.ImagesToAnimatedWebPDataCollectView
 import com.aureusapps.android.webpandroid.example.ui.WebPPreview
 import com.aureusapps.android.webpandroid.example.ui.cards.ImageToWebPCardView
+import com.aureusapps.android.webpandroid.example.ui.cards.ImagesToAnimatedWebPCardView
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
@@ -30,6 +32,10 @@ import kotlinx.coroutines.launch
 
 @Suppress("NestedLambdaShadowedImplicitParameter")
 class CodecActivity : AppCompatActivity() {
+
+    companion object {
+        private val ACTION_TAG = Object()
+    }
 
     private val codecViewModel by viewModels<CodecViewModel>()
 
@@ -40,7 +46,10 @@ class CodecActivity : AppCompatActivity() {
         ) { uri ->
             if (uri != null) {
                 codecViewModel.submitAction(
-                    UiAction.ImageToWebP.SelectSrcUri(uri)
+                    UiAction.ImageToWebP.SelectSrcUri(
+                        srcUri = uri,
+                        tag = ACTION_TAG
+                    )
                 )
             }
         }
@@ -50,7 +59,10 @@ class CodecActivity : AppCompatActivity() {
         ) { uri ->
             if (uri != null) {
                 codecViewModel.submitAction(
-                    UiAction.ImageToWebP.SelectDstUri(uri)
+                    UiAction.ImageToWebP.SelectDstUri(
+                        dstUri = uri,
+                        tag = ACTION_TAG
+                    )
                 )
             }
         }
@@ -75,7 +87,22 @@ class CodecActivity : AppCompatActivity() {
         val multipleImagePickerLauncher = registerForActivityResult(
             ActivityResultContracts.PickMultipleVisualMedia()
         ) { uris ->
+//            codecViewModel.submitAction(
+//                UiAction.ImagesToAnimatedWebP.SelectSrcUris(uris)
+//            )
+        }
 
+        fun openDataCollectBottomSheet() {
+            val dialog = BottomSheetDialog(this@CodecActivity)
+            dialog.setContentView(
+                ImagesToAnimatedWebPDataCollectView(
+                    this@CodecActivity,
+                    this@CodecActivity
+                ) {
+                    dialog.dismiss()
+                }
+            )
+            dialog.show()
         }
 
     }
@@ -84,6 +111,7 @@ class CodecActivity : AppCompatActivity() {
     private val imageToAnimatedWebP = ImageToAnimatedWebP()
 
     private lateinit var imageToWebPCardView: ImageToWebPCardView
+    private lateinit var imagesToAnimatedWebPCardView: ImagesToAnimatedWebPCardView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,15 +126,33 @@ class CodecActivity : AppCompatActivity() {
                     }
 
                     is UiAction.ImageToWebP.OpenSrcUriPicker -> {
-                        imageToWebP.srcUriPickerLauncher.launch(
-                            PickVisualMediaRequest(
-                                mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+                        imageToWebP
+                            .srcUriPickerLauncher
+                            .launch(
+                                PickVisualMediaRequest(
+                                    mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
                             )
-                        )
                     }
 
                     is UiAction.ImageToWebP.OpenDstUriPicker -> {
-                        imageToWebP.dstUriPickerLauncher.launch("static_image.webp")
+                        imageToWebP
+                            .dstUriPickerLauncher
+                            .launch("static_image.webp")
+                    }
+
+                    is UiAction.ImagesToAnimatedWebP.OpenDataCollectBottomSheet -> {
+                        imageToAnimatedWebP.openDataCollectBottomSheet()
+                    }
+
+                    is UiAction.ImagesToAnimatedWebP.OpenSrcUrisPicker -> {
+                        imageToAnimatedWebP
+                            .multipleImagePickerLauncher
+                            .launch(
+                                PickVisualMediaRequest(
+                                    mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
                     }
 
                     else -> {
@@ -125,12 +171,37 @@ class CodecActivity : AppCompatActivity() {
                         is ConvertState.ImageToWebP.OnConvertFinished -> {
                             showWebPPreview(
                                 state.dstUri,
-                                state.dstImageWidth,
-                                state.dstImageHeight
+                                state.imageWidth,
+                                state.imageHeight
                             )
                         }
 
                         is ConvertState.ImageToWebP.OnConvertError -> {
+                            showSnackbar(state.errorMessage)
+                        }
+
+                        else -> {
+
+                        }
+                    }
+                }
+        }
+        lifecycleScope.launch {
+            codecViewModel
+                .imageToAnimatedWebP
+                .convertStateFlow
+                .collect { state ->
+                    imagesToAnimatedWebPCardView.setConvertState(state)
+                    when (state) {
+                        is ConvertState.ImagesToAnimatedWebP.OnConvertFinished -> {
+                            showWebPPreview(
+                                state.dstUri,
+                                state.imageWidth,
+                                state.imageHeight
+                            )
+                        }
+
+                        is ConvertState.ImagesToAnimatedWebP.OnConvertError -> {
                             showSnackbar(state.errorMessage)
                         }
 
@@ -162,14 +233,27 @@ class CodecActivity : AppCompatActivity() {
 
                 }.addView {
                     // card view 1
-                    ImageToWebPCardView(it.context) { action ->
-                        codecViewModel.submitAction(action)
-                    }.apply {
+                    ImageToWebPCardView(it.context).apply {
                         imageToWebPCardView = this
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
                         ).apply {
                             setMargins(paddingLarge)
+                        }
+                    }
+                }.addView {
+                    // card view 2
+                    ImagesToAnimatedWebPCardView(it.context).apply {
+                        imagesToAnimatedWebPCardView = this
+                        layoutParams = LinearLayout.LayoutParams(
+                            MATCH_PARENT, WRAP_CONTENT
+                        ).apply {
+                            setMargins(
+                                paddingLarge,
+                                0,
+                                paddingLarge,
+                                paddingLarge
+                            )
                         }
                     }
                 }

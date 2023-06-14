@@ -385,13 +385,14 @@ JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         JNIEnv *env,
         jobject thiz,
+        jobject jcontext,
         jlong jtimestamp,
-        jobject jbitmap
+        jobject jsrc_uri
 ) {
-    bool bitmap_resized = false;
-    bool unlock_pixels = false;
+    jobject jbitmap = nullptr;
+
     try {
-        WebPAnimationEncoder *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
+        jbitmap = decodeBitmapUri(env, &jcontext, &jsrc_uri);
 
         // Get bitmap info
         AndroidBitmapInfo info;
@@ -404,6 +405,8 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
             throw std::runtime_error("Bitmap is not formatted with RGBA_8888 format.");
         }
 
+        WebPAnimationEncoder *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
+
         // Ensure if the bitmap size is matching
         if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
             jobject resized_bitmap = resizeBitmap(
@@ -412,10 +415,10 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
                     encoder->imageWidth,
                     encoder->imageHeight
             );
-            AndroidBitmap_getInfo(env, resized_bitmap, &info);
+            recycleBitmap(env, &jbitmap);
             env->DeleteLocalRef(jbitmap);
+            AndroidBitmap_getInfo(env, resized_bitmap, &info);
             jbitmap = resized_bitmap;
-            bitmap_resized = true;
         }
 
         // Retrieve bitmap pixels
@@ -423,7 +426,6 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         if (AndroidBitmap_lockPixels(env, jbitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
             throw std::runtime_error("Failed to get bitmap pixel data.");
         }
-        unlock_pixels = true;
 
         // Add frame
         encoder->addFrame(
@@ -432,12 +434,6 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
                 static_cast<int>(info.height),
                 static_cast<long>(jtimestamp)
         );
-
-        // Unlock pixels
-        if (AndroidBitmap_unlockPixels(env, jbitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
-            throw std::runtime_error("Failed to release bitmap pixels.");
-        }
-        unlock_pixels = false;
 
     } catch (std::runtime_error &e) {
         throwRuntimeException(env, e.what());
@@ -449,14 +445,16 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
         throwRuntimeException(env, "Unknown failure occurred.");
     }
 
-    // Unlock pixels
-    if (unlock_pixels) {
-        AndroidBitmap_unlockPixels(env, jbitmap);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
     }
 
-    // Recycler bitmap_resized bitmap
-    if (bitmap_resized) {
+    // Unlock pixels and recycle
+    if (jbitmap != nullptr) {
+        AndroidBitmap_unlockPixels(env, jbitmap);
         recycleBitmap(env, &jbitmap);
+        env->DeleteLocalRef(jbitmap);
+        jbitmap = nullptr;
     }
 }
 

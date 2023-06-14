@@ -1,7 +1,6 @@
 package com.aureusapps.android.webpandroid.encoder
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 
 class WebPAnimEncoder(
@@ -53,7 +52,7 @@ class WebPAnimEncoder(
         preset: WebPPreset? = null
     )
 
-    external fun addFrame(timestamp: Long, bitmap: Bitmap)
+    external fun addFrame(context: Context, timestamp: Long, srcUri: Uri)
 
     external fun assemble(context: Context, timestamp: Long, dstUri: Uri)
 

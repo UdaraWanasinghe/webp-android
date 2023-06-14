@@ -26,7 +26,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 
 @SuppressLint("ViewConstructor")
 @Suppress("NestedLambdaShadowedImplicitParameter")
-internal class ImageToWebPCardView(
+internal class ImagesToAnimatedWebPCardView(
     context: Context
 ) : MaterialCardView(
     context.withCardViewStyle_Elevated,
@@ -35,31 +35,32 @@ internal class ImageToWebPCardView(
 ) {
 
     private val codecViewModel by viewModels<CodecViewModel>()
-    private lateinit var progressIndicator: LinearProgressIndicator
     private lateinit var startButton: MaterialButton
-    private var currentState: ConvertState.ImageToWebP? = null
+    private lateinit var progressIndicator: LinearProgressIndicator
+    private var convertState: ConvertState.ImagesToAnimatedWebP? = null
 
     init {
         createContent()
     }
 
-    fun setConvertState(state: ConvertState.ImageToWebP) {
-        currentState = state
+    fun setConvertState(state: ConvertState.ImagesToAnimatedWebP) {
+        convertState = state
         when (state) {
-            is ConvertState.ImageToWebP.OnConvertStarted -> {
+            is ConvertState.ImagesToAnimatedWebP.OnConvertStarted -> {
                 updateStartButton()
             }
 
-            is ConvertState.ImageToWebP.OnConvertProgress -> {
-                progressIndicator.progress = state.progress
+            is ConvertState.ImagesToAnimatedWebP.OnConvertProgress -> {
+                progressIndicator.progress =
+                    (100 * state.currentFrame + state.frameProgress) / state.frameCount
             }
 
-            is ConvertState.ImageToWebP.OnConvertFinished -> {
+            is ConvertState.ImagesToAnimatedWebP.OnConvertFinished -> {
                 progressIndicator.progress = 100
                 updateStartButton()
             }
 
-            is ConvertState.ImageToWebP.OnConvertError -> {
+            is ConvertState.ImagesToAnimatedWebP.OnConvertError -> {
                 updateStartButton()
             }
         }
@@ -83,7 +84,7 @@ internal class ImageToWebPCardView(
                     setTextStyle(
                         resolveStyleAttribute(R.attr.textAppearanceHeadline6)
                     )
-                    text = context.getString(R.string.card1_title)
+                    text = context.getString(R.string.card2_title)
                     setPadding(paddingRegular)
                 }
 
@@ -96,7 +97,7 @@ internal class ImageToWebPCardView(
                     setTextStyle(
                         resolveStyleAttribute(R.attr.textAppearanceBody1)
                     )
-                    text = context.getString(R.string.card1_description)
+                    text = context.getString(R.string.card2_description)
                     setPadding(paddingRegular)
                 }
 
@@ -117,14 +118,14 @@ internal class ImageToWebPCardView(
                     setIconResource(R.drawable.ic_play)
                     setOnClickListener {
                         if (isConverting()) {
-                            currentState?.let { state ->
+                            convertState?.let { state ->
                                 if (state is ConvertState.CancellableState) {
                                     state.cancel()
                                 }
                             }
                         } else {
                             codecViewModel.submitAction(
-                                UiAction.ImageToWebP.OpenDataCollectBottomSheet()
+                                UiAction.ImagesToAnimatedWebP.OpenDataCollectBottomSheet()
                             )
                         }
                     }
@@ -153,8 +154,8 @@ internal class ImageToWebPCardView(
     }
 
     private fun isConverting(): Boolean {
-        return currentState is ConvertState.ImageToWebP.OnConvertStarted
-                || currentState is ConvertState.ImageToWebP.OnConvertProgress
+        return convertState is ConvertState.ImagesToAnimatedWebP.OnConvertStarted
+                || convertState is ConvertState.ImagesToAnimatedWebP.OnConvertProgress
     }
 
 }
