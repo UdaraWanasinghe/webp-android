@@ -2,19 +2,13 @@
 
 [![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml) ![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)
 
-
-
 ## What's Inside?
 
 ✔️ Encode a series of android bitmap images to an animated WebP image.
 
-
-
 ## TODO
 
 ✘ Extract images from an animated WebP image.
-
-
 
 ## Using
 
@@ -39,7 +33,8 @@
    )
    ```
 
-   See full list of encoder options [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPAnimEncoderOptions.kt).
+   See full list of encoder
+   options [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPAnimEncoderOptions.kt).
 
 3. Configure the encoder.
 
@@ -52,7 +47,8 @@
    )
    ```
 
-   See full list of encoder configurations [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPConfig.kt).
+   See full list of encoder
+   configurations [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPConfig.kt).
 
 4. Add encoder progress listener.
 
@@ -83,12 +79,11 @@
    encoder.release()
    ```
 
-
 ## Updating version
+
 ```shell
 ./gradlew updateVersion --code=xx --name=xx.xx.xx
 ```
-
 
 ## Appreciate my work!
 

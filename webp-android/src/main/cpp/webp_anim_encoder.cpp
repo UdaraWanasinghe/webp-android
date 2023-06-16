@@ -6,6 +6,7 @@
 #include <android/bitmap.h>
 #include <webp/encode.h>
 #include <webp/mux.h>
+#include <android/log.h>
 
 #include "include/webp_encoder_helper.h"
 #include "include/type_helper.h"
@@ -13,6 +14,7 @@
 #include "include/string_formatter.h"
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
+#include "include/error_codes.h"
 
 class WebPAnimationEncoder {
 
@@ -38,6 +40,7 @@ public:
 
     int imageWidth;
     int imageHeight;
+    WebPAnimEncoderOptions encoderOptions{};
 
     /**
      * Constructs a new instance of the WebPAnimationEncoder class with the specified width, height, and options.
@@ -53,10 +56,10 @@ public:
      * Retrieves the instance of the WebPAnimationEncoder associated with the given Java object.
      *
      * @param env The JNI environment.
-     * @param thiz The Java object representing the WebPAnimationEncoder.
+     * @param jencoder The Java object representing the WebPAnimationEncoder.
      * @return A pointer to the WebPAnimationEncoder instance.
      */
-    static WebPAnimationEncoder *getInstance(JNIEnv *env, jobject *thiz);
+    static WebPAnimationEncoder *getInstance(JNIEnv *env, jobject jencoder);
 
     /**
      * Notifies the progress change during the encoding process.
@@ -67,9 +70,18 @@ public:
      */
     static int notifyProgressChanged(int percent, const WebPPicture *picture);
 
-    static void setProgressHookData(JNIEnv *env, jobject *jencoder);
+    static void setProgressHookData(JNIEnv *env, jobject jencoder);
 
     static void clearProgressHookData(JNIEnv *env);
+
+    static void unlockAndRecycleBitmap(JNIEnv *env, jobject jbitmap);
+
+    static int addFrame(
+            JNIEnv *env,
+            jobject thiz,
+            jlong jtimestamp,
+            jobject jbitmap
+    );
 
     /**
      * Configures the WebP encoder with the specified configuration.
@@ -85,8 +97,10 @@ public:
      * @param width The width of the frame bitmap in pixels.
      * @param height The height of the frame bitmap in pixels.
      * @param timestamp The timestamp of the frame in milliseconds.
+     *
+     * @return 0 if success or error code if failed.
      */
-    void addFrame(uint8_t *pixels, int width, int height, long timestamp);
+    int addFrame(uint8_t *pixels, int width, int height, long timestamp);
 
     /**
      * Assembles the animation with the provided timestamp and saves it to the specified output path.
@@ -114,20 +128,21 @@ WebPAnimationEncoder::WebPAnimationEncoder(
     this->imageWidth = width;
     this->imageHeight = height;
     this->frameCount = 0;
-    this->webPAnimEncoder = WebPAnimEncoderNew(width, height, &options);
+    this->encoderOptions = options;
+    this->webPAnimEncoder = WebPAnimEncoderNew(width, height, &encoderOptions);
 }
 
-WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject *thiz) {
-    jclass encoder_class = env->FindClass(
+WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
+    jclass clazz = env->FindClass(
             "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder"
     );
-    if (!env->IsInstanceOf(*thiz, encoder_class)) {
-        env->DeleteLocalRef(encoder_class);
+    if (!env->IsInstanceOf(jencoder, clazz)) {
+        env->DeleteLocalRef(clazz);
         throw std::runtime_error("Given object is not an instance of WebPAnimEncoder.");
     }
-    env->DeleteLocalRef(encoder_class);
-    jfieldID pointer_field_id = env->GetFieldID(encoder_class, "nativePointer", "J");
-    jlong native_pointer = env->GetLongField(*thiz, pointer_field_id);
+    jfieldID pointer_field_id = env->GetFieldID(clazz, "nativePointer", "J");
+    jlong native_pointer = env->GetLongField(jencoder, pointer_field_id);
+    env->DeleteLocalRef(clazz);
     return reinterpret_cast<WebPAnimationEncoder *>(native_pointer);
 }
 
@@ -181,14 +196,14 @@ int WebPAnimationEncoder::notifyProgressChanged(int percent, const WebPPicture *
     return continue_encoding && !cancelEncode;
 }
 
-void WebPAnimationEncoder::setProgressHookData(JNIEnv *env, jobject *jencoder) {
+void WebPAnimationEncoder::setProgressHookData(JNIEnv *env, jobject jencoder) {
     // Delete previous progress data
     delete progressHookData;
 
     jclass encoder_class = env->FindClass(
             "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder"
     );
-    if (!env->IsInstanceOf(*jencoder, encoder_class)) {
+    if (!env->IsInstanceOf(jencoder, encoder_class)) {
         env->DeleteLocalRef(encoder_class);
         throw std::runtime_error("Given encoder object is not an instance of WebPAnimEncoder.");
     }
@@ -200,7 +215,7 @@ void WebPAnimationEncoder::setProgressHookData(JNIEnv *env, jobject *jencoder) {
 
     // Create new progress data
     auto *data = new ProgressHookData();
-    data->progress_observable = env->NewWeakGlobalRef(*jencoder);
+    data->progress_observable = env->NewWeakGlobalRef(jencoder);
     data->progress_method_id = progress_method_id;
     progressHookData = data;
 
@@ -218,11 +233,88 @@ void WebPAnimationEncoder::clearProgressHookData(JNIEnv *env) {
     }
 }
 
+void WebPAnimationEncoder::unlockAndRecycleBitmap(JNIEnv *env, jobject jbitmap) {
+    if (!isObjectNull(env, jbitmap)) {
+        AndroidBitmap_unlockPixels(env, jbitmap);
+        recycleBitmap(env, jbitmap);
+        env->DeleteLocalRef(jbitmap);
+    }
+}
+
+int WebPAnimationEncoder::addFrame(
+        JNIEnv *env,
+        jobject thiz,
+        jlong jtimestamp,
+        jobject jbitmap
+) {
+    bool bitmap_resized = false;
+
+    // Get bitmap info
+    AndroidBitmapInfo info;
+    if (AndroidBitmap_getInfo(env, jbitmap, &info) < 0) {
+        return ERROR_GET_BITMAP_INFO;
+    }
+
+    // Ensure if the bitmap is RGBA_8888 format
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        return ERROR_INVALID_BITMAP_FORMAT;
+    }
+
+    auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
+    if (encoder == nullptr) {
+        return ERROR_NULL_ENCODER;
+    }
+
+    // Ensure if the bitmap size is matching
+    if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
+        // Resize
+        jbitmap = resizeBitmap(
+                env,
+                jbitmap,
+                encoder->imageWidth,
+                encoder->imageHeight
+        );
+        // Check null
+        if (isObjectNull(env, jbitmap)) {
+            throw std::runtime_error("Failed to resize bitmap.");
+        }
+        // Get new info
+        AndroidBitmap_getInfo(env, jbitmap, &info);
+        bitmap_resized = true;
+    }
+
+    // Retrieve bitmap pixels
+    void *pixels;
+    if (AndroidBitmap_lockPixels(env, jbitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        throw std::runtime_error("Failed to get bitmap pixel data.");
+    }
+
+    try {
+        // Add frame
+        encoder->addFrame(
+                static_cast<uint8_t *>(pixels),
+                static_cast<int>(info.width),
+                static_cast<int>(info.height),
+                static_cast<long>(jtimestamp)
+        );
+
+    } catch (std::exception &e) {
+
+    }
+
+    AndroidBitmap_unlockPixels(env, jbitmap);
+    if (bitmap_resized) {
+
+
+    } else {
+    }
+}
+
 void WebPAnimationEncoder::configure(WebPConfig config) {
     webPConfig = config;
 }
 
-void WebPAnimationEncoder::addFrame(
+int WebPAnimationEncoder::addFrame(
         uint8_t *pixels,
         int width,
         int height,
@@ -302,35 +394,25 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
         jint jheight,
         jobject joptions
 ) {
-    try {
-        // Set jvm instance
-        env->GetJavaVM(&WebPAnimationEncoder::jvm);
+    // Set jvm instance
+    env->GetJavaVM(&WebPAnimationEncoder::jvm);
 
-        WebPAnimationEncoder::setProgressHookData(env, &thiz);
+    WebPAnimationEncoder::setProgressHookData(env, thiz);
 
-        // Create encoder options
-        WebPAnimEncoderOptions options;
-        if (!WebPAnimEncoderOptionsInit(&options)) {
-            throw std::runtime_error("Version mismatch.");
-        }
-        parseEncoderOptions(env, &joptions, &options);
-
-        // Create encoder
-        auto *encoder = new WebPAnimationEncoder(jwidth, jheight, options);
-
-        // Return pointer
-        return reinterpret_cast<jlong>(encoder);
-
-    } catch (std::runtime_error &e) {
-        throwRuntimeException(env, e.what());
-
-    } catch (std::exception &e) {
-        throwRuntimeException(env, e.what());
-
-    } catch (...) {
-        throwRuntimeException(env, "Unknown failure occurred.");
+    // Create encoder options
+    WebPAnimEncoderOptions options;
+    if (!WebPAnimEncoderOptionsInit(&options)) {
+        throw std::runtime_error("Version mismatch.");
     }
-    return 0;
+    if (!isObjectNull(env, joptions)) {
+        parseEncoderOptions(env, joptions, &options);
+    }
+
+    // Create encoder
+    auto *encoder = new WebPAnimationEncoder(jwidth, jheight, options);
+
+    // Return pointer
+    return reinterpret_cast<jlong>(encoder);
 }
 
 extern "C"
@@ -342,6 +424,11 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
         jobject jpreset
 ) {
     try {
+        auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
+        if (encoder == nullptr) {
+            throw std::runtime_error("Encoder cannot be null.");
+        }
+
         // Init config
         WebPConfig config;
         if (!WebPConfigInit(&config)) {
@@ -349,28 +436,24 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
         }
 
         // Apply preset
-        if (jpreset != nullptr) {
+        if (!isObjectNull(env, jpreset)) {
             // Get quality
-            float quality = parseWebPQuality(env, &jconfig);
+            float quality = parseWebPQuality(env, jconfig);
 
             // Parse preset
-            WebPPreset preset = parseWebPPreset(env, &jpreset);
+            WebPPreset preset = parseWebPPreset(env, jpreset);
 
             // Apply preset to the config
             if (!WebPConfigPreset(&config, preset, quality)) {
-                throw std::runtime_error("Failed to validate WebPConfig.");
+                throw std::runtime_error("Invalid WebPConfig.");
             }
         }
 
         // Parse config
-        applyWebPConfig(env, &jconfig, &config);
+        applyWebPConfig(env, jconfig, &config);
 
         // Apply config to the encoder
-        auto *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
         encoder->configure(config);
-
-    } catch (std::runtime_error &e) {
-        throwRuntimeException(env, e.what());
 
     } catch (std::exception &e) {
         throwRuntimeException(env, e.what());
@@ -382,7 +465,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__Landroid_content_Context_2JLandroid_net_Uri_2(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
@@ -392,69 +475,56 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame(
     jobject jbitmap = nullptr;
 
     try {
-        jbitmap = decodeBitmapUri(env, &jcontext, &jsrc_uri);
+        jbitmap = decodeBitmapUri(env, jcontext, jsrc_uri);
 
-        // Get bitmap info
-        AndroidBitmapInfo info;
-        if (AndroidBitmap_getInfo(env, jbitmap, &info) < 0) {
-            throw std::runtime_error("Could not retrieve bitmap info.");
-        }
-
-        // Ensure if the bitmap is RGBA_8888 format
-        if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-            throw std::runtime_error("Bitmap is not formatted with RGBA_8888 format.");
-        }
-
-        WebPAnimationEncoder *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
-
-        // Ensure if the bitmap size is matching
-        if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
-            jobject resized_bitmap = resizeBitmap(
-                    env,
-                    &jbitmap,
-                    encoder->imageWidth,
-                    encoder->imageHeight
+        if (isObjectNull(env, jbitmap)) {
+            auto uri_string = uriToString(env, jsrc_uri);
+            std::string message = formatString(
+                    "Failed to decode bitmap uri {uri: %s}",
+                    uri_string.c_str()
             );
-            recycleBitmap(env, &jbitmap);
-            env->DeleteLocalRef(jbitmap);
-            AndroidBitmap_getInfo(env, resized_bitmap, &info);
-            jbitmap = resized_bitmap;
+            throw std::runtime_error(message);
         }
 
-        // Retrieve bitmap pixels
-        void *pixels;
-        if (AndroidBitmap_lockPixels(env, jbitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
-            throw std::runtime_error("Failed to get bitmap pixel data.");
-        }
-
-        // Add frame
-        encoder->addFrame(
-                static_cast<uint8_t *>(pixels),
-                static_cast<int>(info.width),
-                static_cast<int>(info.height),
-                static_cast<long>(jtimestamp)
+        WebPAnimationEncoder::addFrame(
+                env,
+                thiz,
+                jtimestamp,
+                jbitmap
         );
+        WebPAnimationEncoder::unlockAndRecycleBitmap(env, jbitmap);
 
-    } catch (std::runtime_error &e) {
+    } catch (std::exception &e) {
+        WebPAnimationEncoder::unlockAndRecycleBitmap(env, jbitmap);
         throwRuntimeException(env, e.what());
+
+    } catch (...) {
+        WebPAnimationEncoder::unlockAndRecycleBitmap(env, jbitmap);
+        throwRuntimeException(env, "Unknown failure occurred.");
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__JLandroid_graphics_Bitmap_2(
+        JNIEnv *env,
+        jobject thiz,
+        jlong jtimestamp,
+        jobject jsrc_bitmap
+) {
+    try {
+        WebPAnimationEncoder::addFrame(
+                env,
+                thiz,
+                jtimestamp,
+                jsrc_bitmap
+        );
 
     } catch (std::exception &e) {
         throwRuntimeException(env, e.what());
 
     } catch (...) {
         throwRuntimeException(env, "Unknown failure occurred.");
-    }
-
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-    }
-
-    // Unlock pixels and recycle
-    if (jbitmap != nullptr) {
-        AndroidBitmap_unlockPixels(env, jbitmap);
-        recycleBitmap(env, &jbitmap);
-        env->DeleteLocalRef(jbitmap);
-        jbitmap = nullptr;
     }
 }
 
@@ -467,33 +537,38 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
         jlong jtimestamp,
         jobject jdst_uri
 ) {
-    auto *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
-    if (encoder != nullptr) {
-        try {
-            // Assemble animation
-            const uint8_t *webp_data;
-            size_t webp_size;
-            encoder->assemble(
-                    static_cast<long>(jtimestamp),
-                    &webp_data,
-                    &webp_size
-            );
+    const uint8_t *webp_data = nullptr;
+    size_t webp_size = 0;
 
-            int error = writeToUri(env, &jcontext, &jdst_uri, webp_data, webp_size);
-            WebPFree((void *) webp_data);
-            if (error) {
-                throw std::runtime_error("Failed to write to the destination Uri.");
-            }
-
-        } catch (std::runtime_error &e) {
-            throwRuntimeException(env, e.what());
-
-        } catch (std::exception &e) {
-            throwRuntimeException(env, e.what());
-
-        } catch (...) {
-            throwRuntimeException(env, "Unknown failure occurred.");
+    try {
+        auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
+        if (encoder == nullptr) {
+            throw std::runtime_error("Encoder cannot be null.");
         }
+
+        // Assemble animation
+        encoder->assemble(
+                static_cast<long>(jtimestamp),
+                &webp_data,
+                &webp_size
+        );
+
+        int error = writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
+        WebPFree((void *) webp_data);
+        webp_data = nullptr;
+        if (error) {
+            throw std::runtime_error("Failed to write to the destination Uri.");
+        }
+
+    } catch (std::exception &e) {
+        WebPFree((void *) webp_data);
+        webp_data = nullptr;
+        throwRuntimeException(env, e.what());
+
+    } catch (...) {
+        WebPFree((void *) webp_data);
+        webp_data = nullptr;
+        throwRuntimeException(env, "Unknown failure occurred.");
     }
 }
 
@@ -503,9 +578,9 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_cancel(
         JNIEnv *,
         jobject
 ) {
-    WebPAnimationEncoder::ProgressHookData *hookData = WebPAnimationEncoder::progressHookData;
-    if (hookData != nullptr) {
-        hookData->cancel_flag = true;
+    auto *progress_hook_data = WebPAnimationEncoder::progressHookData;
+    if (progress_hook_data != nullptr) {
+        progress_hook_data->cancel_flag = true;
     }
 }
 
@@ -515,8 +590,10 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
         JNIEnv *env,
         jobject thiz
 ) {
-    auto *encoder = WebPAnimationEncoder::getInstance(env, &thiz);
-    if (encoder != nullptr) {
+    auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
+    if (encoder == nullptr) return;
+
+    try {
         // Release resources
         encoder->release();
 
@@ -530,5 +607,8 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
 
         // Delete encoder
         delete encoder;
+
+    } catch (...) {
+
     }
 }

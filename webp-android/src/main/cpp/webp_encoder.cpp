@@ -116,12 +116,14 @@ WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject *jencoder) {
     );
     // Check if an instance of WebPEncoder
     if (!env->IsInstanceOf(*jencoder, clazz)) {
+        env->DeleteLocalRef(clazz);
         throw std::runtime_error("Given jencoder is not of type WebPEncoder.");
     }
     // Get encoder pointer
     jfieldID pointer_field_id = env->GetFieldID(clazz, "nativePointer", "J");
-    jlong encoder_pointer = env->GetLongField(*jencoder, pointer_field_id);
-    return reinterpret_cast<WebPEncoder *>(encoder_pointer);
+    jlong native_pointer = env->GetLongField(*jencoder, pointer_field_id);
+    env->DeleteLocalRef(clazz);
+    return reinterpret_cast<WebPEncoder *>(native_pointer);
 }
 
 void WebPEncoder::setProgressHookData(JNIEnv *env, jobject *jencoder) {
@@ -286,14 +288,14 @@ JNIEXPORT jlong JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_create(
         JNIEnv *env,
         jobject,
-        jint width,
-        jint height
+        jint jwidth,
+        jint jheight
 ) {
     // Set jvm instance
     env->GetJavaVM(&WebPEncoder::jvm);
 
     // Create native encoder
-    auto *encoder = new WebPEncoder(width, height);
+    auto *encoder = new WebPEncoder(jwidth, jheight);
     return reinterpret_cast<jlong>(encoder);
 }
 
@@ -313,18 +315,18 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
         }
 
         // Get quality
-        float quality = parseWebPQuality(env, &jconfig);
+        float quality = parseWebPQuality(env, jconfig);
 
         // Parse WebPPreset if not null
         if (jpreset != nullptr) {
-            WebPPreset preset = parseWebPPreset(env, &jpreset);
+            WebPPreset preset = parseWebPPreset(env, jpreset);
             if (!WebPConfigPreset(&config, preset, quality)) {
                 throw std::runtime_error("Failed to validate WebPConfig");
             }
         }
 
         // Parse WebPConfig values
-        applyWebPConfig(env, &jconfig, &config);
+        applyWebPConfig(env, jconfig, &config);
 
         // Validate WebPConfig
         if (!WebPValidateConfig(&config)) {
@@ -364,15 +366,11 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
     try {
         auto *encoder = WebPEncoder::getInstance(env, &thiz);
 
-        jbitmap = decodeBitmapUri(env, &jcontext, &jsrc_uri);
+        jbitmap = decodeBitmapUri(env, jcontext, jsrc_uri);
 
         // Check for exception
         if (env->ExceptionCheck()) {
-            std::string message = getExceptionMessage(
-                    env,
-                    "Image data could not be decoded: %s"
-            );
-            env->ExceptionClear();
+            std::string message = getExceptionMessage(env, "Image data could not be decoded: %s");
             throw std::runtime_error(message);
         }
 
@@ -390,11 +388,11 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
             jobject resized_bitmap = resizeBitmap(
                     env,
-                    &jbitmap,
+                    jbitmap,
                     encoder->imageWidth,
                     encoder->imageHeight
             );
-            recycleBitmap(env, &jbitmap);
+            recycleBitmap(env, jbitmap);
             env->DeleteLocalRef(jbitmap);
             jbitmap = resized_bitmap;
             AndroidBitmap_getInfo(env, resized_bitmap, &info);
@@ -422,7 +420,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
         );
 
         // Write to dst uri
-        writeToUri(env, &jcontext, &jdst_uri, webp_data, webp_size);
+        writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
 
     } catch (std::runtime_error &e) {
         throwRuntimeException(env, e.what());
@@ -441,7 +439,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode(
     // Release resources
     if (jbitmap != nullptr) {
         AndroidBitmap_unlockPixels(env, jbitmap);
-        recycleBitmap(env, &jbitmap);
+        recycleBitmap(env, jbitmap);
         env->DeleteLocalRef(jbitmap);
     }
     WebPFree(webp_data);

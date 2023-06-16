@@ -12,9 +12,5 @@ ext {
     libwebp_path = "../../../../../libwebp"
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
-
 apply from: "${rootDir}/scripts/publish-root.gradle"
 apply from: "${rootDir}/scripts/update-version.gradle"

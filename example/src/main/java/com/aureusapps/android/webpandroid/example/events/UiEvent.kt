@@ -17,6 +17,7 @@ internal interface UiEvent {
             val imageWidth: Int,
             val imageHeight: Int,
             val convertQuality: Float,
+            val webPPreset: WebPPreset?,
             override val actionTag: Any? = null
         ) : ImageToWebP()
 
@@ -31,7 +32,7 @@ internal interface UiEvent {
         ) : ImageToWebP()
 
         data class OnConvertQualitySelected(
-            val quality: Float,
+            val convertQuality: Float,
             override val actionTag: Any? = null
         ) : ImageToWebP()
 
@@ -46,7 +47,7 @@ internal interface UiEvent {
         ) : ImageToWebP()
 
         data class OnConvertPresetSelected(
-            val preset: WebPPreset,
+            val webPPreset: WebPPreset,
             override val actionTag: Any? = null
         ) : ImageToWebP()
 
@@ -63,6 +64,7 @@ internal interface UiEvent {
         data class OnDataCollectStarted(
             val srcUris: List<Uri>,
             val dstUri: Uri,
+            val frameDuration: Int,
             val convertQuality: Float,
             val imageWidth: Int,
             val imageHeight: Int,
@@ -80,8 +82,13 @@ internal interface UiEvent {
             override val actionTag: Any? = null
         ) : ImagesToAnimatedWebP()
 
+        data class OnFrameDurationSelected(
+            val frameDuration: Int,
+            override val actionTag: Any? = null
+        ) : ImagesToAnimatedWebP()
+
         data class OnConvertQualitySelected(
-            val quality: Float,
+            val convertQuality: Float,
             override val actionTag: Any? = null
         ) : ImagesToAnimatedWebP()
 
@@ -96,7 +103,7 @@ internal interface UiEvent {
         ) : ImagesToAnimatedWebP()
 
         data class OnWebPPresetSelected(
-            val preset: WebPPreset,
+            val webPPreset: WebPPreset,
             override val actionTag: Any? = null
         ) : ImagesToAnimatedWebP()
 

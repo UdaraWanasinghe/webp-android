@@ -16,7 +16,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
@@ -47,15 +46,24 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                     is UiAction.ImageToWebP.OpenDataCollectBottomSheet -> {
                         _uiEventFlow.emit(
                             UiEvent.ImageToWebP.OnDataCollectStarted(
-                                srcUri = data.srcUri,
-                                dstUri = data.dstUri,
-                                imageWidth = data.imageWidth,
-                                imageHeight = data.imageHeight,
-                                convertQuality = data.convertQuality,
+                                srcUri = action.defaultSrcUri,
+                                dstUri = action.defaultDstUri,
+                                imageWidth = action.defaultImageWidth,
+                                imageHeight = action.defaultImageHeight,
+                                convertQuality = action.defaultConvertQuality,
+                                webPPreset = action.defaultWebPPreset,
                                 actionTag = action.tag
                             )
                         )
-                        ConvertData.ImageToWebP()
+                        ConvertData.ImageToWebP(
+                            srcUri = action.defaultSrcUri,
+                            dstUri = action.defaultDstUri,
+                            imageWidth = action.defaultImageWidth,
+                            imageHeight = action.defaultImageHeight,
+                            convertQuality = action.defaultConvertQuality,
+                            webPPreset = action.defaultWebPPreset,
+                            startConvert = action.startConvert
+                        )
                     }
 
                     is UiAction.ImageToWebP.SelectSrcUri -> {
@@ -65,7 +73,9 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                                 actionTag = action.tag
                             )
                         )
-                        data.copy(srcUri = action.srcUri)
+                        data.copy(
+                            srcUri = action.srcUri
+                        )
                     }
 
                     is UiAction.ImageToWebP.SelectDstUri -> {
@@ -75,18 +85,20 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                                 actionTag = action.tag
                             )
                         )
-                        data.copy(dstUri = action.dstUri)
+                        data.copy(
+                            dstUri = action.dstUri
+                        )
                     }
 
                     is UiAction.ImageToWebP.SelectConvertQuality -> {
                         _uiEventFlow.emit(
                             UiEvent.ImageToWebP.OnConvertQualitySelected(
-                                quality = action.quality,
+                                convertQuality = action.convertQuality,
                                 actionTag = action.tag
                             )
                         )
                         data.copy(
-                            convertQuality = action.quality
+                            convertQuality = action.convertQuality
                         )
                     }
 
@@ -121,7 +133,9 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                                     actionTag = action.tag
                                 )
                             )
-                            data.copy(startConvert = true)
+                            data.copy(
+                                startConvert = true
+                            )
                         } else {
                             data
                         }
@@ -155,21 +169,36 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                     is UiAction.ImagesToAnimatedWebP.OpenDataCollectBottomSheet -> {
                         _uiEventFlow.emit(
                             UiEvent.ImagesToAnimatedWebP.OnDataCollectStarted(
-                                srcUris = data.srcUris,
-                                dstUri = data.dstUri,
-                                convertQuality = data.convertQuality,
-                                imageWidth = data.imageWidth,
-                                imageHeight = data.imageHeight,
-                                webPPreset = data.webPPreset,
-
-                                )
+                                srcUris = action.defaultSrcUris,
+                                dstUri = action.defaultDstUri,
+                                convertQuality = action.defaultConvertQuality,
+                                frameDuration = action.defaultFrameDuration,
+                                imageWidth = action.defaultImageWidth,
+                                imageHeight = action.defaultImageHeight,
+                                webPPreset = action.defaultWebPPreset,
+                                actionTag = action.tag
+                            )
                         )
-                        ConvertData.ImagesToAnimatedWebP()
+                        ConvertData.ImagesToAnimatedWebP(
+                            srcUris = action.defaultSrcUris,
+                            dstUri = action.defaultDstUri,
+                            convertQuality = action.defaultConvertQuality,
+                            frameDuration = action.defaultFrameDuration,
+                            imageWidth = action.defaultImageWidth,
+                            imageHeight = action.defaultImageHeight,
+                            webPPreset = action.defaultWebPPreset,
+                            startConvert = action.startConvert
+                        )
                     }
 
                     is UiAction.ImagesToAnimatedWebP.SelectSrcUris -> {
                         _uiEventFlow.emit(
-                            UiEvent.ImagesToAnimatedWebP.OnSrcUrisSelected(action.srcUris)
+                            UiEvent
+                                .ImagesToAnimatedWebP
+                                .OnSrcUrisSelected(
+                                    srcUris = action.srcUris,
+                                    actionTag = action.tag
+                                )
                         )
                         data.copy(
                             srcUris = action.srcUris
@@ -178,7 +207,12 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
 
                     is UiAction.ImagesToAnimatedWebP.SelectDstUri -> {
                         _uiEventFlow.emit(
-                            UiEvent.ImagesToAnimatedWebP.OnDstUriSelected(action.dstUri)
+                            UiEvent
+                                .ImagesToAnimatedWebP
+                                .OnDstUriSelected(
+                                    dstUri = action.dstUri,
+                                    actionTag = action.tag
+                                )
                         )
                         data.copy(
                             dstUri = action.dstUri
@@ -187,18 +221,40 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
 
                     is UiAction.ImagesToAnimatedWebP.SelectConvertQuality -> {
                         _uiEventFlow.emit(
-                            UiEvent.ImagesToAnimatedWebP.OnConvertQualitySelected(action.quality)
+                            UiEvent
+                                .ImagesToAnimatedWebP
+                                .OnConvertQualitySelected(
+                                    convertQuality = action.convertQuality,
+                                    actionTag = action.tag
+                                )
                         )
                         data.copy(
-                            convertQuality = action.quality
+                            convertQuality = action.convertQuality
+                        )
+                    }
+
+                    is UiAction.ImagesToAnimatedWebP.SelectFrameDuration -> {
+                        _uiEventFlow.emit(
+                            UiEvent
+                                .ImagesToAnimatedWebP
+                                .OnFrameDurationSelected(
+                                    frameDuration = action.frameDuration,
+                                    actionTag = action.tag
+                                )
+                        )
+                        data.copy(
+                            frameDuration = action.frameDuration
                         )
                     }
 
                     is UiAction.ImagesToAnimatedWebP.SelectImageWidth -> {
                         _uiEventFlow.emit(
-                            UiEvent.ImagesToAnimatedWebP.OnImageWidthSelected(
-                                imageWidth = action.imageWidth
-                            )
+                            UiEvent
+                                .ImagesToAnimatedWebP
+                                .OnImageWidthSelected(
+                                    imageWidth = action.imageWidth,
+                                    actionTag = action.tag
+                                )
                         )
                         data.copy(
                             imageWidth = action.imageWidth
@@ -207,9 +263,12 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
 
                     is UiAction.ImagesToAnimatedWebP.SelectImageHeight -> {
                         _uiEventFlow.emit(
-                            UiEvent.ImagesToAnimatedWebP.OnImageHeightSelected(
-                                imageHeight = action.imageHeight
-                            )
+                            UiEvent
+                                .ImagesToAnimatedWebP
+                                .OnImageHeightSelected(
+                                    imageHeight = action.imageHeight,
+                                    actionTag = action.tag
+                                )
                         )
                         data.copy(
                             imageHeight = action.imageHeight
@@ -218,19 +277,28 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
 
                     is UiAction.ImagesToAnimatedWebP.SelectWebPPreset -> {
                         _uiEventFlow.emit(
-                            UiEvent.ImagesToAnimatedWebP.OnWebPPresetSelected(action.preset)
+                            UiEvent
+                                .ImagesToAnimatedWebP
+                                .OnWebPPresetSelected(
+                                    webPPreset = action.webPPreset,
+                                    actionTag = action.tag
+                                )
                         )
                         data.copy(
-                            webPPreset = action.preset
+                            webPPreset = action.webPPreset
                         )
                     }
 
                     is UiAction.ImagesToAnimatedWebP.RequestStartConvert -> {
                         if (data.isConvertDataComplete()) {
                             _uiEventFlow.emit(
-                                UiEvent.ImagesToAnimatedWebP.OnConvertStarted()
+                                UiEvent.ImagesToAnimatedWebP.OnConvertStarted(
+                                    actionTag = action.tag
+                                )
                             )
-                            data.copy(startConvert = true)
+                            data.copy(
+                                startConvert = true
+                            )
                         } else {
                             data
                         }
@@ -255,16 +323,16 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     }
 
     private val _uiActionFlow = MutableSharedFlow<UiAction>()
-    private val _uiEventFlow = MutableSharedFlow<UiEvent>()
+    private val _uiEventFlow = MutableSharedFlow<UiEvent>(replay = 1)
 
-    val uiActionFlow = _uiActionFlow.asSharedFlow()
-    val uiEventFlow = _uiEventFlow.asSharedFlow()
+    val uiActionFlow: Flow<UiAction> = _uiActionFlow
+    val uiEventFlow: Flow<UiEvent> = _uiEventFlow
 
     val imageToWebP: ImageToWebP = ImageToWebPImpl()
     val imageToAnimatedWebP: ImagesToAnimatedWebP = ImagesToAnimatedWebPImpl()
 
     fun submitAction(action: UiAction) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _uiActionFlow.emit(action)
         }
     }
@@ -275,14 +343,16 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         val context = getApplication<Application>().applicationContext
         val sharedFlow = MutableSharedFlow<ConvertState.ImageToWebP>()
         val webPEncoder = WebPEncoder(data.imageWidth, data.imageHeight)
-        var lastState: ConvertState.ImageToWebP = ConvertState.ImageToWebP.OnConvertStarted(
-            srcUri = data.srcUri,
-            dstUri = data.dstUri,
-            imageWidth = data.imageWidth,
-            imageHeight = data.imageHeight
-        ) {
-            webPEncoder.cancel()
-        }
+        var lastState: ConvertState.ImageToWebP = ConvertState
+            .ImageToWebP
+            .OnConvertStarted(
+                srcUri = data.srcUri,
+                dstUri = data.dstUri,
+                imageWidth = data.imageWidth,
+                imageHeight = data.imageHeight
+            ) {
+                webPEncoder.cancel()
+            }
         val mutex = Object()
         val emitState: ((ConvertState.ImageToWebP) -> ConvertState.ImageToWebP) -> Unit =
             { action ->
@@ -298,11 +368,13 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
             try {
                 webPEncoder.addProgressListener { progress ->
                     emitState { state ->
-                        ConvertState.ImageToWebP.OnConvertProgress(
-                            state, progress
-                        ) {
-                            webPEncoder.cancel()
-                        }
+                        ConvertState
+                            .ImageToWebP
+                            .OnConvertProgress(
+                                state, progress
+                            ) {
+                                webPEncoder.cancel()
+                            }
                     }
                     true
                 }
@@ -313,17 +385,25 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                     ),
                     preset = data.webPPreset
                 )
-                webPEncoder.encode(context, data.srcUri, data.dstUri)
+                webPEncoder.encode(
+                    context,
+                    data.srcUri,
+                    data.dstUri
+                )
                 emitState { state ->
-                    ConvertState.ImageToWebP.OnConvertFinished(state)
+                    ConvertState
+                        .ImageToWebP
+                        .OnConvertFinished(state)
                 }
 
             } catch (e: Exception) {
                 emitState { state ->
-                    ConvertState.ImageToWebP.OnConvertError(
-                        state,
-                        errorMessage = e.message ?: "Unknown error."
-                    )
+                    ConvertState
+                        .ImageToWebP
+                        .OnConvertError(
+                            state,
+                            errorMessage = e.message ?: "Unknown error."
+                        )
                 }
             } finally {
                 webPEncoder.release()
@@ -342,14 +422,16 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         )
         val stateFlow = MutableSharedFlow<ConvertState.ImagesToAnimatedWebP>()
         var lastState: ConvertState.ImagesToAnimatedWebP =
-            ConvertState.ImagesToAnimatedWebP.OnConvertStarted(
-                srcUris = data.srcUris,
-                dstUri = data.dstUri,
-                imageWidth = data.imageWidth,
-                imageHeight = data.imageHeight
-            ) {
-                webPAnimEncoder.cancel()
-            }
+            ConvertState
+                .ImagesToAnimatedWebP
+                .OnConvertStarted(
+                    srcUris = data.srcUris,
+                    dstUri = data.dstUri,
+                    imageWidth = data.imageWidth,
+                    imageHeight = data.imageHeight
+                ) {
+                    webPAnimEncoder.cancel()
+                }
         val mutex = Object()
         val emitState: ((ConvertState.ImagesToAnimatedWebP) -> ConvertState.ImagesToAnimatedWebP) -> Unit =
             { action ->
@@ -361,8 +443,8 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 }
             }
         emitState { lastState }
-        try {
-            viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
                 webPAnimEncoder.configure(
                     config = WebPConfig(
                         lossless = WebPConfig.COMPRESSION_LOSSLESS,
@@ -372,13 +454,15 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 )
                 webPAnimEncoder.addProgressListener { currentFrame, frameProgress ->
                     emitState { state ->
-                        ConvertState.ImagesToAnimatedWebP.OnConvertProgress(
-                            parent = state,
-                            currentFrame = currentFrame,
-                            frameProgress = frameProgress
-                        ) {
-                            webPAnimEncoder.cancel()
-                        }
+                        ConvertState
+                            .ImagesToAnimatedWebP
+                            .OnConvertProgress(
+                                parent = state,
+                                currentFrame = currentFrame,
+                                frameProgress = frameProgress
+                            ) {
+                                webPAnimEncoder.cancel()
+                            }
                     }
                     true
                 }
@@ -390,18 +474,26 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         timestamp += data.frameDuration
                     }
                 webPAnimEncoder.assemble(context, timestamp, data.dstUri)
-                webPAnimEncoder.release()
                 emitState { state ->
-                    ConvertState.ImagesToAnimatedWebP.OnConvertFinished(parent = state)
+                    ConvertState
+                        .ImagesToAnimatedWebP
+                        .OnConvertFinished(
+                            parent = state
+                        )
                 }
-            }
 
-        } catch (e: Exception) {
-            emitState { state ->
-                ConvertState.ImagesToAnimatedWebP.OnConvertError(
-                    parent = state,
-                    errorMessage = e.message ?: "Unknown error."
-                )
+            } catch (e: Exception) {
+                emitState { state ->
+                    ConvertState
+                        .ImagesToAnimatedWebP
+                        .OnConvertError(
+                            parent = state,
+                            errorMessage = e.message ?: "Unknown error."
+                        )
+                }
+
+            } finally {
+                webPAnimEncoder.release()
             }
         }
         return stateFlow

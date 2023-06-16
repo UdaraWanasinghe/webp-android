@@ -14,10 +14,13 @@ internal sealed interface UiAction {
         open val tag: Any? = null
 
         data class OpenDataCollectBottomSheet(
+            val defaultSrcUri: Uri = Uri.EMPTY,
+            val defaultDstUri: Uri = Uri.EMPTY,
             val defaultConvertQuality: Float = 70f,
             val defaultImageWidth: Int = 512,
             val defaultImageHeight: Int = 512,
-            val defaultPreset: WebPPreset? = null,
+            val defaultWebPPreset: WebPPreset? = WebPPreset.WEBP_PRESET_DEFAULT,
+            val startConvert: Boolean = false,
             override val tag: Any? = null
         ) : ImageToWebP()
 
@@ -44,7 +47,7 @@ internal sealed interface UiAction {
         ) : ImageToWebP()
 
         data class SelectConvertQuality(
-            val quality: Float,
+            val convertQuality: Float,
             override val tag: Any? = null
         ) : ImageToWebP()
 
@@ -59,7 +62,7 @@ internal sealed interface UiAction {
         ) : ImageToWebP()
 
         data class SelectWebPPreset(
-            val preset: WebPPreset,
+            val webPPreset: WebPPreset,
             override val tag: Any? = null
         ) : ImageToWebP()
     }
@@ -69,10 +72,14 @@ internal sealed interface UiAction {
         open val tag: Any? = null
 
         data class OpenDataCollectBottomSheet(
+            val defaultSrcUris: List<Uri> = emptyList(),
+            val defaultDstUri: Uri = Uri.EMPTY,
+            val defaultFrameDuration: Int = 1000,
             val defaultConvertQuality: Float = 70f,
             val defaultImageWidth: Int = 512,
             val defaultImageHeight: Int = 512,
-            val defaultPreset: WebPPreset? = null,
+            val defaultWebPPreset: WebPPreset? = WebPPreset.WEBP_PRESET_DEFAULT,
+            val startConvert: Boolean = false,
             override val tag: Any? = null
         ) : ImagesToAnimatedWebP()
 
@@ -99,12 +106,12 @@ internal sealed interface UiAction {
         ) : ImagesToAnimatedWebP()
 
         data class SelectConvertQuality(
-            val quality: Float,
+            val convertQuality: Float,
             override val tag: Any? = null
         ) : ImagesToAnimatedWebP()
 
         data class SelectFrameDuration(
-            val duration: Int,
+            val frameDuration: Int,
             override val tag: Any? = null
         ) : ImagesToAnimatedWebP()
 
@@ -119,7 +126,7 @@ internal sealed interface UiAction {
         ) : ImagesToAnimatedWebP()
 
         data class SelectWebPPreset(
-            val preset: WebPPreset,
+            val webPPreset: WebPPreset,
             override val tag: Any? = null
         ) : ImagesToAnimatedWebP()
     }

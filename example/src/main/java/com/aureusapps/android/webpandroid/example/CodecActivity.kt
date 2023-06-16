@@ -7,6 +7,7 @@ import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.ScrollView
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -70,11 +71,22 @@ class CodecActivity : AppCompatActivity() {
         fun openDataCollectBottomSheet() {
             val dialog = BottomSheetDialog(this@CodecActivity)
             dialog.setContentView(
-                ImageToWebPDataCollectView(
-                    this@CodecActivity,
-                    this@CodecActivity
-                ) {
-                    dialog.dismiss()
+                RelativeLayout(this@CodecActivity).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        MATCH_PARENT, MATCH_PARENT
+                    )
+                    addView {
+                        ImageToWebPDataCollectView(
+                            context,
+                            this@CodecActivity
+                        ) {
+                            dialog.dismiss()
+                        }.apply {
+                            layoutParams = RelativeLayout.LayoutParams(
+                                MATCH_PARENT, MATCH_PARENT
+                            )
+                        }
+                    }
                 }
             )
             dialog.show()
@@ -82,24 +94,51 @@ class CodecActivity : AppCompatActivity() {
 
     }
 
-    private inner class ImageToAnimatedWebP {
+    private inner class ImagesToAnimatedWebP {
 
         val multipleImagePickerLauncher = registerForActivityResult(
             ActivityResultContracts.PickMultipleVisualMedia()
         ) { uris ->
-//            codecViewModel.submitAction(
-//                UiAction.ImagesToAnimatedWebP.SelectSrcUris(uris)
-//            )
+            codecViewModel.submitAction(
+                UiAction.ImagesToAnimatedWebP.SelectSrcUris(
+                    srcUris = uris,
+                    tag = ACTION_TAG
+                )
+            )
+        }
+
+        val dstUriPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.CreateDocument("image/webp")
+        ) { uri ->
+            if (uri != null) {
+                codecViewModel.submitAction(
+                    UiAction.ImagesToAnimatedWebP.SelectDstUri(
+                        dstUri = uri,
+                        tag = ACTION_TAG
+                    )
+                )
+            }
         }
 
         fun openDataCollectBottomSheet() {
             val dialog = BottomSheetDialog(this@CodecActivity)
             dialog.setContentView(
-                ImagesToAnimatedWebPDataCollectView(
-                    this@CodecActivity,
-                    this@CodecActivity
-                ) {
-                    dialog.dismiss()
+                RelativeLayout(this@CodecActivity).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        MATCH_PARENT, MATCH_PARENT
+                    )
+                    addView {
+                        ImagesToAnimatedWebPDataCollectView(
+                            context,
+                            this@CodecActivity
+                        ) {
+                            dialog.dismiss()
+                        }.apply {
+                            layoutParams = RelativeLayout.LayoutParams(
+                                MATCH_PARENT, MATCH_PARENT
+                            )
+                        }
+                    }
                 }
             )
             dialog.show()
@@ -108,7 +147,7 @@ class CodecActivity : AppCompatActivity() {
     }
 
     private val imageToWebP = ImageToWebP()
-    private val imageToAnimatedWebP = ImageToAnimatedWebP()
+    private val imagesToAnimatedWebP = ImagesToAnimatedWebP()
 
     private lateinit var imageToWebPCardView: ImageToWebPCardView
     private lateinit var imagesToAnimatedWebPCardView: ImagesToAnimatedWebPCardView
@@ -142,17 +181,23 @@ class CodecActivity : AppCompatActivity() {
                     }
 
                     is UiAction.ImagesToAnimatedWebP.OpenDataCollectBottomSheet -> {
-                        imageToAnimatedWebP.openDataCollectBottomSheet()
+                        imagesToAnimatedWebP.openDataCollectBottomSheet()
                     }
 
                     is UiAction.ImagesToAnimatedWebP.OpenSrcUrisPicker -> {
-                        imageToAnimatedWebP
+                        imagesToAnimatedWebP
                             .multipleImagePickerLauncher
                             .launch(
                                 PickVisualMediaRequest(
                                     mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
                                 )
                             )
+                    }
+
+                    is UiAction.ImagesToAnimatedWebP.OpenDstUriPicker -> {
+                        imagesToAnimatedWebP
+                            .dstUriPickerLauncher
+                            .launch("animated_image.webp")
                     }
 
                     else -> {

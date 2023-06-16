@@ -24,7 +24,7 @@ internal sealed interface ConvertData {
     data class ImagesToAnimatedWebP(
         val srcUris: List<Uri> = emptyList(), // Image uri and timestamp pair list.
         val dstUri: Uri = Uri.EMPTY,
-        val frameDuration: Long = 0,
+        val frameDuration: Int = 0,
         val imageWidth: Int = 0,
         val imageHeight: Int = 0,
         val convertQuality: Float = 0f,

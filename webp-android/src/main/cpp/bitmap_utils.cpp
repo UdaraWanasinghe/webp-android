@@ -9,9 +9,7 @@
 #include "include/bitmap_utils.h"
 #include "include/exception_helper.h"
 
-#define LOG_TAG "BitmapUtils"
-
-jobject decodeBitmapUri(JNIEnv *env, jobject *jcontext, jobject *juri) {
+jobject decodeBitmapUri(JNIEnv *env, jobject jcontext, jobject juri) {
     jclass bitmap_factory_extended_class = env->FindClass(
             "com/aureusapps/android/webpandroid/utils/BitmapFactoryExtended"
     );
@@ -23,14 +21,19 @@ jobject decodeBitmapUri(JNIEnv *env, jobject *jcontext, jobject *juri) {
     jobject jbitmap = env->CallStaticObjectMethod(
             bitmap_factory_extended_class,
             decode_uri_method_id,
-            *jcontext,
-            *juri
+            jcontext,
+            juri
     );
+    if (env->ExceptionCheck()) {
+        std::string message = getExceptionMessage(env, "%s");
+        env->DeleteLocalRef(bitmap_factory_extended_class);
+        throw std::runtime_error(message);
+    }
     env->DeleteLocalRef(bitmap_factory_extended_class);
     return jbitmap;
 }
 
-jobject resizeBitmap(JNIEnv *env, jobject *jbitmap, int width, int height) {
+jobject resizeBitmap(JNIEnv *env, jobject jbitmap, int width, int height) {
     jclass bitmap_class = env->FindClass("android/graphics/Bitmap");
     jmethodID create_scaled_bitmap_method_id = env->GetStaticMethodID(
             bitmap_class,
@@ -40,7 +43,7 @@ jobject resizeBitmap(JNIEnv *env, jobject *jbitmap, int width, int height) {
     jobject resized_bitmap = env->CallStaticObjectMethod(
             bitmap_class,
             create_scaled_bitmap_method_id,
-            *jbitmap,
+            jbitmap,
             width,
             height,
             true
@@ -49,8 +52,8 @@ jobject resizeBitmap(JNIEnv *env, jobject *jbitmap, int width, int height) {
     return resized_bitmap;
 }
 
-void recycleBitmap(JNIEnv *env, jobject *bitmap) {
+void recycleBitmap(JNIEnv *env, jobject bitmap) {
     jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
     jmethodID recycleMethodID = env->GetMethodID(bitmapClass, "recycle", "()V");
-    env->CallVoidMethod(*bitmap, recycleMethodID);
+    env->CallVoidMethod(bitmap, recycleMethodID);
 }

@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.inputmethod.EditorInfo
+import android.widget.ArrayAdapter
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,9 +19,12 @@ import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.extensions.resolvePixelDimensionAttribute
 import com.aureusapps.android.extensions.viewModels
+import com.aureusapps.android.styles.extensions.withAutoCompleteEditTextStyle_Regular
+import com.aureusapps.android.styles.extensions.withAutoCompleteTextInputStyle_OutlinedSmall
 import com.aureusapps.android.styles.extensions.withBaseStyle
 import com.aureusapps.android.styles.extensions.withButtonStyle_Elevated
 import com.aureusapps.android.styles.extensions.withTextInputStyle_OutlinedSmall
+import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import com.aureusapps.android.webpandroid.example.R
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.events.UiEvent
@@ -29,6 +33,7 @@ import com.aureusapps.android.webpandroid.example.models.CodecViewModel
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.CoroutineScope
@@ -52,9 +57,11 @@ internal class ImagesToAnimatedWebPDataCollectView(
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private lateinit var srcUriTextView: TextView
     private lateinit var dstUriTextView: TextView
+    private lateinit var frameDurationTextView: TextView
     private lateinit var imageWidthTextView: TextView
     private lateinit var imageHeightTextView: TextView
     private lateinit var convertQualityTextView: TextView
+    private lateinit var presetTextView: MaterialAutoCompleteTextView
 
     init {
         setTag(R.id.view_tree_view_model_store_owner, viewModelStoreOwner)
@@ -79,9 +86,15 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                         }
                                 }
                                 dstUriTextView.setText { event.dstUri.toString() }
+                                frameDurationTextView.setText { event.frameDuration.toString() }
                                 convertQualityTextView.setText { "%.2f".format(event.convertQuality) }
                                 imageWidthTextView.setText { event.imageWidth.toString() }
                                 imageHeightTextView.setText { event.imageHeight.toString() }
+                                if (event.webPPreset != null) {
+                                    presetTextView.setText(
+                                        event.webPPreset.name
+                                    )
+                                }
                             }
                         }
 
@@ -103,14 +116,24 @@ internal class ImagesToAnimatedWebPDataCollectView(
                             }
                         }
 
+                        is UiEvent.ImagesToAnimatedWebP.OnFrameDurationSelected -> {
+                            if (event.actionTag != ACTION_TAG) {
+                                frameDurationTextView.setText { event.frameDuration.toString() }
+                            }
+                        }
+
                         is UiEvent.ImagesToAnimatedWebP.OnConvertQualitySelected -> {
                             if (event.actionTag != ACTION_TAG) {
-                                convertQualityTextView.setText { "%.2f".format(event.quality) }
+                                convertQualityTextView.setText { "%.2f".format(event.convertQuality) }
                             }
                         }
 
                         is UiEvent.ImagesToAnimatedWebP.OnWebPPresetSelected -> {
-
+                            if (event.actionTag != ACTION_TAG) {
+                                presetTextView.setText(
+                                    event.webPPreset.name
+                                )
+                            }
                         }
 
                         is UiEvent.ImagesToAnimatedWebP.OnImageWidthSelected -> {
@@ -148,7 +171,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                     layoutParams = AppBarLayout.LayoutParams(
                         MATCH_PARENT, WRAP_CONTENT
                     ).apply {
-                        scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP
+                        scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
                     }
                     title = "Images to Animated WebP"
                     setBackgroundColor(
@@ -208,7 +231,8 @@ internal class ImagesToAnimatedWebPDataCollectView(
                             maxLines = 10
                             isSingleLine = false
                             imeOptions = EditorInfo.IME_ACTION_NEXT
-                            inputType = EditorInfo.TYPE_CLASS_TEXT
+                            inputType = EditorInfo.TYPE_CLASS_TEXT or
+                                    EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE
                             addTextChangedListener {
                                 if (tag == null) {
                                     codecViewModel.submitAction(
@@ -259,7 +283,8 @@ internal class ImagesToAnimatedWebPDataCollectView(
                             maxLines = 10
                             isSingleLine = false
                             imeOptions = EditorInfo.IME_ACTION_NEXT
-                            inputType = EditorInfo.TYPE_CLASS_TEXT
+                            inputType = EditorInfo.TYPE_CLASS_TEXT or
+                                    EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE
                             addTextChangedListener {
                                 if (tag == null) {
                                     codecViewModel.submitAction(
@@ -306,7 +331,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                         UiAction
                                             .ImagesToAnimatedWebP
                                             .SelectConvertQuality(
-                                                quality = it
+                                                convertQuality = it
                                                     .toString()
                                                     .toFloatOrNull()
                                                     ?: 0f,
@@ -335,7 +360,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                     }.addView {
                         // text view
                         TextInputEditText(it.context).apply {
-                            convertQualityTextView = this
+                            frameDurationTextView = this
                             maxLines = 10
                             isSingleLine = true
                             imeOptions = EditorInfo.IME_ACTION_NEXT
@@ -346,7 +371,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                         UiAction
                                             .ImagesToAnimatedWebP
                                             .SelectFrameDuration(
-                                                duration = it
+                                                frameDuration = it
                                                     .toString()
                                                     .toIntOrNull()
                                                     ?: 0,
@@ -440,6 +465,49 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                         )
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                }.addView {
+                    // preset select drop down
+                    TextInputLayout(
+                        it.context.withAutoCompleteTextInputStyle_OutlinedSmall,
+                        null,
+                        R.attr.autoCompleteTextInputStyle_outlinedSmall
+                    ).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            MATCH_PARENT, WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, paddingLarge)
+                        }
+                        hint = "WebPConfig Preset"
+
+                    }.addView {
+                        // text view
+                        MaterialAutoCompleteTextView(
+                            it.context.withAutoCompleteEditTextStyle_Regular,
+                            null,
+                            R.attr.autoCompleteEditTextStyle_regular
+                        ).apply {
+                            presetTextView = this
+                            setAdapter(
+                                ArrayAdapter(
+                                    context,
+                                    android.R.layout.simple_list_item_1,
+                                    WebPPreset.values().map { it.name }
+                                )
+                            )
+                            setOnItemClickListener { _, _, position, _ ->
+                                val preset = WebPPreset.values()[position]
+                                codecViewModel.submitAction(
+                                    UiAction
+                                        .ImagesToAnimatedWebP
+                                        .SelectWebPPreset(
+                                            webPPreset = preset,
+                                            tag = ACTION_TAG
+                                        )
+                                )
                             }
                         }
                     }

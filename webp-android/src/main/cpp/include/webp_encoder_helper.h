@@ -20,7 +20,7 @@
  */
 WebPPreset parseWebPPreset(
         JNIEnv *env,
-        jobject *jpreset
+        jobject jpreset
 );
 
 /**
@@ -32,7 +32,7 @@ WebPPreset parseWebPPreset(
  */
 void applyWebPConfig(
         JNIEnv *env,
-        jobject *jconfig,
+        jobject jconfig,
         WebPConfig *config
 );
 
@@ -46,7 +46,7 @@ void applyWebPConfig(
  */
 float parseWebPQuality(
         JNIEnv *env,
-        jobject *jconfig
+        jobject jconfig
 );
 
 /**
@@ -58,7 +58,7 @@ float parseWebPQuality(
  */
 void parseEncoderOptions(
         JNIEnv *env,
-        jobject *joptions,
+        jobject joptions,
         WebPAnimEncoderOptions *options
 );
 

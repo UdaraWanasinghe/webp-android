@@ -18,8 +18,8 @@
  */
 int openFileDescriptor(
         JNIEnv *env,
-        jobject *jcontext,
-        jobject *juri,
+        jobject jcontext,
+        jobject juri,
         const char *mode
 );
 
@@ -36,8 +36,8 @@ int openFileDescriptor(
  */
 int readFromUri(
         JNIEnv *env,
-        jobject *jcontext,
-        jobject *juri,
+        jobject jcontext,
+        jobject juri,
         uint8_t **file_data,
         size_t *file_size
 );
@@ -55,8 +55,19 @@ int readFromUri(
  */
 int writeToUri(
         JNIEnv *env,
-        jobject *jcontext,
-        jobject *juri,
+        jobject jcontext,
+        jobject juri,
         const uint8_t *file_data,
         size_t file_size
 );
+
+/**
+ * Converts a Android Uri object to a C++ std::string representation.
+ *
+ * @param env     The JNI environment pointer.
+ * @param juri    The Android Uri object to convert.
+ *
+ * @return        The Uri as a C++ std::string.
+ * @throws runtime_error if given juri in not an instance of Android Uri.
+ */
+std::string uriToString(JNIEnv *env, jobject juri);

@@ -6,17 +6,19 @@
 
 #include <jni.h>
 
-int getIntegerValue(JNIEnv *env, jobject *object);
+int getIntegerValue(JNIEnv *env, jobject object);
 
-bool getBooleanValue(JNIEnv *env, jobject *object);
+bool getBooleanValue(JNIEnv *env, jobject object);
 
-long getLongValue(JNIEnv *env, jobject *object);
+long getLongValue(JNIEnv *env, jobject object);
 
-float getFloatValue(JNIEnv *env, jobject *object);
+float getFloatValue(JNIEnv *env, jobject object);
 
 jobject getObjectField(
         JNIEnv *env,
-        jobject *object,
+        jobject object,
         const char *name,
         const char *sig
 );
+
+bool isObjectNull(JNIEnv *env, jobject obj);

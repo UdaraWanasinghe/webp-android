@@ -14,8 +14,8 @@
  *
  * @return Android bitmap or null if failed to decode.
  */
-jobject decodeBitmapUri(JNIEnv *env, jobject *jcontext, jobject *juri);
+jobject decodeBitmapUri(JNIEnv *env, jobject jcontext, jobject juri);
 
-jobject resizeBitmap(JNIEnv *env, jobject *jbitmap, int width, int height);
+jobject resizeBitmap(JNIEnv *env, jobject jbitmap, int width, int height);
 
-void recycleBitmap(JNIEnv *env, jobject *bitmap);
+void recycleBitmap(JNIEnv *env, jobject bitmap);

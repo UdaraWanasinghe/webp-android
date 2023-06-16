@@ -7,42 +7,30 @@
 #include <string>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <android/log.h>
 
 #include "include/file_utils.h"
 #include "include/exception_helper.h"
-
-#define LOG_TAG "FileUtils"
+#include "include/string_formatter.h"
 
 int openFileDescriptor(
         JNIEnv *env,
-        jobject *jcontext,
-        jobject *juri,
+        jobject jcontext,
+        jobject juri,
         const char *mode
 ) {
     // Verify context instance
     jclass context_class = env->FindClass("android/content/Context");
-    if (!env->IsInstanceOf(*jcontext, context_class)) {
+    if (!env->IsInstanceOf(jcontext, context_class)) {
         env->DeleteLocalRef(context_class);
-        __android_log_print(
-                ANDROID_LOG_ERROR,
-                LOG_TAG,
-                "Given context is not an instance of Android Context."
-        );
-        return -1;
+        throw std::runtime_error("Given context is not an instance of Android Context.");
     }
 
     // Verify uri instance
     jclass uri_class = env->FindClass("android/net/Uri");
-    if (!env->IsInstanceOf(*juri, uri_class)) {
+    if (!env->IsInstanceOf(juri, uri_class)) {
         env->DeleteLocalRef(context_class);
         env->DeleteLocalRef(uri_class);
-        __android_log_print(
-                ANDROID_LOG_ERROR,
-                LOG_TAG,
-                "Given uri is not an instance of Android Uri."
-        );
-        return -1;
+        throw std::runtime_error("Given uri is not an instance of Android Uri.");
     }
     env->DeleteLocalRef(uri_class);
 
@@ -54,7 +42,7 @@ int openFileDescriptor(
             "()Landroid/content/ContentResolver;"
     );
     env->DeleteLocalRef(context_class);
-    jobject content_resolver = env->CallObjectMethod(*jcontext, get_content_resolver_method_id);
+    jobject content_resolver = env->CallObjectMethod(jcontext, get_content_resolver_method_id);
 
     // Open file descriptor
     jmethodID open_file_descriptor_method_id = env->GetMethodID(
@@ -67,7 +55,7 @@ int openFileDescriptor(
     jobject parcel_file_descriptor = env->CallObjectMethod(
             content_resolver,
             open_file_descriptor_method_id,
-            *juri,
+            juri,
             read_mode
     );
     env->DeleteLocalRef(read_mode);
@@ -75,15 +63,8 @@ int openFileDescriptor(
     // Check for exception
     if (env->ExceptionCheck()) {
         std::string message = getExceptionMessage(env, "%s");
-        __android_log_print(
-                ANDROID_LOG_ERROR,
-                LOG_TAG,
-                "Failed to open file descriptor: %s",
-                message.c_str()
-        );
-        env->ExceptionClear();
         env->DeleteLocalRef(content_resolver);
-        return -1;
+        throw std::runtime_error(message);
     }
 
     // Get file descriptor
@@ -97,8 +78,8 @@ int openFileDescriptor(
 
 int readFromUri(
         JNIEnv *env,
-        jobject *jcontext,
-        jobject *juri,
+        jobject jcontext,
+        jobject juri,
         uint8_t **const file_data,
         size_t *const file_size
 ) {
@@ -130,8 +111,8 @@ int readFromUri(
 
 int writeToUri(
         JNIEnv *env,
-        jobject *jcontext,
-        jobject *juri,
+        jobject jcontext,
+        jobject juri,
         const uint8_t *file_data,
         size_t file_size
 ) {
@@ -143,14 +124,32 @@ int writeToUri(
     int written = write(descriptor, file_data, file_size);
     close(descriptor);
     if (written != file_size) {
-        __android_log_print(
-                ANDROID_LOG_ERROR,
-                LOG_TAG,
-                "Failed to write complete file to the given juri {written: %d}",
+        std::string uri_string = uriToString(env, juri);
+        std::string message = formatString(
+                "Failed to write complete file to the given uri {uri: %s, size: %d, written: %d}",
+                uri_string.c_str(),
+                file_size,
                 written
         );
-        return -1;
+        throw std::runtime_error(message);
     }
 
     return 0;
+}
+
+std::string uriToString(JNIEnv *env, jobject juri) {
+    jclass uri_class = env->FindClass("android/net/Uri");
+    // Check juri instance
+    if (!env->IsInstanceOf(juri, uri_class)) {
+        throw std::runtime_error("Given uri object is not an instance of Android Uri.");
+    }
+    // Get string
+    jmethodID to_string_method_id = env->GetMethodID(uri_class, "toString", "()Ljava/lang/String;");
+    auto uri_jstring = (jstring) env->CallObjectMethod(juri, to_string_method_id);
+    const char *uri_chars = env->GetStringUTFChars(uri_jstring, nullptr);
+    std::string uri_string(uri_chars);
+    // Delete refs
+    env->DeleteLocalRef(uri_class);
+    env->ReleaseStringUTFChars(uri_jstring, uri_chars);
+    return uri_string;
 }
