@@ -22,6 +22,9 @@ class WebPAnimEncoder(
 
     init {
         nativePointer = create(width, height, options)
+        if (nativePointer == 0L) {
+            throw RuntimeException("Failed to create native encoder")
+        }
     }
 
     fun addProgressListener(listener: WebPAnimEncoderProgressListener) {
@@ -53,9 +56,9 @@ class WebPAnimEncoder(
         preset: WebPPreset? = null
     )
 
-    external fun addFrame(context: Context, timestamp: Long, srcUri: Uri)
-
     external fun addFrame(timestamp: Long, srcBitmap: Bitmap)
+
+    external fun addFrame(context: Context, timestamp: Long, srcUri: Uri)
 
     external fun assemble(context: Context, timestamp: Long, dstUri: Uri)
 

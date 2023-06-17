@@ -1,6 +1,7 @@
 package com.aureusapps.android.webpandroid.encoder
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 
 class WebPEncoder(width: Int, height: Int) {
@@ -16,6 +17,9 @@ class WebPEncoder(width: Int, height: Int) {
 
     init {
         nativePointer = create(width, height)
+        if (nativePointer == 0L) {
+            throw RuntimeException("Failed to create native encoder")
+        }
     }
 
     private external fun create(width: Int, height: Int): Long
@@ -39,6 +43,8 @@ class WebPEncoder(width: Int, height: Int) {
         }
         return encode
     }
+
+    external fun encode(context: Context, srcBitmap: Bitmap, dstUri: Uri)
 
     external fun encode(context: Context, srcUri: Uri, dstUri: Uri)
 
