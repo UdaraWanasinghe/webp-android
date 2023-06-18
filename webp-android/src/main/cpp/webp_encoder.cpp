@@ -89,21 +89,21 @@ namespace {
 
     };
 
-    int setProgressHookData(JNIEnv *env, jobject *jencoder) {
+    int setProgressHookData(JNIEnv *env, jobject jencoder) {
         delete progressHookData;
         int result = RESULT_SUCCESS;
 
         jclass encoder_class = env->FindClass(
                 "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
         );
-        if (env->IsInstanceOf(*jencoder, encoder_class) != 0) {
+        if (env->IsInstanceOf(jencoder, encoder_class) != 0) {
             jmethodID progress_method_id = env->GetMethodID(
                     encoder_class,
                     "notifyProgressChanged",
                     "(I)Z"
             );
             auto *data = new ProgressHookData();
-            data->progress_observable = env->NewWeakGlobalRef(*jencoder);
+            data->progress_observable = env->NewWeakGlobalRef(jencoder);
             data->progress_method_id = progress_method_id;
             progressHookData = data;
 
@@ -116,12 +116,12 @@ namespace {
 
     void clearProgressHookData(JNIEnv *env) {
         ProgressHookData *data = progressHookData;
+        progressHookData = nullptr;
         if (data != nullptr) {
             data->progress_method_id = nullptr;
             env->DeleteWeakGlobalRef(data->progress_observable);
             data->progress_observable = nullptr;
             delete data;
-            progressHookData = nullptr;
         }
     }
 
@@ -153,7 +153,7 @@ namespace {
                 return 0;
         }
 
-        jobject observable = progress_hook_data->progress_observable;
+        jweak observable = progress_hook_data->progress_observable;
         jmethodID progress_method_id = progress_hook_data->progress_method_id;
         jboolean continue_encoding = env->CallBooleanMethod(
                 observable,
@@ -363,7 +363,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_create(
         jint jheight
 ) {
     env->GetJavaVM(&jvm);
-    setProgressHookData(env, &thiz);
+    setProgressHookData(env, thiz);
     auto *encoder = new WebPEncoder(jwidth, jheight);
     return reinterpret_cast<jlong>(encoder);
 }

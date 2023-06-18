@@ -39,6 +39,14 @@ std::string parseErrorMessage(int error_code) {
             return "Failed to write to the given uri";
         case ERROR_WEBP_ENCODE_FAILED:
             return "WebPEncode failed";
+        case ERROR_INVALID_DECODER_INSTANCE:
+            return "Given decoder is not a valid decoder instance";
+        case ERROR_READ_URI_FAILED:
+            return "Failed to read from the given uri";
+        case ERROR_READ_WEBP_INFO_FAILED:
+            return "Failed to read WebP info";
+        case ERROR_WEBP_DECODE_FAILED:
+            return "Failed to decode webp data";
         default:
             return "Unknown error.";
     }

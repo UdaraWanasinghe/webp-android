@@ -27,12 +27,12 @@ class WebPAnimEncoder(
         }
     }
 
-    fun addProgressListener(listener: WebPAnimEncoderProgressListener) {
-        progressListeners.add(listener)
+    fun addProgressListener(listener: WebPAnimEncoderProgressListener): Boolean {
+        return progressListeners.add(listener)
     }
 
-    fun removeProgressListener(listener: WebPAnimEncoderProgressListener) {
-        progressListeners.remove(listener)
+    fun removeProgressListener(listener: WebPAnimEncoderProgressListener): Boolean {
+        return progressListeners.remove(listener)
     }
 
     private fun notifyProgressChanged(currentFrame: Int, frameProgress: Int): Boolean {

@@ -173,11 +173,12 @@ namespace {
 
     void clearProgressHookData(JNIEnv *env) {
         ProgressHookData *data = progressHookData;
+        progressHookData = nullptr;
         if (data != nullptr) {
             data->progress_method_id = nullptr;
             env->DeleteWeakGlobalRef(data->progress_observable);
             data->progress_observable = nullptr;
-            delete progressHookData;
+            delete data;
         }
     }
 
