@@ -48,6 +48,7 @@ dependencies {
     implementation libs.aureusapps.extensions
     implementation libs.aureusapps.styles
     implementation libs.lifecycle.viewmodel.ktx
+    implementation libs.documentfile
     implementation project(":webp-android")
 
     testImplementation libs.junit

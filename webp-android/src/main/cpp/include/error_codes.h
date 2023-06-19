@@ -25,5 +25,6 @@
 #define ERROR_READ_URI_FAILED 18
 #define ERROR_READ_WEBP_INFO_FAILED 19
 #define ERROR_WEBP_DECODE_FAILED 20
+#define ERROR_WRITE_BITMAP_TO_URI_FAILED 21
 
 std::string parseErrorMessage(int error_code);

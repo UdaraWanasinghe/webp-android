@@ -11,9 +11,13 @@ internal sealed interface UiAction {
 
     sealed class ImageToWebP : UiAction {
 
-        open val tag: Any? = null
+        abstract val tag: Any?
 
         data class OpenDataCollectBottomSheet(
+            override val tag: Any? = null
+        ) : ImageToWebP()
+
+        data class StartDataCollect(
             val defaultSrcUri: Uri = Uri.EMPTY,
             val defaultDstUri: Uri = Uri.EMPTY,
             val defaultConvertQuality: Float = 70f,
@@ -69,9 +73,13 @@ internal sealed interface UiAction {
 
     sealed class ImagesToAnimatedWebP : UiAction {
 
-        open val tag: Any? = null
+        abstract val tag: Any?
 
         data class OpenDataCollectBottomSheet(
+            override val tag: Any? = null
+        ) : ImagesToAnimatedWebP()
+
+        data class StartDataCollect(
             val defaultSrcUris: List<Uri> = emptyList(),
             val defaultDstUri: Uri = Uri.EMPTY,
             val defaultFrameDuration: Int = 1000,
@@ -129,6 +137,45 @@ internal sealed interface UiAction {
             val webPPreset: WebPPreset,
             override val tag: Any? = null
         ) : ImagesToAnimatedWebP()
+    }
+
+    sealed class WebPToImages : UiAction {
+
+        abstract val tag: Any?
+
+        data class OpenDataCollectBottomSheet(
+            override val tag: Any? = null
+        ) : WebPToImages()
+
+        data class StartDataCollect(
+            val defaultSrcUri: Uri = Uri.EMPTY,
+            val defaultDstUri: Uri = Uri.EMPTY,
+            val startConvert: Boolean = false,
+            override val tag: Any? = null
+        ) : WebPToImages()
+
+        data class OpenSrcUriPicker(
+            override val tag: Any? = null
+        ) : WebPToImages()
+
+        data class SelectSrcUri(
+            val srcUri: Uri,
+            override val tag: Any? = null
+        ) : WebPToImages()
+
+        data class OpenDstUriPicker(
+            override val tag: Any? = null
+        ) : WebPToImages()
+
+        data class SelectDstUri(
+            val dstUri: Uri,
+            override val tag: Any? = null
+        ) : WebPToImages()
+
+        data class RequestStartConvert(
+            override val tag: Any? = null
+        ) : WebPToImages()
+
     }
 
 }

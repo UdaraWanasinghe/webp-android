@@ -7,8 +7,10 @@
     <string name="preview">Preview</string>
     <string name="card1_title">Image to WebP</string>
     <string name="card2_title">Images to Animated WebP</string>
-    <string name="card1_description">Converts an image to a static WebP image.</string>
-    <string name="card2_description">Converts a set of images to an animated WebP image.</string>
+    <string name="card3_title">WebP to Images</string>
+    <string name="card1_description">Converts an image to a static webp image</string>
+    <string name="card2_description">Converts a set of images to an animated webp image</string>
+    <string name="card3_description">Converts a webp image to bitmap images</string>
     <string name="source_image">Source Image</string>
     <string name="start_convert">Start Convert</string>
 </resources>

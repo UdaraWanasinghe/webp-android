@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid.example.ui
+package com.aureusapps.android.webpandroid.example.ui.preview
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -11,6 +11,7 @@ import androidx.core.widget.NestedScrollView
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.webpandroid.example.R
+import com.aureusapps.android.webpandroid.example.ui.AspectRatioDraweeView
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.view.SimpleDraweeView
 import com.facebook.imagepipeline.request.ImageRequestBuilder

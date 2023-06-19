@@ -18,14 +18,19 @@ import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolvePixelDimensionAttribute
 import com.aureusapps.android.extensions.viewModels
 import com.aureusapps.android.styles.extensions.withBaseStyle
+import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.example.actions.UiAction
+import com.aureusapps.android.webpandroid.example.events.UiEvent
 import com.aureusapps.android.webpandroid.example.models.CodecViewModel
 import com.aureusapps.android.webpandroid.example.states.ConvertState
-import com.aureusapps.android.webpandroid.example.ui.ImageToWebPDataCollectView
-import com.aureusapps.android.webpandroid.example.ui.ImagesToAnimatedWebPDataCollectView
-import com.aureusapps.android.webpandroid.example.ui.WebPPreview
 import com.aureusapps.android.webpandroid.example.ui.cards.ImageToWebPCardView
 import com.aureusapps.android.webpandroid.example.ui.cards.ImagesToAnimatedWebPCardView
+import com.aureusapps.android.webpandroid.example.ui.cards.WebPToImagesCardView
+import com.aureusapps.android.webpandroid.example.ui.data.ImageToWebPDataCollectView
+import com.aureusapps.android.webpandroid.example.ui.data.ImagesToAnimatedWebPDataCollectView
+import com.aureusapps.android.webpandroid.example.ui.data.WebPToImagesDataCollectView
+import com.aureusapps.android.webpandroid.example.ui.preview.BitmapPreview
+import com.aureusapps.android.webpandroid.example.ui.preview.WebPPreview
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
@@ -146,11 +151,67 @@ class CodecActivity : AppCompatActivity() {
 
     }
 
+    private inner class WebPToImages {
+
+        val srcUriPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.PickVisualMedia()
+        ) { uri ->
+            if (uri != null) {
+                codecViewModel.submitAction(
+                    UiAction.WebPToImages.SelectSrcUri(
+                        srcUri = uri,
+                        tag = ACTION_TAG
+                    )
+                )
+            }
+        }
+
+        val dstUriPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri ->
+            if (uri != null) {
+                codecViewModel.submitAction(
+                    UiAction.WebPToImages.SelectDstUri(
+                        dstUri = uri,
+                        tag = ACTION_TAG
+                    )
+                )
+            }
+        }
+
+        fun openDataCollectBottomSheet() {
+            val dialog = BottomSheetDialog(this@CodecActivity)
+            dialog.setContentView(
+                RelativeLayout(this@CodecActivity).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        MATCH_PARENT, MATCH_PARENT
+                    )
+                    addView {
+                        WebPToImagesDataCollectView(
+                            context,
+                            this@CodecActivity
+                        ) {
+                            dialog.dismiss()
+                        }.apply {
+                            layoutParams = RelativeLayout.LayoutParams(
+                                MATCH_PARENT, MATCH_PARENT
+                            )
+                        }
+                    }
+                }
+            )
+            dialog.show()
+        }
+
+    }
+
     private val imageToWebP = ImageToWebP()
     private val imagesToAnimatedWebP = ImagesToAnimatedWebP()
+    private val webPToImages = WebPToImages()
 
     private lateinit var imageToWebPCardView: ImageToWebPCardView
     private lateinit var imagesToAnimatedWebPCardView: ImagesToAnimatedWebPCardView
+    private lateinit var webPToImagesCardView: WebPToImagesCardView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,54 +219,81 @@ class CodecActivity : AppCompatActivity() {
         createContent()
 
         lifecycleScope.launch {
-            codecViewModel.uiActionFlow.collect { action ->
-                when (action) {
-                    is UiAction.ImageToWebP.OpenDataCollectBottomSheet -> {
-                        imageToWebP.openDataCollectBottomSheet()
-                    }
+            codecViewModel
+                .uiEventFlow
+                .collect { action ->
+                    when (action) {
+                        is UiEvent.ImageToWebP.OnOpenDataCollectBottomSheet -> {
+                            imageToWebP.openDataCollectBottomSheet()
+                        }
 
-                    is UiAction.ImageToWebP.OpenSrcUriPicker -> {
-                        imageToWebP
-                            .srcUriPickerLauncher
-                            .launch(
-                                PickVisualMediaRequest(
-                                    mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+                        is UiEvent.ImageToWebP.OnOpenSrcUriPicker -> {
+                            imageToWebP
+                                .srcUriPickerLauncher
+                                .launch(
+                                    PickVisualMediaRequest(
+                                        mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    )
                                 )
-                            )
-                    }
+                        }
 
-                    is UiAction.ImageToWebP.OpenDstUriPicker -> {
-                        imageToWebP
-                            .dstUriPickerLauncher
-                            .launch("static_image.webp")
-                    }
+                        is UiEvent.ImageToWebP.OnOpenDstUriPicker -> {
+                            imageToWebP
+                                .dstUriPickerLauncher
+                                .launch("static_image.webp")
+                        }
 
-                    is UiAction.ImagesToAnimatedWebP.OpenDataCollectBottomSheet -> {
-                        imagesToAnimatedWebP.openDataCollectBottomSheet()
-                    }
+                        is UiEvent.ImagesToAnimatedWebP.OnOpenDataCollectBottomSheet -> {
+                            imagesToAnimatedWebP.openDataCollectBottomSheet()
+                        }
 
-                    is UiAction.ImagesToAnimatedWebP.OpenSrcUrisPicker -> {
-                        imagesToAnimatedWebP
-                            .multipleImagePickerLauncher
-                            .launch(
-                                PickVisualMediaRequest(
-                                    mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+                        is UiEvent.ImagesToAnimatedWebP.OnOpenSrcUrisPicker -> {
+                            imagesToAnimatedWebP
+                                .multipleImagePickerLauncher
+                                .launch(
+                                    PickVisualMediaRequest(
+                                        mediaType = ActivityResultContracts
+                                            .PickVisualMedia
+                                            .ImageOnly
+                                    )
                                 )
-                            )
-                    }
+                        }
 
-                    is UiAction.ImagesToAnimatedWebP.OpenDstUriPicker -> {
-                        imagesToAnimatedWebP
-                            .dstUriPickerLauncher
-                            .launch("animated_image.webp")
-                    }
+                        is UiEvent.ImagesToAnimatedWebP.OnOpenDstUriPicker -> {
+                            imagesToAnimatedWebP
+                                .dstUriPickerLauncher
+                                .launch("animated_image.webp")
+                        }
 
-                    else -> {
+                        is UiEvent.WebPToImages.OnOpenDataCollectBottomSheet -> {
+                            webPToImages.openDataCollectBottomSheet()
+                        }
 
+                        is UiEvent.WebPToImages.OnOpenSrcUriPicker -> {
+                            webPToImages
+                                .srcUriPickerLauncher
+                                .launch(
+                                    PickVisualMediaRequest(
+                                        mediaType = ActivityResultContracts
+                                            .PickVisualMedia
+                                            .SingleMimeType("image/webp")
+                                    )
+                                )
+                        }
+
+                        is UiEvent.WebPToImages.OnOpenDstUriPicker -> {
+                            webPToImages
+                                .dstUriPickerLauncher
+                                .launch(null)
+                        }
+
+                        else -> {
+
+                        }
                     }
                 }
-            }
         }
+
         lifecycleScope.launch {
             codecViewModel
                 .imageToWebP
@@ -231,6 +319,7 @@ class CodecActivity : AppCompatActivity() {
                     }
                 }
         }
+
         lifecycleScope.launch {
             codecViewModel
                 .imageToAnimatedWebP
@@ -247,6 +336,37 @@ class CodecActivity : AppCompatActivity() {
                         }
 
                         is ConvertState.ImagesToAnimatedWebP.OnConvertError -> {
+                            showSnackbar(state.errorMessage)
+                        }
+
+                        else -> {
+
+                        }
+                    }
+                }
+        }
+
+        var webPInfo: WebPInfo? = null
+        lifecycleScope.launch {
+            codecViewModel
+                .webPToImages
+                .convertStateFlow
+                .collect { state ->
+                    webPToImagesCardView.setConvertState(state)
+                    when (state) {
+                        is ConvertState.WebPToImages.OnReceiveWebPInfo -> {
+                            webPInfo = state.webPInfo
+                        }
+
+                        is ConvertState.WebPToImages.OnConvertFinished -> {
+                            showBitmapPreview(
+                                state.dstUri,
+                                webPInfo?.width ?: 0,
+                                webPInfo?.height ?: 0
+                            )
+                        }
+
+                        is ConvertState.WebPToImages.OnConvertError -> {
                             showSnackbar(state.errorMessage)
                         }
 
@@ -286,10 +406,22 @@ class CodecActivity : AppCompatActivity() {
                             setMargins(paddingLarge)
                         }
                     }
+
                 }.addView {
                     // card view 2
                     ImagesToAnimatedWebPCardView(it.context).apply {
                         imagesToAnimatedWebPCardView = this
+                        layoutParams = LinearLayout.LayoutParams(
+                            MATCH_PARENT, WRAP_CONTENT
+                        ).apply {
+                            setMargins(paddingLarge)
+                        }
+                    }
+
+                }.addView {
+                    // card view 3
+                    WebPToImagesCardView(it.context).apply {
+                        webPToImagesCardView = this
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
                         ).apply {
@@ -318,6 +450,14 @@ class CodecActivity : AppCompatActivity() {
         val dialog = BottomSheetDialog(this)
         dialog.setContentView(
             WebPPreview(this, uri, width, height)
+        )
+        dialog.show()
+    }
+
+    private fun showBitmapPreview(uri: Uri, width: Int, height: Int) {
+        val dialog = BottomSheetDialog(this)
+        dialog.setContentView(
+            BitmapPreview(this, uri, width, height)
         )
         dialog.show()
     }

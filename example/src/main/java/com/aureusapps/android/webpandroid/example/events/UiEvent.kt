@@ -9,7 +9,11 @@ internal interface UiEvent {
 
     sealed class ImageToWebP : UiEvent {
 
-        open val actionTag: Any? = null
+        abstract val actionTag: Any?
+
+        data class OnOpenDataCollectBottomSheet(
+            override val actionTag: Any? = null
+        ) : ImageToWebP()
 
         data class OnDataCollectStarted(
             val srcUri: Uri,
@@ -21,8 +25,16 @@ internal interface UiEvent {
             override val actionTag: Any? = null
         ) : ImageToWebP()
 
+        data class OnOpenSrcUriPicker(
+            override val actionTag: Any? = null
+        ) : ImageToWebP()
+
         data class OnSrcUriSelected(
             val srcUri: Uri,
+            override val actionTag: Any? = null
+        ) : ImageToWebP()
+
+        data class OnOpenDstUriPicker(
             override val actionTag: Any? = null
         ) : ImageToWebP()
 
@@ -59,7 +71,11 @@ internal interface UiEvent {
 
     sealed class ImagesToAnimatedWebP : UiEvent {
 
-        open val actionTag: Any? = null
+        abstract val actionTag: Any?
+
+        data class OnOpenDataCollectBottomSheet(
+            override val actionTag: Any? = null
+        ) : ImagesToAnimatedWebP()
 
         data class OnDataCollectStarted(
             val srcUris: List<Uri>,
@@ -72,8 +88,16 @@ internal interface UiEvent {
             override val actionTag: Any? = null
         ) : ImagesToAnimatedWebP()
 
+        data class OnOpenSrcUrisPicker(
+            override val actionTag: Any? = null
+        ) : ImagesToAnimatedWebP()
+
         data class OnSrcUrisSelected(
             val srcUris: List<Uri>,
+            override val actionTag: Any? = null
+        ) : ImagesToAnimatedWebP()
+
+        data class OnOpenDstUriPicker(
             override val actionTag: Any? = null
         ) : ImagesToAnimatedWebP()
 
@@ -113,4 +137,41 @@ internal interface UiEvent {
 
     }
 
+    sealed class WebPToImages : UiEvent {
+
+        abstract val actionTag: Any?
+
+        data class OnOpenDataCollectBottomSheet(
+            override val actionTag: Any? = null
+        ) : WebPToImages()
+
+        data class OnDataCollectStarted(
+            val srcUri: Uri,
+            val dstUri: Uri,
+            override val actionTag: Any? = null
+        ) : WebPToImages()
+
+        data class OnOpenSrcUriPicker(
+            override val actionTag: Any? = null
+        ) : WebPToImages()
+
+        data class OnSrcUriSelected(
+            val srcUri: Uri,
+            override val actionTag: Any? = null
+        ) : WebPToImages()
+
+        data class OnOpenDstUriPicker(
+            override val actionTag: Any? = null
+        ) : WebPToImages()
+
+        data class OnDstUriSelected(
+            val dstUri: Uri,
+            override val actionTag: Any? = null
+        ) : WebPToImages()
+
+        data class OnConvertStarted(
+            override val actionTag: Any? = null
+        ) : WebPToImages()
+
+    }
 }

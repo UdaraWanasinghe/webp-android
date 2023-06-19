@@ -58,7 +58,7 @@ jobject decodeBitmapUri(
         jobject juri
 ) {
     jclass bitmap_factory_extended_class = env->FindClass(
-            "com/aureusapps/android/webpandroid/utils/BitmapFactoryExtended"
+            "com/aureusapps/android/extensions/BitmapUtils"
     );
     jmethodID decode_uri_method_id = env->GetStaticMethodID(
             bitmap_factory_extended_class,

@@ -66,6 +66,8 @@ dependencies {
     implementation libs.kotlin.stdlib
     implementation libs.annotation
     implementation libs.okhttp
+    implementation libs.documentfile
+    implementation libs.aureusapps.extensions
 
     testImplementation libs.junit
 

@@ -47,6 +47,8 @@ std::string parseErrorMessage(int error_code) {
             return "Failed to read WebP info";
         case ERROR_WEBP_DECODE_FAILED:
             return "Failed to decode webp data";
+        case ERROR_WRITE_BITMAP_TO_URI_FAILED:
+            return "Failed to write bitmap to the uri";
         default:
             return "Unknown error.";
     }

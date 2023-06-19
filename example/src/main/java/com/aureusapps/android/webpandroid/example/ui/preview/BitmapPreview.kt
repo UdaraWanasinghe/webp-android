@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid.example.ui
+package com.aureusapps.android.webpandroid.example.ui.preview
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -16,9 +16,10 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.aureusapps.android.extensions.addView
+import com.aureusapps.android.extensions.listFiles
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.webpandroid.example.R
-import com.aureusapps.android.webpandroid.example.states.WebPToBitmapConvertState
+import com.aureusapps.android.webpandroid.example.ui.AspectRatioImageView
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.CoroutineScope
@@ -30,11 +31,23 @@ import java.io.InputStream
 @SuppressLint("ViewConstructor")
 @Suppress("NestedLambdaShadowedImplicitParameter")
 internal class BitmapPreview(
-    context: Context, private val webPToBitmapConvertState: WebPToBitmapConvertState
+    context: Context,
+    private val directoryUri: Uri,
+    private val imageWidth: Int,
+    private val imageHeight: Int
 ) : CoordinatorLayout(context) {
+
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private lateinit var recyclerView: RecyclerView
 
     init {
         createContent()
+        coroutineScope.launch(Dispatchers.IO) {
+            val uris = directoryUri.listFiles(context) ?: emptyList()
+            withContext(Dispatchers.Main) {
+                recyclerView.adapter = ImageAdapter(uris, imageWidth, imageHeight)
+            }
+        }
     }
 
     override fun onStartNestedScroll(child: View, target: View, axes: Int, type: Int): Boolean {
@@ -69,45 +82,39 @@ internal class BitmapPreview(
 
         addView {
             RecyclerView(it.context).apply {
+                recyclerView = this
                 layoutParams = LayoutParams(
                     MATCH_PARENT, MATCH_PARENT
                 ).apply {
                     behavior = AppBarLayout.ScrollingViewBehavior()
                 }
                 layoutManager = GridLayoutManager(context, 2)
-                adapter = ImageAdapter(webPToBitmapConvertState)
             }
         }
     }
 
     private class ImageAdapter(
-        private val webPToBitmapConvertState: WebPToBitmapConvertState
+        private val files: List<Uri>,
+        private val imageWidth: Int,
+        private val imageHeight: Int
     ) : RecyclerView.Adapter<ViewHolder>() {
 
-        private val aspectRatio: Float
         private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
-        init {
-            val imageWidth = (webPToBitmapConvertState.imageInfo?.width ?: 1)
-            val imageHeight = (webPToBitmapConvertState.imageInfo?.height ?: 1)
-            aspectRatio = imageWidth.toFloat().div(imageHeight)
-        }
-
         override fun getItemCount(): Int {
-            return webPToBitmapConvertState.imageInfo?.frameCount ?: 0
+            return files.size
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val imageView = AspectRatioImageView(parent.context).apply {
-                aspectRatio = aspectRatio
+                aspectRatio = imageWidth.toFloat().div(imageHeight)
             }
             return object : ViewHolder(imageView) {}
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val imageView = holder.itemView as AspectRatioImageView
-            val (frame, _) = webPToBitmapConvertState.frames[position]
-            readImage(frame, imageView)
+            readImage(files[position], imageView)
         }
 
         private fun readImage(imageUri: Uri, imageView: ImageView) {

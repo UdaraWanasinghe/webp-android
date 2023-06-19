@@ -39,7 +39,7 @@ class WebPDecoder {
         return decodeListeners.remove(listener)
     }
 
-    external fun decodeFrames(context: Context, srcUri: Uri)
+    external fun decodeFrames(context: Context, srcUri: Uri, dstUri: Uri? = null)
 
     external fun decodeInfo(context: Context, srcUri: Uri): WebPInfo
 

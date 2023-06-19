@@ -36,8 +36,9 @@ internal sealed interface ConvertData {
      * Data required to extract images from a webp image.
      */
     data class WebPToImages(
-        val srcUri: Uri? = null,
-        val dstUri: Uri? = null
+        val srcUri: Uri = Uri.EMPTY,
+        val dstUri: Uri = Uri.EMPTY,
+        val startConvert: Boolean = false
     )
 
 }

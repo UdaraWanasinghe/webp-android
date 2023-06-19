@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid.example.ui
+package com.aureusapps.android.webpandroid.example.ui.data
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -36,14 +36,17 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.textfield.TextInputLayout.END_ICON_CUSTOM
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 
-@Suppress("NestedLambdaShadowedImplicitParameter")
 @SuppressLint("ViewConstructor")
-internal class ImagesToAnimatedWebPDataCollectView(
+@Suppress("NestedLambdaShadowedImplicitParameter")
+internal class ImageToWebPDataCollectView(
     context: Context,
     viewModelStoreOwner: ViewModelStoreOwner,
     private val dismissCallback: () -> Unit
@@ -54,106 +57,103 @@ internal class ImagesToAnimatedWebPDataCollectView(
     }
 
     private val codecViewModel by viewModels<CodecViewModel>()
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private lateinit var srcUriTextView: TextView
     private lateinit var dstUriTextView: TextView
-    private lateinit var frameDurationTextView: TextView
     private lateinit var imageWidthTextView: TextView
     private lateinit var imageHeightTextView: TextView
     private lateinit var convertQualityTextView: TextView
     private lateinit var presetTextView: MaterialAutoCompleteTextView
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private var flagCollectData = true
 
     init {
         setTag(R.id.view_tree_view_model_store_owner, viewModelStoreOwner)
         createContent()
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         coroutineScope.launch {
             codecViewModel
                 .uiEventFlow
-                .filterIsInstance<UiEvent.ImagesToAnimatedWebP>()
+                .filterIsInstance<UiEvent.ImageToWebP>()
                 .collect { event ->
                     when (event) {
-                        is UiEvent.ImagesToAnimatedWebP.OnDataCollectStarted -> {
+                        is UiEvent.ImageToWebP.OnDataCollectStarted -> {
                             if (event.actionTag != ACTION_TAG) {
-                                srcUriTextView.setText {
-                                    event
-                                        .srcUris
-                                        .joinToString {
-                                            it.toString()
-                                        }
-                                }
+                                srcUriTextView.setText { event.srcUri.toString() }
                                 dstUriTextView.setText { event.dstUri.toString() }
-                                frameDurationTextView.setText { event.frameDuration.toString() }
                                 convertQualityTextView.setText { "%.2f".format(event.convertQuality) }
                                 imageWidthTextView.setText { event.imageWidth.toString() }
                                 imageHeightTextView.setText { event.imageHeight.toString() }
                                 if (event.webPPreset != null) {
-                                    presetTextView.setText(
-                                        event.webPPreset.name
-                                    )
+                                    presetTextView.setText(event.webPPreset.name)
                                 }
                             }
                         }
 
-                        is UiEvent.ImagesToAnimatedWebP.OnSrcUrisSelected -> {
+                        is UiEvent.ImageToWebP.OnSrcUriSelected -> {
                             if (event.actionTag != ACTION_TAG) {
-                                srcUriTextView.setText {
-                                    event
-                                        .srcUris
-                                        .joinToString {
-                                            it.toString()
-                                        }
-                                }
+                                srcUriTextView.setText { event.srcUri.toString() }
                             }
                         }
 
-                        is UiEvent.ImagesToAnimatedWebP.OnDstUriSelected -> {
+                        is UiEvent.ImageToWebP.OnDstUriSelected -> {
                             if (event.actionTag != ACTION_TAG) {
                                 dstUriTextView.setText { event.dstUri.toString() }
                             }
                         }
 
-                        is UiEvent.ImagesToAnimatedWebP.OnFrameDurationSelected -> {
-                            if (event.actionTag != ACTION_TAG) {
-                                frameDurationTextView.setText { event.frameDuration.toString() }
-                            }
-                        }
-
-                        is UiEvent.ImagesToAnimatedWebP.OnConvertQualitySelected -> {
+                        is UiEvent.ImageToWebP.OnConvertQualitySelected -> {
                             if (event.actionTag != ACTION_TAG) {
                                 convertQualityTextView.setText { "%.2f".format(event.convertQuality) }
                             }
                         }
 
-                        is UiEvent.ImagesToAnimatedWebP.OnWebPPresetSelected -> {
-                            if (event.actionTag != ACTION_TAG) {
-                                presetTextView.setText(
-                                    event.webPPreset.name
-                                )
-                            }
-                        }
-
-                        is UiEvent.ImagesToAnimatedWebP.OnImageWidthSelected -> {
+                        is UiEvent.ImageToWebP.OnImageWidthSelected -> {
                             if (event.actionTag != ACTION_TAG) {
                                 imageWidthTextView.setText { event.imageWidth.toString() }
                             }
                         }
 
-                        is UiEvent.ImagesToAnimatedWebP.OnImageHeightSelected -> {
+                        is UiEvent.ImageToWebP.OnImageHeightSelected -> {
                             if (event.actionTag != ACTION_TAG) {
                                 imageHeightTextView.setText { event.imageHeight.toString() }
                             }
                         }
 
-                        is UiEvent.ImagesToAnimatedWebP.OnConvertStarted -> {
+                        is UiEvent.ImageToWebP.OnConvertPresetSelected -> {
+                            if (event.actionTag != ACTION_TAG) {
+                                presetTextView.setText(event.webPPreset.name)
+                            }
+                        }
+
+                        is UiEvent.ImageToWebP.OnConvertStarted -> {
                             dismissCallback()
+                        }
+
+                        else -> {
+
                         }
                     }
                 }
         }
+        if (flagCollectData) {
+            flagCollectData = false
+            coroutineScope.launch {
+                codecViewModel.submitAction(
+                    UiAction
+                        .ImageToWebP
+                        .StartDataCollect()
+                )
+            }
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        coroutineScope.coroutineContext[Job]?.cancelChildren()
+        super.onDetachedFromWindow()
     }
 
     private fun createContent() {
@@ -173,7 +173,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                     ).apply {
                         scrollFlags = AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
                     }
-                    title = "Images to Animated WebP"
+                    title = "Image to WebP"
                     setBackgroundColor(
                         resolveColorAttribute(R.attr.colorSurface)
                     )
@@ -212,15 +212,13 @@ internal class ImagesToAnimatedWebPDataCollectView(
                             setMargins(0, 0, 0, paddingLarge)
                         }
                         hint = "Source Uri"
-                        endIconMode = TextInputLayout.END_ICON_CUSTOM
+                        endIconMode = END_ICON_CUSTOM
                         setEndIconDrawable(R.drawable.ic_image)
                         setEndIconOnClickListener {
                             codecViewModel.submitAction(
-                                UiAction
-                                    .ImagesToAnimatedWebP
-                                    .OpenSrcUrisPicker(
-                                        tag = ACTION_TAG
-                                    )
+                                UiAction.ImageToWebP.OpenSrcUriPicker(
+                                    tag = ACTION_TAG
+                                )
                             )
                         }
 
@@ -237,12 +235,9 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                 if (tag == null) {
                                     codecViewModel.submitAction(
                                         UiAction
-                                            .ImagesToAnimatedWebP
-                                            .SelectSrcUris(
-                                                srcUris = it
-                                                    .toString()
-                                                    .split(", ")
-                                                    .map { it.toUri() },
+                                            .ImageToWebP
+                                            .SelectSrcUri(
+                                                srcUri = it.toString().toUri(),
                                                 tag = ACTION_TAG
                                             )
                                     )
@@ -264,15 +259,13 @@ internal class ImagesToAnimatedWebPDataCollectView(
                             setMargins(0, 0, 0, paddingLarge)
                         }
                         hint = "Destination Uri"
-                        endIconMode = TextInputLayout.END_ICON_CUSTOM
+                        endIconMode = END_ICON_CUSTOM
                         setEndIconDrawable(R.drawable.ic_image)
                         setEndIconOnClickListener {
                             codecViewModel.submitAction(
-                                UiAction
-                                    .ImagesToAnimatedWebP
-                                    .OpenDstUriPicker(
-                                        tag = ACTION_TAG
-                                    )
+                                UiAction.ImageToWebP.OpenDstUriPicker(
+                                    tag = ACTION_TAG
+                                )
                             )
                         }
 
@@ -289,11 +282,9 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                 if (tag == null) {
                                     codecViewModel.submitAction(
                                         UiAction
-                                            .ImagesToAnimatedWebP
+                                            .ImageToWebP
                                             .SelectDstUri(
-                                                dstUri = it
-                                                    .toString()
-                                                    .toUri(),
+                                                dstUri = it.toString().toUri(),
                                                 tag = ACTION_TAG
                                             )
                                     )
@@ -329,12 +320,11 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                 if (tag == null) {
                                     codecViewModel.submitAction(
                                         UiAction
-                                            .ImagesToAnimatedWebP
+                                            .ImageToWebP
                                             .SelectConvertQuality(
                                                 convertQuality = it
                                                     .toString()
-                                                    .toFloatOrNull()
-                                                    ?: 0f,
+                                                    .toFloatOrNull() ?: 0f,
                                                 tag = ACTION_TAG
                                             )
                                     )
@@ -344,47 +334,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                     }
 
                 }.addView {
-                    // frame duration text view
-                    TextInputLayout(
-                        it.context.withTextInputStyle_OutlinedSmall,
-                        null,
-                        R.attr.textInputStyle_outlinedSmall
-                    ).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            MATCH_PARENT, WRAP_CONTENT
-                        ).apply {
-                            setMargins(0, 0, 0, paddingLarge)
-                        }
-                        hint = "Frame Duration"
-
-                    }.addView {
-                        // text view
-                        TextInputEditText(it.context).apply {
-                            frameDurationTextView = this
-                            maxLines = 10
-                            isSingleLine = true
-                            imeOptions = EditorInfo.IME_ACTION_NEXT
-                            inputType = EditorInfo.TYPE_CLASS_NUMBER
-                            addTextChangedListener {
-                                if (tag == null) {
-                                    codecViewModel.submitAction(
-                                        UiAction
-                                            .ImagesToAnimatedWebP
-                                            .SelectFrameDuration(
-                                                frameDuration = it
-                                                    .toString()
-                                                    .toIntOrNull()
-                                                    ?: 0,
-                                                tag = ACTION_TAG
-                                            )
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                }.addView {
-                    // dst image width
+                    // dst image size
                     LinearLayout(it.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
@@ -416,7 +366,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                     if (tag == null) {
                                         codecViewModel.submitAction(
                                             UiAction
-                                                .ImagesToAnimatedWebP
+                                                .ImageToWebP
                                                 .SelectImageWidth(
                                                     imageWidth = it
                                                         .toString()
@@ -454,7 +404,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                     if (tag == null) {
                                         codecViewModel.submitAction(
                                             UiAction
-                                                .ImagesToAnimatedWebP
+                                                .ImageToWebP
                                                 .SelectImageHeight(
                                                     imageHeight = it
                                                         .toString()
@@ -502,7 +452,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                                 val preset = WebPPreset.values()[position]
                                 codecViewModel.submitAction(
                                     UiAction
-                                        .ImagesToAnimatedWebP
+                                        .ImageToWebP
                                         .SelectWebPPreset(
                                             webPPreset = preset,
                                             tag = ACTION_TAG
@@ -526,7 +476,7 @@ internal class ImagesToAnimatedWebPDataCollectView(
                         setOnClickListener {
                             codecViewModel.submitAction(
                                 UiAction
-                                    .ImagesToAnimatedWebP
+                                    .ImageToWebP
                                     .RequestStartConvert(
                                         tag = ACTION_TAG
                                     )
@@ -536,6 +486,6 @@ internal class ImagesToAnimatedWebPDataCollectView(
                 }
             }
         }
-
     }
+
 }

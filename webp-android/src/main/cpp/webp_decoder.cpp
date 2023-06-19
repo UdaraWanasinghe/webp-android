@@ -5,11 +5,14 @@
 #include <fstream>
 #include <sstream>
 #include <webp/demux.h>
+#include <android/bitmap.h>
 
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
 #include "include/error_codes.h"
 #include "include/exception_helper.h"
+#include "include/type_helper.h"
+#include "include/string_formatter.h"
 
 namespace {
 
@@ -55,7 +58,8 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
-        jobject jsrc_uri
+        jobject jsrc_uri,
+        jobject jdst_uri
 ) {
     int result = RESULT_SUCCESS;
 
@@ -134,6 +138,51 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
                            && WebPAnimDecoderGetNext(anim_decoder, &pixels, &timestamp)) {
                         result = copyPixels(env, pixels, jbitmap);
                         if (result != RESULT_SUCCESS) break;
+
+                        if (!isObjectNull(env, jdst_uri)) {
+                            auto display_name = formatString("Image-%d.png", index);
+                            jstring jdisplay_name = env->NewStringUTF(display_name.c_str());
+                            jclass bitmap_utils_class = env->FindClass(
+                                    "com/aureusapps/android/extensions/BitmapUtils"
+                            );
+                            jmethodID write_bitmap_method_id = env->GetStaticMethodID(
+                                    bitmap_utils_class,
+                                    "saveInDirectory",
+                                    "(Landroid/content/Context;Landroid/graphics/Bitmap;Landroid/net/Uri;Ljava/lang/String;Landroid/graphics/Bitmap$CompressFormat;I)Landroid/net/Uri;"
+                            );
+                            jclass compress_format_class = env->FindClass(
+                                    "android/graphics/Bitmap$CompressFormat"
+                            );
+                            jfieldID png_field_id = env->GetStaticFieldID(
+                                    compress_format_class,
+                                    "PNG",
+                                    "Landroid/graphics/Bitmap$CompressFormat;"
+                            );
+                            jobject jpng = env->GetStaticObjectField(
+                                    compress_format_class,
+                                    png_field_id
+                            );
+
+                            jobject jbitmap_uri = env->CallStaticObjectMethod(
+                                    bitmap_utils_class,
+                                    write_bitmap_method_id,
+                                    jcontext,
+                                    jbitmap,
+                                    jdst_uri,
+                                    jdisplay_name,
+                                    jpng,
+                                    100
+                            );
+                            if (isObjectNull(env, jbitmap_uri)) {
+                                result = ERROR_WRITE_BITMAP_TO_URI_FAILED;
+                            }
+                            env->DeleteLocalRef(bitmap_utils_class);
+                            env->DeleteLocalRef(jdisplay_name);
+                            env->DeleteLocalRef(compress_format_class);
+                            env->DeleteLocalRef(jpng);
+                            env->DeleteLocalRef(jbitmap_uri);
+                        }
+
                         env->CallVoidMethod(
                                 thiz,
                                 notify_frame_decoded_method_id,
@@ -141,6 +190,9 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
                                 static_cast<jlong>(timestamp),
                                 jbitmap
                         );
+                        if (result != RESULT_SUCCESS) {
+                            break;
+                        }
                     }
 
                     WebPAnimDecoderDelete(anim_decoder);
@@ -163,7 +215,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
                     features.height,
                     features.has_alpha,
                     features.has_animation,
-                    0, 0, 0
+                    0, 1, 0
             );
             env->CallVoidMethod(thiz, notify_info_decoded_method_id, jinfo);
             env->DeleteLocalRef(jinfo);
@@ -176,6 +228,50 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
 
             } else {
                 jobject jbitmap = createBitmap(env, width, height, pixels);
+                if (!isObjectNull(env, jdst_uri)) {
+                    auto display_name = formatString("Image-%d.png", 0);
+                    jstring jdisplay_name = env->NewStringUTF(display_name.c_str());
+
+                    jclass bitmap_utils_class = env->FindClass(
+                            "com/aureusapps/android/extensions/BitmapUtils"
+                    );
+                    jmethodID write_bitmap_method_id = env->GetStaticMethodID(
+                            bitmap_utils_class,
+                            "saveInDirectory",
+                            "(Landroid/content/Context;Landroid/graphics/Bitmap;Landroid/net/Uri;Ljava/lang/String;Landroid/graphics/Bitmap$CompressFormat;I)Landroid/net/Uri;"
+                    );
+                    jclass compress_format_class = env->FindClass(
+                            "android/graphics/Bitmap$CompressFormat"
+                    );
+                    jfieldID png_field_id = env->GetStaticFieldID(
+                            compress_format_class,
+                            "PNG",
+                            "Landroid/graphics/Bitmap$CompressFormat;"
+                    );
+                    jobject jpng = env->GetStaticObjectField(
+                            compress_format_class,
+                            png_field_id
+                    );
+
+                    jobject jbitmap_uri = env->CallStaticObjectMethod(
+                            bitmap_utils_class,
+                            write_bitmap_method_id,
+                            jcontext,
+                            jbitmap,
+                            jdst_uri,
+                            jdisplay_name,
+                            jpng,
+                            100
+                    );
+                    if (isObjectNull(env, jbitmap_uri)) {
+                        result = ERROR_WRITE_BITMAP_TO_URI_FAILED;
+                    }
+                    env->DeleteLocalRef(bitmap_utils_class);
+                    env->DeleteLocalRef(jdisplay_name);
+                    env->DeleteLocalRef(compress_format_class);
+                    env->DeleteLocalRef(jpng);
+                    env->DeleteLocalRef(jbitmap_uri);
+                }
                 env->CallVoidMethod(
                         thiz,
                         notify_frame_decoded_method_id,
