@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aureusapps.android.extensions.scanNotNull
 import com.aureusapps.android.webpandroid.decoder.WebPDecodeListener
 import com.aureusapps.android.webpandroid.decoder.WebPDecoder
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
@@ -14,7 +15,6 @@ import com.aureusapps.android.webpandroid.encoder.WebPEncoder
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.data.ConvertData
 import com.aureusapps.android.webpandroid.example.events.UiEvent
-import com.aureusapps.android.webpandroid.example.extensions.scanNotNull
 import com.aureusapps.android.webpandroid.example.states.ConvertState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
