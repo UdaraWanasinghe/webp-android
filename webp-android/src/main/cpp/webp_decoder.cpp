@@ -116,7 +116,7 @@ int processFrame(
         int timestamp,
         int index
 ) {
-    int result = copyPixels(env, pixels, jbitmap);
+    int result = bmp::copyPixels(env, pixels, jbitmap);
     if (result == RESULT_SUCCESS) {
         jclass decoder_class = env->FindClass(
                 "com/aureusapps/android/webpandroid/decoder/WebPDecoder");
@@ -204,7 +204,7 @@ int decodeAnimFrames(
         }
 
         if (result == RESULT_SUCCESS) {
-            jobject jbitmap = createBitmap(env, features.width, features.height);
+            jobject jbitmap = bmp::createBitmap(env, features.width, features.height);
             uint8_t *pixels = nullptr;
             int timestamp = 0;
             int index = 0;
@@ -277,7 +277,7 @@ int decodeStaticFrame(
         }
 
         if (result == RESULT_SUCCESS) {
-            jobject jbitmap = createBitmap(env, width, height);
+            jobject jbitmap = bmp::createBitmap(env, width, height);
             result = processFrame(env, jdecoder, jcontext, jbitmap, jdst_uri, pixels, 0, 0);
         }
     }

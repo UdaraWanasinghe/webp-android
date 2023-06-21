@@ -10,7 +10,7 @@
 #include "include/exception_helper.h"
 #include "include/result_codes.h"
 
-jobject createBitmap(
+jobject bmp::createBitmap(
         JNIEnv *env,
         int width,
         int height
@@ -21,45 +21,43 @@ jobject createBitmap(
             "createBitmap",
             "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;"
     );
-    jclass bitmap_config_class = env->FindClass("android/graphics/Bitmap$Config");
+    jclass config_class = env->FindClass("android/graphics/Bitmap$Config");
     jfieldID argb_8888_field = env->GetStaticFieldID(
-            bitmap_config_class,
+            config_class,
             "ARGB_8888",
             "Landroid/graphics/Bitmap$Config;"
     );
-    jobject config = env->GetStaticObjectField(bitmap_config_class, argb_8888_field);
-    jobject bitmap = env->CallStaticObjectMethod(
+    jobject jconfig = env->GetStaticObjectField(config_class, argb_8888_field);
+    jobject jbitmap = env->CallStaticObjectMethod(
             bitmap_class,
             create_bitmap_method_id,
             width,
             height,
-            config
+            jconfig
     );
     env->DeleteLocalRef(bitmap_class);
-    env->DeleteLocalRef(bitmap_config_class);
-    env->DeleteLocalRef(config);
-    return bitmap;
+    env->DeleteLocalRef(config_class);
+    env->DeleteLocalRef(jconfig);
+    return jbitmap;
 }
 
-jobject createBitmap(
+jobject bmp::createBitmap(
         JNIEnv *env,
         int width,
         int height,
         const uint8_t *pixels
 ) {
     jobject bitmap = createBitmap(env, width, height);
-    copyPixels(env, pixels, bitmap);
+    bmp::copyPixels(env, pixels, bitmap);
     return bitmap;
 }
 
-jobject decodeBitmapUri(
+jobject bmp::decodeBitmapUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri
 ) {
-    jclass bitmap_utils_class = env->FindClass(
-            "com/aureusapps/android/extensions/BitmapUtils"
-    );
+    jclass bitmap_utils_class = env->FindClass("com/aureusapps/android/extensions/BitmapUtils");
     jmethodID decode_uri_method_id = env->GetStaticMethodID(
             bitmap_utils_class,
             "decodeUri",
@@ -75,53 +73,52 @@ jobject decodeBitmapUri(
     return jbitmap;
 }
 
-jobject resizeBitmap(
+jobject bmp::resizeBitmap(
         JNIEnv *env,
         jobject jbitmap,
         int width,
         int height
 ) {
     jclass bitmap_class = env->FindClass("android/graphics/Bitmap");
-    jmethodID create_scaled_bitmap_method_id = env->GetStaticMethodID(
+    jmethodID scale_method_id = env->GetStaticMethodID(
             bitmap_class,
             "createScaledBitmap",
             "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;"
     );
-    jobject resized_bitmap = env->CallStaticObjectMethod(
+    jobject jresized_bitmap = env->CallStaticObjectMethod(
             bitmap_class,
-            create_scaled_bitmap_method_id,
+            scale_method_id,
             jbitmap,
             width,
             height,
             true
     );
     env->DeleteLocalRef(bitmap_class);
-    return resized_bitmap;
+    return jresized_bitmap;
 }
 
-int copyPixels(
+int bmp::copyPixels(
         JNIEnv *env,
-        const uint8_t *pixels,
-        jobject jbitmap
+        const uint8_t *src_pixels,
+        jobject jdst_bitmap
 ) {
     AndroidBitmapInfo info;
-    if (AndroidBitmap_getInfo(env, jbitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
+    if (AndroidBitmap_getInfo(env, jdst_bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
         return ERROR_BITMAP_INFO_EXTRACT_FAILED;
     }
 
     void *dst_pixels;
-    if (AndroidBitmap_lockPixels(env, jbitmap, &dst_pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
+    if (AndroidBitmap_lockPixels(env, jdst_bitmap, &dst_pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
         return ERROR_LOCK_BITMAP_PIXELS_FAILED;
     }
 
-    size_t num_bytes = info.width * info.height * 4;
-    memcpy(dst_pixels, pixels, num_bytes);
+    const size_t num_bytes = info.width * info.height * 4;
+    memcpy(dst_pixels, src_pixels, num_bytes);
 
-    int result = RESULT_SUCCESS;
-    if (AndroidBitmap_unlockPixels(env, jbitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        result = ERROR_UNLOCK_BITMAP_PIXELS_FAILED;
+    if (AndroidBitmap_unlockPixels(env, jdst_bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        return ERROR_UNLOCK_BITMAP_PIXELS_FAILED;
     }
-    return result;
+    return RESULT_SUCCESS;
 }
 
 jobject bmp::saveToDirectory(
@@ -143,10 +140,7 @@ jobject bmp::saveToDirectory(
             "PNG",
             "Landroid/graphics/Bitmap$CompressFormat;"
     );
-    jobject jpng = env->GetStaticObjectField(
-            compress_format_class,
-            png_field_id
-    );
+    jobject jpng = env->GetStaticObjectField(compress_format_class, png_field_id);
     jstring jdisplay_name = env->NewStringUTF(file_name.c_str());
     jobject jbitmap_uri = env->CallStaticObjectMethod(
             bitmap_utils_class,
@@ -165,11 +159,12 @@ jobject bmp::saveToDirectory(
     return jbitmap_uri;
 }
 
-void recycleBitmap(
+void bmp::recycleBitmap(
         JNIEnv *env,
         jobject jbitmap
 ) {
-    jclass bitmapClass = env->FindClass("android/graphics/Bitmap");
-    jmethodID recycleMethodID = env->GetMethodID(bitmapClass, "recycle", "()V");
-    env->CallVoidMethod(jbitmap, recycleMethodID);
+    jclass bitmap_class = env->FindClass("android/graphics/Bitmap");
+    jmethodID recycle_method_id = env->GetMethodID(bitmap_class, "recycle", "()V");
+    env->CallVoidMethod(jbitmap, recycle_method_id);
+    env->DeleteLocalRef(bitmap_class);
 }

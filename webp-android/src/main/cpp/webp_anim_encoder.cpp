@@ -206,7 +206,7 @@ namespace {
 
         bool bitmap_resized = false;
         if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
-            jbitmap = resizeBitmap(
+            jbitmap = bmp::resizeBitmap(
                     env,
                     jbitmap,
                     encoder->imageWidth,
@@ -246,7 +246,7 @@ namespace {
             }
         }
         if (bitmap_resized) {
-            recycleBitmap(env, jbitmap);
+            bmp::recycleBitmap(env, jbitmap);
             env->DeleteLocalRef(jbitmap);
         }
         return result;
@@ -416,7 +416,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__Landro
         jobject jsrc_uri
 ) {
     int result = RESULT_SUCCESS;
-    jobject jbitmap = decodeBitmapUri(env, jcontext, jsrc_uri);
+    jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
 
     if (isObjectNull(env, jbitmap)) {
         result = ERROR_BITMAP_URI_DECODE_FAILED;
