@@ -691,6 +691,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 var webPInfo: WebPInfo? = null
+                val dstUris = mutableListOf<Uri>()
                 webPDecoder.addDecodeListener(
                     object : WebPDecodeListener {
                         override fun onInfoDecoded(info: WebPInfo) {
@@ -707,7 +708,15 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                             }
                         }
 
-                        override fun onFrameDecoded(index: Int, timestamp: Long, frame: Bitmap) {
+                        override fun onFrameDecoded(
+                            index: Int,
+                            timestamp: Long,
+                            bitmap: Bitmap,
+                            uri: Uri?
+                        ) {
+                            if (uri != null) {
+                                dstUris.add(uri)
+                            }
                             val frameCount = webPInfo?.frameCount ?: 0
                             emitState { state ->
                                 val progress = if (frameCount != 0) {
@@ -732,7 +741,8 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                     ConvertState
                         .WebPToImages
                         .OnConvertFinished(
-                            parent = state
+                            parent = state,
+                            dstUris = dstUris
                         )
                 }
 

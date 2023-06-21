@@ -11,7 +11,7 @@
 #include "include/webp_encoder_helper.h"
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
-#include "include/error_codes.h"
+#include "include/result_codes.h"
 
 namespace {
 
@@ -186,7 +186,7 @@ namespace {
 
         AndroidBitmapInfo info;
         if (AndroidBitmap_getInfo(env, jbitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
-            return ERROR_FAILED_TO_GET_BITMAP_INFO;
+            return ERROR_BITMAP_INFO_EXTRACT_FAILED;
         }
 
         bool bitmap_resized = false;
@@ -198,12 +198,12 @@ namespace {
                     encoder->imageHeight
             );
             if (isObjectNull(env, jbitmap)) {
-                result = ERROR_RESIZE_BITMAP_FAILED;
+                result = ERROR_BITMAP_RESIZE_FAILED;
 
             } else {
                 bitmap_resized = true;
                 if (AndroidBitmap_getInfo(env, jbitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
-                    result = ERROR_FAILED_TO_GET_BITMAP_INFO;
+                    result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
 
                 } else if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
                     result = ERROR_INVALID_BITMAP_FORMAT;
@@ -408,7 +408,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
     }
 
     if (result != RESULT_SUCCESS) {
-        std::string message = parseErrorMessage(result);
+        std::string message = parseResultMessage(result);
         throwRuntimeException(env, message.c_str());
     }
 }
@@ -434,7 +434,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
         env->DeleteLocalRef(jbitmap);
     }
     if (result != RESULT_SUCCESS) {
-        std::string message = parseErrorMessage(result);
+        std::string message = parseResultMessage(result);
         throwRuntimeException(env, message.c_str());
     }
 }
@@ -456,7 +456,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
             jdst_uri
     );
     if (result != RESULT_SUCCESS) {
-        std::string message = parseErrorMessage(result);
+        std::string message = parseResultMessage(result);
         throwRuntimeException(env, message.c_str());
     }
 }

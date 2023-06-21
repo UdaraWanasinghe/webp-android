@@ -84,6 +84,30 @@ int copyPixels(
         jobject jbitmap
 );
 
+namespace bmp {
+
+/**
+ * Saves the given bitmap object to the directory represented by the URI.
+ * The URI can be either a file URI or a tree URI.
+ *
+ * @param env The JNI environment.
+ * @param jcontext The context object.
+ * @param jbitmap The bitmap object to be saved.
+ * @param jdirectory_uri The URI representing the directory where the bitmap will be saved.
+ * @param file_name The name of the file to be saved.
+ *
+ * @return The result code indicating the status of the save operation.
+ */
+    jobject saveToDirectory(
+            JNIEnv *env,
+            jobject jcontext,
+            jobject jbitmap,
+            jobject jdirectory_uri,
+            const std::string &file_name
+    );
+
+}
+
 /**
  * Recycles a Bitmap object, releasing associated resources.
  *

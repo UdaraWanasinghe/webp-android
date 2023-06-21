@@ -7,10 +7,13 @@
 #include <string>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sstream>
+#include <fstream>
 
 #include "include/file_utils.h"
 #include "include/exception_helper.h"
 #include "include/string_formatter.h"
+#include "include/result_codes.h"
 
 int openFileDescriptor(
         JNIEnv *env,
@@ -85,14 +88,14 @@ int readFromUri(
 ) {
     jint file_descriptor = openFileDescriptor(env, jcontext, juri, "r");
     if (file_descriptor == -1) {
-        return -1;
+        return ERROR_READ_URI_FAILED;
     }
 
     // Get file size
     struct stat file_stat{};
     if (fstat(file_descriptor, &file_stat) == -1) {
         close(file_descriptor);
-        return -1;
+        return ERROR_READ_URI_FAILED;
     }
 
     // Read from file descriptor
@@ -101,12 +104,12 @@ int readFromUri(
     close(file_descriptor);
     if (bytes_read != file_stat.st_size) {
         free(buffer);
-        return -1;
+        return ERROR_READ_URI_FAILED;
     }
 
     *file_data = buffer;
     *file_size = file_stat.st_size;
-    return 0;
+    return RESULT_SUCCESS;
 }
 
 int writeToUri(
@@ -152,4 +155,60 @@ std::string uriToString(JNIEnv *env, jobject juri) {
     env->DeleteLocalRef(uri_class);
     env->ReleaseStringUTFChars(uri_jstring, uri_chars);
     return uri_string;
+}
+
+int fileExists(
+        JNIEnv *env,
+        jobject jcontext,
+        jobject jdirectory_uri,
+        const std::string &file_name
+) {
+    jclass uri_extensions_class = env->FindClass(
+            "com/aureusapps/android/extensions/UriExtensionsKt"
+    );
+    jmethodID file_exists_method_id = env->GetStaticMethodID(
+            uri_extensions_class,
+            "fileExists",
+            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
+    );
+    jstring jfile_name = env->NewStringUTF(file_name.c_str());
+    jboolean jexists = env->CallStaticBooleanMethod(
+            uri_extensions_class,
+            file_exists_method_id,
+            jdirectory_uri,
+            jcontext,
+            jfile_name
+    );
+    if (env->ExceptionCheck()) {
+        jexists = -1;
+        env->ExceptionClear();
+    }
+    env->DeleteLocalRef(uri_extensions_class);
+    env->DeleteLocalRef(jfile_name);
+    return jexists;
+}
+
+std::pair<bool, std::string> generateFileName(
+        JNIEnv *env,
+        jobject jcontext,
+        jobject jdirectory_uri,
+        int index,
+        const std::string &prefix,
+        const std::string &suffix
+) {
+    int counter = index;
+    std::pair<bool, std::string> result(false, "");
+    while (true) {
+        std::stringstream ss;
+        ss << prefix << "_" << std::setfill('0') << std::setw(4) << counter++ << suffix;
+        int exists = fileExists(env, jcontext, jdirectory_uri, ss.str());
+        if (exists == -1) {
+            break;
+        }
+        if (exists == 0) {
+            result = std::pair(true, ss.str());
+            break;
+        }
+    }
+    return result;
 }

@@ -32,7 +32,7 @@ int openFileDescriptor(
  * @param file_data A pointer to the dynamically allocated uint8_t buffer that will store the file data.
  * @param file_size A pointer to the variable that will store the size of the file.
  *
- * @return 0 on success, or a non-zero value if an error occurs.
+ * @return Result code that tells status of the read operation.
  */
 int readFromUri(
         JNIEnv *env,
@@ -71,3 +71,41 @@ int writeToUri(
  * @throws runtime_error if given juri in not an instance of Android Uri.
  */
 std::string uriToString(JNIEnv *env, jobject juri);
+
+/**
+ * Checks if the file exists or not.
+ *
+ * @param env The Java environment.
+ * @param jcontext The Android context.
+ * @param jdirectory_uri Directory uri.
+ * @param file_name File name of the child.
+ *
+ * @return 1 if file exists, 0 if not, -1 if error occurred.
+ */
+int fileExists(
+        JNIEnv *env,
+        jobject jcontext,
+        jobject jdirectory_uri,
+        const std::string &file_name
+);
+
+/**
+ * Generates file name with the pattern prefix_####suffix.
+ *
+ * @param env Java environment.
+ * @param jcontext The Android context.
+ * @param jdirectory_uri The destination uri (tree uri or file uri).
+ * @param index Bitmap index.
+ * @param prefix File name prefix.
+ * @param suffix File name suffix.
+ *
+ * @return A pair - success, file name
+ */
+std::pair<bool, std::string> generateFileName(
+        JNIEnv *env,
+        jobject jcontext,
+        jobject jdirectory_uri,
+        int index,
+        const std::string &prefix,
+        const std::string &suffix
+);

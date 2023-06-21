@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.aureusapps.android.extensions.addView
-import com.aureusapps.android.extensions.listFiles
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.webpandroid.example.R
 import com.aureusapps.android.webpandroid.example.ui.AspectRatioImageView
@@ -32,7 +31,7 @@ import java.io.InputStream
 @Suppress("NestedLambdaShadowedImplicitParameter")
 internal class BitmapPreview(
     context: Context,
-    private val directoryUri: Uri,
+    private val imagesUris: List<Uri>,
     private val imageWidth: Int,
     private val imageHeight: Int
 ) : CoordinatorLayout(context) {
@@ -43,9 +42,8 @@ internal class BitmapPreview(
     init {
         createContent()
         coroutineScope.launch(Dispatchers.IO) {
-            val uris = directoryUri.listFiles(context) ?: emptyList()
             withContext(Dispatchers.Main) {
-                recyclerView.adapter = ImageAdapter(uris, imageWidth, imageHeight)
+                recyclerView.adapter = ImageAdapter(imagesUris, imageWidth, imageHeight)
             }
         }
     }

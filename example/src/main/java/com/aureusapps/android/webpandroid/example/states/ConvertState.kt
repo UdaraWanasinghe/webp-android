@@ -228,13 +228,16 @@ internal interface ConvertState {
         data class OnConvertFinished(
             override val srcUri: Uri,
             override val dstUri: Uri,
+            val dstUris: List<Uri>
         ) : WebPToImages() {
 
             constructor(
-                parent: WebPToImages
+                parent: WebPToImages,
+                dstUris: List<Uri>
             ) : this(
                 srcUri = parent.srcUri,
-                dstUri = parent.dstUri
+                dstUri = parent.dstUri,
+                dstUris = dstUris
             )
 
         }

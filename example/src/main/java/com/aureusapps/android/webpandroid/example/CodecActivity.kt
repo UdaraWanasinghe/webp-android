@@ -360,7 +360,7 @@ class CodecActivity : AppCompatActivity() {
 
                         is ConvertState.WebPToImages.OnConvertFinished -> {
                             showBitmapPreview(
-                                state.dstUri,
+                                state.dstUris,
                                 webPInfo?.width ?: 0,
                                 webPInfo?.height ?: 0
                             )
@@ -454,10 +454,10 @@ class CodecActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showBitmapPreview(uri: Uri, width: Int, height: Int) {
+    private fun showBitmapPreview(uris: List<Uri>, width: Int, height: Int) {
         val dialog = BottomSheetDialog(this)
         dialog.setContentView(
-            BitmapPreview(this, uri, width, height)
+            BitmapPreview(this, uris, width, height)
         )
         dialog.show()
     }
