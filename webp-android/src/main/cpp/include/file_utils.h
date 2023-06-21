@@ -6,106 +6,112 @@
 
 #include <jni.h>
 
-/**
- * Retrieves the file descriptor associated with the Android Uri.
- *
- * @param env The JNI environment pointer.
- * @param jcontext The Android Context object.
- * @param juri The Android Uri object representing the file.
- * @param mode File mode used to open the file.
- *
- * @return The file descriptor associated with the Android Uri, or -1 if an error occurs.
- */
-int openFileDescriptor(
-        JNIEnv *env,
-        jobject jcontext,
-        jobject juri,
-        const char *mode
-);
+namespace files {
 
-/**
- * Reads the contents of a file specified by the Android Uri into a dynamically allocated uint8_t buffer.
- *
- * @param env The JNI environment pointer.
- * @param jcontext The Android Context object.
- * @param juri The Android Uri object representing the file to be read.
- * @param file_data A pointer to the dynamically allocated uint8_t buffer that will store the file data.
- * @param file_size A pointer to the variable that will store the size of the file.
- *
- * @return Result code that tells status of the read operation.
- */
-int readFromUri(
-        JNIEnv *env,
-        jobject jcontext,
-        jobject juri,
-        uint8_t **file_data,
-        size_t *file_size
-);
+    /**
+     * Retrieves the file descriptor associated with the Android Uri.
+     * The Uri could be a content provider Uri, file Uri or an Android resource Uri.
+     *
+     * @param env Pointer to the JNI environment.
+     * @param jcontext The Android context object.
+     * @param juri The Android Uri object representing the file.
+     * @param mode File mode used to open the file.
+     *
+     * @return The file descriptor associated with the Android Uri, or -1 if an error occurs.
+     */
+    int openFileDescriptor(
+            JNIEnv *env,
+            jobject jcontext,
+            jobject juri,
+            const char *mode
+    );
 
-/**
- * Writes data to a content Uri in Android.
- *
- * @param env The JNI environment.
- * @param jcontext The Android jcontext object.
- * @param juri The content URI to write to.
- * @param file_data A pointer to the data to be written.
- * @param file_size A pointer to the size of the data to be written.
- *
- * @return 0 if the operation is successful, or a negative value indicating an error.
- */
-int writeToUri(
-        JNIEnv *env,
-        jobject jcontext,
-        jobject juri,
-        const uint8_t *file_data,
-        size_t file_size
-);
+    /**
+     * Reads the contents of a file specified by the Android Uri into a dynamically allocated buffer.
+     * The Uri could be a content provider Uri, file Uri or an Android resource Uri.
+     *
+     * @param env Pointer to the JNI environment.
+     * @param jcontext The Android context object.
+     * @param juri The Android Uri object representing the file to be read.
+     * @param file_data A pointer to the dynamically allocated buffer that will store the file data.
+     * @param file_size A pointer to the variable that will store the size of the file.
+     *
+     * @return Result code that tells status of the read operation.
+     */
+    int readFromUri(
+            JNIEnv *env,
+            jobject jcontext,
+            jobject juri,
+            uint8_t **file_data,
+            size_t *file_size
+    );
 
-/**
- * Converts a Android Uri object to a C++ std::string representation.
- *
- * @param env     The JNI environment pointer.
- * @param juri    The Android Uri object to convert.
- *
- * @return        The Uri as a C++ std::string.
- * @throws runtime_error if given juri in not an instance of Android Uri.
- */
-std::string uriToString(JNIEnv *env, jobject juri);
+    /**
+     * Writes data to a content Uri in Android.
+     * The Uri could be a content provider Uri or a file Uri.
+     *
+     * @param env Pointer to the JNI environment.
+     * @param jcontext The Android context object.
+     * @param juri The Uri to write to.
+     * @param file_data A pointer to the data to be written.
+     * @param file_size A pointer to the size of the data to be written.
+     *
+     * @return Result code that tells status of the write operation.
+     */
+    int writeToUri(
+            JNIEnv *env,
+            jobject jcontext,
+            jobject juri,
+            const uint8_t *file_data,
+            size_t file_size
+    );
 
-/**
- * Checks if the file exists or not.
- *
- * @param env The Java environment.
- * @param jcontext The Android context.
- * @param jdirectory_uri Directory uri.
- * @param file_name File name of the child.
- *
- * @return 1 if file exists, 0 if not, -1 if error occurred.
- */
-int fileExists(
-        JNIEnv *env,
-        jobject jcontext,
-        jobject jdirectory_uri,
-        const std::string &file_name
-);
+    /**
+     * Converts an Android Uri object to a C++ std::string representation.
+     *
+     * @param env Pointer to the JNI environment.
+     * @param juri The Android Uri object to convert.
+     *
+     * @return The Uri as a C++ std::string.
+     */
+    std::string uriToString(JNIEnv *env, jobject juri);
 
-/**
- * Generates file name with the pattern prefix_####suffix.
- *
- * @param env Java environment.
- * @param jcontext The Android context.
- * @param jdirectory_uri The destination uri (tree uri or file uri).
- * @param index Bitmap index.
- * @param prefix File name prefix.
- * @param suffix File name suffix.
- *
- * @return A pair - success, file name
- */
-std::pair<bool, std::string> generateFileName(
-        JNIEnv *env,
-        jobject jcontext,
-        jobject jdirectory_uri,
-        int index,
-        const std::string &prefix,
-        const std::string &suffix
-);
+    /**
+     * Checks if the file exists in the directory represented by Android Uri.
+     *
+     * @param env Pointer to the JNI environment.
+     * @param jcontext The Android context object.
+     * @param jdirectory_uri Directory uri. This could be a file Uri or a tree Uri.
+     * @param file_name File name to check.
+     *
+     * @return RESULT_FILE_EXISTS if file exists, RESULT_FILE_NOT_FOUND if not, ERROR_JAVA_EXCEPTION if error occurred.
+     */
+    int fileExists(
+            JNIEnv *env,
+            jobject jcontext,
+            jobject jdirectory_uri,
+            const std::string &file_name
+    );
+
+    /**
+     * Generates file name with the pattern prefix_####suffix.
+     *
+     * @param env Pointer to the JNI environment.
+     * @param jcontext The Android context.
+     * @param jdirectory_uri The directory Uri. This could be a file Uri or a tree Uri.
+     * @param index Expected file index. Index will be incremented if file exists.
+     * @param prefix File name prefix.
+     * @param suffix File name suffix.
+     *
+     * @return A pair indicating success flag and the generated file name.
+     */
+    std::pair<bool, std::string> generateFileName(
+            JNIEnv *env,
+            jobject jcontext,
+            jobject jdirectory_uri,
+            int index,
+            const std::string &prefix,
+            const std::string &suffix
+    );
+
+}

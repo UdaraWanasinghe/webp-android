@@ -14,150 +14,137 @@
 #include "include/exception_helper.h"
 #include "include/string_formatter.h"
 #include "include/result_codes.h"
+#include "include/type_helper.h"
 
-int openFileDescriptor(
+int files::openFileDescriptor(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         const char *mode
 ) {
-    // Verify context instance
     jclass context_class = env->FindClass("android/content/Context");
-    if (!env->IsInstanceOf(jcontext, context_class)) {
-        env->DeleteLocalRef(context_class);
-        throw std::runtime_error("Given context is not an instance of Android Context.");
-    }
-
-    // Verify uri instance
-    jclass uri_class = env->FindClass("android/net/Uri");
-    if (!env->IsInstanceOf(juri, uri_class)) {
-        env->DeleteLocalRef(context_class);
-        env->DeleteLocalRef(uri_class);
-        throw std::runtime_error("Given uri is not an instance of Android Uri.");
-    }
-    env->DeleteLocalRef(uri_class);
-
-    // Get content resolver
     jclass content_resolver_class = env->FindClass("android/content/ContentResolver");
     jmethodID get_content_resolver_method_id = env->GetMethodID(
             context_class,
             "getContentResolver",
             "()Landroid/content/ContentResolver;"
     );
-    env->DeleteLocalRef(context_class);
     jobject content_resolver = env->CallObjectMethod(jcontext, get_content_resolver_method_id);
-
-    // Open file descriptor
     jmethodID open_file_descriptor_method_id = env->GetMethodID(
             content_resolver_class,
             "openFileDescriptor",
             "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
     );
-    env->DeleteLocalRef(content_resolver_class);
     jstring read_mode = env->NewStringUTF(mode);
-    jobject parcel_file_descriptor = env->CallObjectMethod(
+    jobject parcel_fd = env->CallObjectMethod(
             content_resolver,
             open_file_descriptor_method_id,
             juri,
             read_mode
     );
-    env->DeleteLocalRef(read_mode);
-
-    // Check for exception
+    int fd = 0;
     if (env->ExceptionCheck()) {
-        std::string message = getExceptionMessage(env, "%s");
-        env->DeleteLocalRef(content_resolver);
-        throw std::runtime_error(message);
+        env->ExceptionClear();
+        fd = -1;
     }
-
-    // Get file descriptor
-    jclass file_descriptor_class = env->FindClass("android/os/ParcelFileDescriptor");
-    jmethodID get_fd_method_id = env->GetMethodID(file_descriptor_class, "getFd", "()I");
-    jint file_descriptor = env->CallIntMethod(parcel_file_descriptor, get_fd_method_id);
-    env->DeleteLocalRef(file_descriptor_class);
-
-    return file_descriptor;
+    if (fd == 0) {
+        jclass fd_class = env->FindClass("android/os/ParcelFileDescriptor");
+        jmethodID get_fd_method_id = env->GetMethodID(fd_class, "getFd", "()I");
+        fd = env->CallIntMethod(parcel_fd, get_fd_method_id);
+        env->DeleteLocalRef(fd_class);
+    }
+    env->DeleteLocalRef(context_class);
+    env->DeleteLocalRef(content_resolver_class);
+    env->DeleteLocalRef(content_resolver);
+    env->DeleteLocalRef(read_mode);
+    env->DeleteLocalRef(parcel_fd);
+    return fd;
 }
 
-int readFromUri(
+int files::readFromUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         uint8_t **const file_data,
         size_t *const file_size
 ) {
-    jint file_descriptor = openFileDescriptor(env, jcontext, juri, "r");
-    if (file_descriptor == -1) {
-        return ERROR_READ_URI_FAILED;
+    int result = RESULT_SUCCESS;
+
+    const int fd = openFileDescriptor(env, jcontext, juri, "r");
+    if (fd == -1) {
+        result = ERROR_READ_URI_FAILED;
     }
 
     // Get file size
     struct stat file_stat{};
-    if (fstat(file_descriptor, &file_stat) == -1) {
-        close(file_descriptor);
-        return ERROR_READ_URI_FAILED;
+    if (result == RESULT_SUCCESS) {
+        if (fstat(fd, &file_stat) == -1) {
+            result = ERROR_READ_URI_FAILED;
+        }
     }
 
     // Read from file descriptor
-    auto *const buffer = reinterpret_cast<uint8_t *>(malloc(file_stat.st_size));
-    ssize_t bytes_read = read(file_descriptor, buffer, file_stat.st_size);
-    close(file_descriptor);
-    if (bytes_read != file_stat.st_size) {
-        free(buffer);
-        return ERROR_READ_URI_FAILED;
+    if (result == RESULT_SUCCESS) {
+        auto *const buffer = reinterpret_cast<uint8_t *>(malloc(file_stat.st_size));
+        const ssize_t bytes_read = read(fd, buffer, file_stat.st_size);
+        if (bytes_read == file_stat.st_size) {
+            *file_data = buffer;
+            *file_size = file_stat.st_size;
+
+        } else {
+            free(buffer);
+            result = ERROR_READ_URI_FAILED;
+        }
     }
 
-    *file_data = buffer;
-    *file_size = file_stat.st_size;
-    return RESULT_SUCCESS;
+    if (fd != -1) {
+        close(fd);
+    }
+
+    return result;
 }
 
-int writeToUri(
+int files::writeToUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         const uint8_t *file_data,
         size_t file_size
 ) {
-    int descriptor = openFileDescriptor(env, jcontext, juri, "w");
-    if (descriptor == -1) {
-        return -1;
+    int result = RESULT_SUCCESS;
+
+    const int fd = openFileDescriptor(env, jcontext, juri, "w");
+    if (fd == -1) {
+        result = ERROR_WRITE_TO_URI_FAILED;
     }
 
-    int written = write(descriptor, file_data, file_size);
-    close(descriptor);
-    if (written != file_size) {
-        std::string uri_string = uriToString(env, juri);
-        std::string message = formatString(
-                "Failed to write complete file to the given uri {uri: %s, size: %d, written: %d}",
-                uri_string.c_str(),
-                file_size,
-                written
-        );
-        throw std::runtime_error(message);
+    if (result == RESULT_SUCCESS) {
+        int bytes_wrote = write(fd, file_data, file_size);
+        if (bytes_wrote != file_size) {
+            result = ERROR_WRITE_TO_URI_FAILED;
+        }
     }
 
-    return 0;
+    if (fd != -1) {
+        close(fd);
+    }
+
+    return result;
 }
 
-std::string uriToString(JNIEnv *env, jobject juri) {
+std::string files::uriToString(JNIEnv *env, jobject juri) {
     jclass uri_class = env->FindClass("android/net/Uri");
-    // Check juri instance
-    if (!env->IsInstanceOf(juri, uri_class)) {
-        throw std::runtime_error("Given uri object is not an instance of Android Uri.");
-    }
-    // Get string
     jmethodID to_string_method_id = env->GetMethodID(uri_class, "toString", "()Ljava/lang/String;");
-    auto uri_jstring = (jstring) env->CallObjectMethod(juri, to_string_method_id);
-    const char *uri_chars = env->GetStringUTFChars(uri_jstring, nullptr);
-    std::string uri_string(uri_chars);
-    // Delete refs
+    const auto juri_string = (jstring) env->CallObjectMethod(juri, to_string_method_id);
+    std::string uri_string = jstringToString(env, juri_string);
+
     env->DeleteLocalRef(uri_class);
-    env->ReleaseStringUTFChars(uri_jstring, uri_chars);
+    env->DeleteLocalRef(juri_string);
+
     return uri_string;
 }
 
-int fileExists(
+int files::fileExists(
         JNIEnv *env,
         jobject jcontext,
         jobject jdirectory_uri,
@@ -169,26 +156,30 @@ int fileExists(
     jmethodID file_exists_method_id = env->GetStaticMethodID(
             uri_extensions_class,
             "fileExists",
-            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
+            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)I"
     );
     jstring jfile_name = env->NewStringUTF(file_name.c_str());
-    jboolean jexists = env->CallStaticBooleanMethod(
+    jint jexists = env->CallStaticIntMethod(
             uri_extensions_class,
             file_exists_method_id,
             jdirectory_uri,
             jcontext,
             jfile_name
     );
-    if (env->ExceptionCheck()) {
-        jexists = -1;
-        env->ExceptionClear();
+    int result;
+    if (jexists == 1) {
+        result = RESULT_FILE_EXISTS;
+    } else if (jexists == 0) {
+        result = RESULT_FILE_NOT_FOUND;
+    } else {
+        result = ERROR_JAVA_EXCEPTION;
     }
     env->DeleteLocalRef(uri_extensions_class);
     env->DeleteLocalRef(jfile_name);
-    return jexists;
+    return result;
 }
 
-std::pair<bool, std::string> generateFileName(
+std::pair<bool, std::string> files::generateFileName(
         JNIEnv *env,
         jobject jcontext,
         jobject jdirectory_uri,
@@ -201,11 +192,11 @@ std::pair<bool, std::string> generateFileName(
     while (true) {
         std::stringstream ss;
         ss << prefix << "_" << std::setfill('0') << std::setw(4) << counter++ << suffix;
-        int exists = fileExists(env, jcontext, jdirectory_uri, ss.str());
-        if (exists == -1) {
+        int exists = files::fileExists(env, jcontext, jdirectory_uri, ss.str());
+        if (exists == ERROR_JAVA_EXCEPTION) {
             break;
         }
-        if (exists == 0) {
+        if (exists == RESULT_FILE_NOT_FOUND) {
             result = std::pair(true, ss.str());
             break;
         }

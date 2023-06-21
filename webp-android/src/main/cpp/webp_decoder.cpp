@@ -138,7 +138,8 @@ int processFrame(
 
         } else {
             // save bitmap to dst uri
-            auto name_result = generateFileName(env, jcontext, jdst_uri, index, "IMG", ".png");
+            auto name_result = files::generateFileName(env, jcontext, jdst_uri, index, "IMG",
+                                                       ".png");
             if (name_result.first) {
                 jobject jbitmap_uri = bmp::saveToDirectory(
                         env,
@@ -293,7 +294,7 @@ int decode(
 ) {
     uint8_t *file_data = nullptr;
     size_t file_size = 0;
-    int result = readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
+    int result = files::readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
 
     WebPBitstreamFeatures features;
     if (result == RESULT_SUCCESS
@@ -362,7 +363,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeInfo(
     // read file data
     uint8_t *file_data = nullptr;
     size_t file_size = 0;
-    int result = readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
+    int result = files::readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
 
     if (result == RESULT_SUCCESS) {
         WebPBitstreamFeatures features;

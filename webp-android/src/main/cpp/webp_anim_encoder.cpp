@@ -480,9 +480,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
                 &webp_size
         );
         if (result == RESULT_SUCCESS) {
-            if (writeToUri(env, jcontext, jdst_uri, webp_data, webp_size) != 0) {
-                result = ERROR_WRITE_TO_URI_FAILED;
-            }
+            result = files::writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
             WebPFree((void *) webp_data);
             webp_data = nullptr;
         }

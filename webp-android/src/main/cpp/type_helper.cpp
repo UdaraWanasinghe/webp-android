@@ -86,3 +86,10 @@ bool isObjectNull(JNIEnv *env, jobject obj) {
     jboolean isNull = env->IsSameObject(obj, nullptr);
     return static_cast<bool>(isNull);
 }
+
+std::string jstringToString(JNIEnv *env, jstring jstr) {
+    const char *chars = env->GetStringUTFChars(jstr, nullptr);
+    std::string str(chars);
+    env->ReleaseStringUTFChars(jstr, chars);
+    return str;
+}

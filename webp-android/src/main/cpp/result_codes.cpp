@@ -9,8 +9,8 @@ std::string parseResultMessage(int result_code) {
     switch (result_code) {
         case RESULT_FILE_EXISTS:
             return "File already exists";
-        case RESULT_FILE_DOES_NOT_EXITS:
-            return "File does not exists";
+        case RESULT_FILE_NOT_FOUND:
+            return "File not found";
         case ERROR_NULL_ENCODER:
             return "Encoder is missing";
         case ERROR_INVALID_ENCODER_INSTANCE:

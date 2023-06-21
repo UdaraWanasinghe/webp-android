@@ -22,3 +22,5 @@ jobject getObjectField(
 );
 
 bool isObjectNull(JNIEnv *env, jobject obj);
+
+std::string jstringToString(JNIEnv *env, jstring jstr);
