@@ -7,15 +7,19 @@
 #include "include/string_formatter.h"
 #include "include/exception_helper.h"
 
-void throwException(JNIEnv *env, jclass exception_class, const char *format, ...) {
-    va_list args;
-    va_start(args, format);
+namespace {
 
-    std::string message = formatString(format, args);
-    env->ThrowNew(exception_class, message.c_str());
-    env->DeleteLocalRef(exception_class);
+    void throwException(JNIEnv *env, jclass exception_class, const char *format, ...) {
+        va_list args;
+        va_start(args, format);
 
-    va_end(args);
+        std::string message = formatString(format, args);
+        env->ThrowNew(exception_class, message.c_str());
+        env->DeleteLocalRef(exception_class);
+
+        va_end(args);
+    }
+
 }
 
 void throwNullPointerException(JNIEnv *env, const char *format, ...) {
@@ -102,6 +106,14 @@ void throwRuntimeException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
     jclass exception_class = env->FindClass("java/lang/RuntimeException");
+    throwException(env, exception_class, format, args);
+    va_end(args);
+}
+
+void throwCancellationException(JNIEnv *env, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    jclass exception_class = env->FindClass("java/util/concurrent/CancellationException");
     throwException(env, exception_class, format, args);
     va_end(args);
 }

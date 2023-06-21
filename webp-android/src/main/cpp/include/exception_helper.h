@@ -29,6 +29,8 @@ void throwNumberFormatException(JNIEnv *env, const char *format, ...);
 
 void throwRuntimeException(JNIEnv *env, const char *format, ...);
 
+void throwCancellationException(JNIEnv *env, const char *format, ...);
+
 /**
  * Retrieves an exception message by formatting the given format string and optional arguments.
  * The function takes a JNI environment pointer and a format string along with optional arguments.
