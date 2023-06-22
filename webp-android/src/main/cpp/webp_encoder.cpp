@@ -69,18 +69,13 @@ namespace {
          *
          * @return 0 if success, otherwise error code.
          */
-        int encode(
+        CodecResultCode encode(
                 const uint8_t *pixels,
                 int width,
                 int height,
                 const uint8_t **webp_data,
                 size_t *webp_size
         );
-
-        /**
-         * Cancels ongoing encode process
-         */
-        static void cancel();
 
         /**
         * Releases any resources held by the WebPEncoder object.
@@ -108,7 +103,7 @@ namespace {
             progressHookData = data;
 
         } else {
-            result = ERROR_INVALID_ENCODER_INSTANCE;
+            result = ERROR_INVALID_ENCODER;
         }
         env->DeleteLocalRef(encoder_class);
         return result;
@@ -170,14 +165,14 @@ namespace {
         return continue_encoding && !cancel_encode;
     }
 
-    int encodeBitmapFrame(
+    CodecResultCode encodeBitmapFrame(
             JNIEnv *env,
             jobject thiz,
             jobject jcontext,
             jobject jbitmap,
             jobject jdst_uri
     ) {
-        int result = RESULT_SUCCESS;
+        CodecResultCode result = RESULT_SUCCESS;
 
         auto *encoder = WebPEncoder::getInstance(env, thiz);
         if (encoder == nullptr) {
@@ -272,14 +267,14 @@ namespace {
         webPConfig = config;
     }
 
-    int WebPEncoder::encode(
+    CodecResultCode WebPEncoder::encode(
             const uint8_t *const pixels,
             const int width,
             const int height,
             const uint8_t **webp_data,
             size_t *webp_size
     ) {
-        int result = RESULT_SUCCESS;
+        CodecResultCode result = RESULT_SUCCESS;
 
         if (WebPValidateConfig(&webPConfig)) {
             // Setup the input data
@@ -318,7 +313,8 @@ namespace {
                         *webp_size = wtr.size;
 
                     } else {
-                        result = ERROR_WEBP_ENCODE_FAILED;
+                        result = result::encodingErrorToResultCode(pic.error_code);
+
                     }
 
                     // Release resources.
@@ -337,13 +333,6 @@ namespace {
             result = ERROR_INVALID_WEBP_CONFIG;
         }
         return result;
-    }
-
-    void WebPEncoder::cancel() {
-        ProgressHookData *data = progressHookData;
-        if (data != nullptr) {
-            data->cancel_flag = true;
-        }
     }
 
     void WebPEncoder::release() {
@@ -374,7 +363,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
         jobject jconfig,
         jobject jpreset
 ) {
-    int result = RESULT_SUCCESS;
+    CodecResultCode result = RESULT_SUCCESS;
 
     WebPConfig config;
     if (WebPConfigInit(&config)) {
@@ -405,10 +394,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
         result = ERROR_VERSION_MISMATCH;
     }
 
-    if (result != RESULT_SUCCESS) {
-        std::string message = parseResultMessage(result);
-        throwRuntimeException(env, message.c_str());
-    }
+    result::handleResult(env, result);
 }
 
 extern "C"
@@ -420,7 +406,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
         jobject jsrc_uri,
         jobject jdst_uri
 ) {
-    int result = RESULT_SUCCESS;
+    CodecResultCode result;
 
     jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
     if (type::isObjectNull(env, jbitmap)) {
@@ -431,10 +417,8 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
         bmp::recycleBitmap(env, jbitmap);
         env->DeleteLocalRef(jbitmap);
     }
-    if (result != RESULT_SUCCESS) {
-        std::string message = parseResultMessage(result);
-        throwRuntimeException(env, message.c_str());
-    }
+
+    result::handleResult(env, result);
 }
 
 extern "C"
@@ -446,23 +430,24 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
         jobject jsrc_bitmap,
         jobject jdst_uri
 ) {
-    int result = encodeBitmapFrame(
+    CodecResultCode result = encodeBitmapFrame(
             env,
             thiz,
             jcontext,
             jsrc_bitmap,
             jdst_uri
     );
-    if (result != RESULT_SUCCESS) {
-        std::string message = parseResultMessage(result);
-        throwRuntimeException(env, message.c_str());
-    }
+
+    result::handleResult(env, result);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_cancel(JNIEnv *, jobject) {
-    WebPEncoder::cancel();
+    auto *data = progressHookData;
+    if (data != nullptr) {
+        data->cancel_flag = true;
+    }
 }
 
 extern "C"
@@ -475,10 +460,10 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_release(JNIEnv *env,
     jfieldID pointer_field_id = env->GetFieldID(encoder_class, "nativePointer", "J");
     env->SetLongField(thiz, pointer_field_id, (jlong) 0);
 
-
     // Release resources
     env->DeleteLocalRef(encoder_class);
     clearProgressHookData(env);
+    encoder->release();
     delete encoder;
     jvm = nullptr;
 }

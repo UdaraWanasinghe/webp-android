@@ -5,6 +5,7 @@
 #pragma once
 
 #include <jni.h>
+#include "result_codes.h"
 
 namespace files {
 
@@ -38,7 +39,7 @@ namespace files {
      *
      * @return Result code that tells status of the read operation.
      */
-    int readFromUri(
+    CodecResultCode readFromUri(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,
@@ -58,7 +59,7 @@ namespace files {
      *
      * @return Result code that tells status of the write operation.
      */
-    int writeToUri(
+    CodecResultCode writeToUri(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,
@@ -86,7 +87,7 @@ namespace files {
      *
      * @return RESULT_FILE_EXISTS if file exists, RESULT_FILE_NOT_FOUND if not, ERROR_JAVA_EXCEPTION if error occurred.
      */
-    int fileExists(
+    CodecResultCode fileExists(
             JNIEnv *env,
             jobject jcontext,
             jobject jdirectory_uri,

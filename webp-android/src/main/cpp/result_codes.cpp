@@ -4,16 +4,19 @@
 
 #include <string>
 #include "include/result_codes.h"
+#include "include/exception_helper.h"
 
-std::string parseResultMessage(int result_code) {
+std::string result::parseMessage(CodecResultCode result_code) {
     switch (result_code) {
+        case RESULT_SUCCESS:
+            return "Operation success";
         case RESULT_FILE_EXISTS:
             return "File already exists";
         case RESULT_FILE_NOT_FOUND:
             return "File not found";
         case ERROR_NULL_ENCODER:
             return "Encoder is missing";
-        case ERROR_INVALID_ENCODER_INSTANCE:
+        case ERROR_INVALID_ENCODER:
             return "Invalid encoder instance";
         case ERROR_VERSION_MISMATCH:
             return "Version mismatch";
@@ -29,8 +32,6 @@ std::string parseResultMessage(int result_code) {
             return "Failed to unlock bitmap pixels";
         case ERROR_MEMORY_ERROR:
             return "Memory error";
-        case ERROR_ADD_FRAME_FAILED:
-            return "Failed to add frame";
         case ERROR_MARK_ANIMATION_END_FAILED:
             return "Failed to mark animation end";
         case ERROR_ANIMATION_ASSEMBLE_FAILED:
@@ -41,10 +42,6 @@ std::string parseResultMessage(int result_code) {
             return "Failed to decode bitmap URI";
         case ERROR_WRITE_TO_URI_FAILED:
             return "Failed to write to URI";
-        case ERROR_WEBP_ENCODE_FAILED:
-            return "WebP encoding failed";
-        case ERROR_INVALID_DECODER_INSTANCE:
-            return "Invalid decoder instance";
         case ERROR_READ_URI_FAILED:
             return "Failed to read from URI";
         case ERROR_WEBP_INFO_EXTRACT_FAILED:
@@ -59,7 +56,68 @@ std::string parseResultMessage(int result_code) {
             return "Java exception occurred";
         case ERROR_FILE_NAME_GENERATION_FAILED:
             return "File name generation failed";
-        default:
-            return "Unknown result code";
+        case ERROR_OUT_OF_MEMORY:
+            return "Memory error allocating objects";
+        case ERROR_BITSTREAM_OUT_OF_MEMORY:
+            return "Memory error while flushing bits";
+        case ERROR_NULL_PARAMETER:
+            return "A pointer parameter is NULL";
+        case ERROR_INVALID_CONFIGURATION:
+            return "Configuration is invalid";
+        case ERROR_BAD_DIMENSION:
+            return "Picture has invalid width/height";
+        case ERROR_PARTITION0_OVERFLOW:
+            return "Partition is bigger than 512k";
+        case ERROR_PARTITION_OVERFLOW:
+            return "Partition is bigger than 16M";
+        case ERROR_BAD_WRITE:
+            return "Error while flushing bytes";
+        case ERROR_FILE_TOO_BIG:
+            return "File is bigger than 4G";
+        case ERROR_USER_ABORT:
+            return "Abort request by user";
+        case ERROR_LAST:
+            return "List terminator. always last.";
+    }
+}
+
+void result::handleResult(JNIEnv *env, CodecResultCode result) {
+    if (result != RESULT_SUCCESS) {
+        std::string message = parseMessage(result);
+        if (result == ERROR_USER_ABORT) {
+            throwCancellationException(env, message.c_str());
+
+        } else {
+            throwRuntimeException(env, message.c_str());
+        }
+    }
+}
+
+CodecResultCode result::encodingErrorToResultCode(WebPEncodingError error_code) {
+    switch (error_code) {
+        case VP8_ENC_OK:
+            return RESULT_SUCCESS;
+        case VP8_ENC_ERROR_OUT_OF_MEMORY:
+            return ERROR_OUT_OF_MEMORY;
+        case VP8_ENC_ERROR_BITSTREAM_OUT_OF_MEMORY:
+            return ERROR_BITSTREAM_OUT_OF_MEMORY;
+        case VP8_ENC_ERROR_NULL_PARAMETER:
+            return ERROR_NULL_PARAMETER;
+        case VP8_ENC_ERROR_INVALID_CONFIGURATION:
+            return ERROR_INVALID_CONFIGURATION;
+        case VP8_ENC_ERROR_BAD_DIMENSION:
+            return ERROR_BAD_DIMENSION;
+        case VP8_ENC_ERROR_PARTITION0_OVERFLOW:
+            return ERROR_PARTITION0_OVERFLOW;
+        case VP8_ENC_ERROR_PARTITION_OVERFLOW:
+            return ERROR_PARTITION_OVERFLOW;
+        case VP8_ENC_ERROR_BAD_WRITE:
+            return ERROR_BAD_WRITE;
+        case VP8_ENC_ERROR_FILE_TOO_BIG:
+            return ERROR_FILE_TOO_BIG;
+        case VP8_ENC_ERROR_USER_ABORT:
+            return ERROR_USER_ABORT;
+        case VP8_ENC_ERROR_LAST:
+            return ERROR_LAST;
     }
 }

@@ -61,14 +61,14 @@ int files::openFileDescriptor(
     return fd;
 }
 
-int files::readFromUri(
+CodecResultCode files::readFromUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         uint8_t **const file_data,
         size_t *const file_size
 ) {
-    int result = RESULT_SUCCESS;
+    CodecResultCode result = RESULT_SUCCESS;
 
     const int fd = openFileDescriptor(env, jcontext, juri, "r");
     if (fd == -1) {
@@ -104,14 +104,14 @@ int files::readFromUri(
     return result;
 }
 
-int files::writeToUri(
+CodecResultCode files::writeToUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         const uint8_t *file_data,
         size_t file_size
 ) {
-    int result = RESULT_SUCCESS;
+    CodecResultCode result = RESULT_SUCCESS;
 
     const int fd = openFileDescriptor(env, jcontext, juri, "w");
     if (fd == -1) {
@@ -144,7 +144,7 @@ std::string files::uriToString(JNIEnv *env, jobject juri) {
     return uri_string;
 }
 
-int files::fileExists(
+CodecResultCode files::fileExists(
         JNIEnv *env,
         jobject jcontext,
         jobject jdirectory_uri,
@@ -166,7 +166,7 @@ int files::fileExists(
             jcontext,
             jfile_name
     );
-    int result;
+    CodecResultCode result;
     if (jexists == 1) {
         result = RESULT_FILE_EXISTS;
     } else if (jexists == 0) {

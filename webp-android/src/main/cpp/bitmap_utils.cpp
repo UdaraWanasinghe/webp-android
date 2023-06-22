@@ -97,7 +97,7 @@ jobject bmp::resizeBitmap(
     return jresized_bitmap;
 }
 
-int bmp::copyPixels(
+CodecResultCode bmp::copyPixels(
         JNIEnv *env,
         const uint8_t *src_pixels,
         jobject jdst_bitmap

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <jni.h>
+#include "result_codes.h"
 
 namespace bmp {
 
@@ -81,7 +82,7 @@ namespace bmp {
      *
      * @return Result code indicating the status of the copy operation.
      */
-    int copyPixels(
+    CodecResultCode copyPixels(
             JNIEnv *env,
             const uint8_t *src_pixels,
             jobject jdst_bitmap
