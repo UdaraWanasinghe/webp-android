@@ -197,7 +197,7 @@ namespace {
                     encoder->imageWidth,
                     encoder->imageHeight
             );
-            if (isObjectNull(env, jbitmap)) {
+            if (type::isObjectNull(env, jbitmap)) {
                 result = ERROR_BITMAP_RESIZE_FAILED;
 
             } else {
@@ -378,7 +378,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
 
     WebPConfig config;
     if (WebPConfigInit(&config)) {
-        if (!isObjectNull(env, jpreset)) {
+        if (!type::isObjectNull(env, jpreset)) {
             float quality = parseWebPQuality(env, jconfig);
             WebPPreset preset = parseWebPPreset(env, jpreset);
             if (!WebPConfigPreset(&config, preset, quality)) {
@@ -423,7 +423,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
     int result = RESULT_SUCCESS;
 
     jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
-    if (isObjectNull(env, jbitmap)) {
+    if (type::isObjectNull(env, jbitmap)) {
         result = ERROR_BITMAP_URI_DECODE_FAILED;
 
     } else {

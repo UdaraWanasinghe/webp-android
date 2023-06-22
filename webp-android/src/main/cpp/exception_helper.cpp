@@ -13,7 +13,7 @@ namespace {
         va_list args;
         va_start(args, format);
 
-        std::string message = formatString(format, args);
+        std::string message = str::formatString(format, args);
         env->ThrowNew(exception_class, message.c_str());
         env->DeleteLocalRef(exception_class);
 
@@ -133,7 +133,7 @@ std::string getExceptionMessage(JNIEnv *env, const char *format, ...) {
 
     auto message_string = (jstring) env->CallObjectMethod(exception, message_method_id);
     const char *message_chars = env->GetStringUTFChars(message_string, nullptr);
-    std::string message = formatString(format, message_chars, args);
+    std::string message = str::formatString(format, message_chars, args);
 
     env->DeleteLocalRef(exception);
     env->DeleteLocalRef(throwable_class);

@@ -212,7 +212,7 @@ namespace {
                     encoder->imageWidth,
                     encoder->imageHeight
             );
-            if (isObjectNull(env, jbitmap)) {
+            if (type::isObjectNull(env, jbitmap)) {
                 result = ERROR_BITMAP_RESIZE_FAILED;
 
             } else {
@@ -359,7 +359,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
     if (!WebPAnimEncoderOptionsInit(&options)) {
         return 0;
     }
-    if (!isObjectNull(env, joptions)) {
+    if (!type::isObjectNull(env, joptions)) {
         parseEncoderOptions(env, joptions, &options);
     }
     auto *encoder = new WebPAnimationEncoder(jwidth, jheight, options);
@@ -383,7 +383,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
     } else {
         WebPConfig config;
         if (WebPConfigInit(&config) != 0) {
-            if (!isObjectNull(env, jpreset)) {
+            if (!type::isObjectNull(env, jpreset)) {
                 float quality = parseWebPQuality(env, jconfig);
                 WebPPreset preset = parseWebPPreset(env, jpreset);
                 if (!WebPConfigPreset(&config, preset, quality)) {
@@ -418,7 +418,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__Landro
     int result = RESULT_SUCCESS;
     jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
 
-    if (isObjectNull(env, jbitmap)) {
+    if (type::isObjectNull(env, jbitmap)) {
         result = ERROR_BITMAP_URI_DECODE_FAILED;
 
     } else {

@@ -136,7 +136,7 @@ std::string files::uriToString(JNIEnv *env, jobject juri) {
     jclass uri_class = env->FindClass("android/net/Uri");
     jmethodID to_string_method_id = env->GetMethodID(uri_class, "toString", "()Ljava/lang/String;");
     const auto juri_string = (jstring) env->CallObjectMethod(juri, to_string_method_id);
-    std::string uri_string = jstringToString(env, juri_string);
+    std::string uri_string = type::jstringToString(env, juri_string);
 
     env->DeleteLocalRef(uri_class);
     env->DeleteLocalRef(juri_string);

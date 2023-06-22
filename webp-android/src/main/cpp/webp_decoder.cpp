@@ -86,7 +86,7 @@ int notifyInfoDecoded(
         jobject jinfo
 ) {
     int result = RESULT_SUCCESS;
-    if (isObjectNull(env, jinfo)) {
+    if (type::isObjectNull(env, jinfo)) {
         result = ERROR_WEBP_INFO_EXTRACT_FAILED;
 
     } else {
@@ -125,7 +125,7 @@ int processFrame(
                 "notifyFrameDecoded",
                 "(IJLandroid/graphics/Bitmap;Landroid/net/Uri;)V"
         );
-        if (isObjectNull(env, jdst_uri)) {
+        if (type::isObjectNull(env, jdst_uri)) {
             jobject jbitmap_uri = nullptr;
             env->CallVoidMethod(
                     jdecoder,
@@ -148,7 +148,7 @@ int processFrame(
                         jdst_uri,
                         name_result.second
                 );
-                if (isObjectNull(env, jbitmap_uri)) {
+                if (type::isObjectNull(env, jbitmap_uri)) {
                     result = ERROR_BITMAP_WRITE_TO_URI_FAILED;
 
                 } else {
@@ -196,7 +196,7 @@ int decodeAnimFrames(
 
         jobject jinfo = decodeAnimInfo(env, anim_decoder, features);
 
-        if (isObjectNull(env, jinfo)) {
+        if (type::isObjectNull(env, jinfo)) {
             result = ERROR_WEBP_INFO_EXTRACT_FAILED;
         }
 

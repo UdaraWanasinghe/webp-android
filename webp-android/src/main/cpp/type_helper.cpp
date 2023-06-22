@@ -7,7 +7,7 @@
 
 #include "include/type_helper.h"
 
-int getIntegerValue(
+int type::getIntegerValue(
         JNIEnv *env,
         jobject object
 ) {
@@ -21,7 +21,7 @@ int getIntegerValue(
     return static_cast<int>(value);
 }
 
-bool getBooleanValue(
+bool type::getBooleanValue(
         JNIEnv *env,
         jobject object
 ) {
@@ -35,7 +35,7 @@ bool getBooleanValue(
     return static_cast<bool>(value);
 }
 
-long getLongValue(
+long type::getLongValue(
         JNIEnv *env,
         jobject object
 ) {
@@ -49,7 +49,7 @@ long getLongValue(
     return static_cast<long>(value);
 }
 
-float getFloatValue(
+float type::getFloatValue(
         JNIEnv *env,
         jobject object
 ) {
@@ -63,7 +63,7 @@ float getFloatValue(
     return static_cast<float>(value);
 }
 
-jobject getObjectField(
+jobject type::getObjectField(
         JNIEnv *env,
         jobject object,
         const char *name,
@@ -76,18 +76,17 @@ jobject getObjectField(
     return field;
 }
 
-bool isObjectNull(JNIEnv *env, jobject obj) {
+bool type::isObjectNull(JNIEnv *env, jobject obj) {
     if (obj == nullptr) {
         // If the object is already null, return true
         return true;
     }
-
     // Check if the object is the null reference
     jboolean isNull = env->IsSameObject(obj, nullptr);
     return static_cast<bool>(isNull);
 }
 
-std::string jstringToString(JNIEnv *env, jstring jstr) {
+std::string type::jstringToString(JNIEnv *env, jstring jstr) {
     const char *chars = env->GetStringUTFChars(jstr, nullptr);
     std::string str(chars);
     env->ReleaseStringUTFChars(jstr, chars);
