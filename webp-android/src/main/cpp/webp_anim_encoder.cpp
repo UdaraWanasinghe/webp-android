@@ -7,7 +7,7 @@
 #include <webp/encode.h>
 #include <webp/mux.h>
 
-#include "include/webp_encoder_helper.h"
+#include "include/encoder_helper.h"
 #include "include/type_helper.h"
 #include "include/exception_helper.h"
 #include "include/bitmap_utils.h"
@@ -299,7 +299,7 @@ namespace {
         if (!WebPPictureAlloc(&pic)) {
             return ERROR_MEMORY_ERROR;
         }
-        copyPixels(pixels, &pic);
+        encoder::copyPixels(pixels, &pic);
         auto *frame_data = new FrameData();
         frame_data->frame_index = frameCount++;
         pic.user_data = frame_data;
@@ -360,7 +360,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
         return 0;
     }
     if (!type::isObjectNull(env, joptions)) {
-        parseEncoderOptions(env, joptions, &options);
+        encoder::parseEncoderOptions(env, joptions, &options);
     }
     auto *encoder = new WebPAnimationEncoder(jwidth, jheight, options);
     return reinterpret_cast<jlong>(encoder);
@@ -384,14 +384,14 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
         WebPConfig config;
         if (WebPConfigInit(&config) != 0) {
             if (!type::isObjectNull(env, jpreset)) {
-                float quality = parseWebPQuality(env, jconfig);
-                WebPPreset preset = parseWebPPreset(env, jpreset);
+                float quality = encoder::parseWebPQuality(env, jconfig);
+                WebPPreset preset = encoder::parseWebPPreset(env, jpreset);
                 if (!WebPConfigPreset(&config, preset, quality)) {
                     result = ERROR_INVALID_WEBP_CONFIG;
                 }
             }
             if (result == RESULT_SUCCESS) {
-                applyWebPConfig(env, jconfig, &config);
+                encoder::applyWebPConfig(env, jconfig, &config);
                 encoder->configure(config);
             }
 

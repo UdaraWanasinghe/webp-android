@@ -8,7 +8,7 @@
 
 #include "include/exception_helper.h"
 #include "include/type_helper.h"
-#include "include/webp_encoder_helper.h"
+#include "include/encoder_helper.h"
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
 #include "include/result_codes.h"
@@ -296,7 +296,7 @@ namespace {
                     // WebPPictureImportRGB(), which will take care of memory allocation.
                     // In any case, past this point, one will have to call
                     // WebPPictureFree(&pic) to reclaim memory.
-                    copyPixels(pixels, &pic);
+                    encoder::copyPixels(pixels, &pic);
 
                     // set progress hook
                     pic.progress_hook = &notifyProgressChanged;
@@ -379,14 +379,14 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
     WebPConfig config;
     if (WebPConfigInit(&config)) {
         if (!type::isObjectNull(env, jpreset)) {
-            float quality = parseWebPQuality(env, jconfig);
-            WebPPreset preset = parseWebPPreset(env, jpreset);
+            float quality = encoder::parseWebPQuality(env, jconfig);
+            WebPPreset preset = encoder::parseWebPPreset(env, jpreset);
             if (!WebPConfigPreset(&config, preset, quality)) {
                 result = ERROR_INVALID_WEBP_CONFIG;
             }
         }
         if (result == RESULT_SUCCESS) {
-            applyWebPConfig(env, jconfig, &config);
+            encoder::applyWebPConfig(env, jconfig, &config);
             if (WebPValidateConfig(&config) != 0) {
                 WebPEncoder *encoder = WebPEncoder::getInstance(env, thiz);
                 if (encoder == nullptr) {
