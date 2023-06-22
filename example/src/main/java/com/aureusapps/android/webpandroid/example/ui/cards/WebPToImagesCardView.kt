@@ -45,6 +45,7 @@ internal class WebPToImagesCardView(
         currentState = state
         when (state) {
             is ConvertState.WebPToImages.OnConvertStarted -> {
+                progressIndicator.progress = 0
                 updateStartButton()
             }
 
