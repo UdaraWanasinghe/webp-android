@@ -2,11 +2,11 @@
 // Created by udara on 6/5/23.
 //
 
-#include "include/webp_encoder_helper.h"
+#include "include/encoder_helper.h"
 #include "include/exception_helper.h"
 #include "include/type_helper.h"
 
-WebPPreset parseWebPPreset(JNIEnv *env, jobject jpreset) {
+WebPPreset encoder::parseWebPPreset(JNIEnv *env, jobject jpreset) {
     // get preset class
     jclass preset_class = env->FindClass("com/aureusapps/android/webpandroid/encoder/WebPPreset");
 
@@ -25,7 +25,7 @@ WebPPreset parseWebPPreset(JNIEnv *env, jobject jpreset) {
     return WebPPreset(ordinal);
 }
 
-void applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
+void encoder::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     // lossless
     jobject lossless = type::getObjectField(env, jconfig, "lossless", "Ljava/lang/Integer;");
     if (!type::isObjectNull(env, lossless)) {
@@ -280,7 +280,7 @@ void applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
 
 }
 
-float parseWebPQuality(JNIEnv *env, jobject jconfig) {
+float encoder::parseWebPQuality(JNIEnv *env, jobject jconfig) {
     jclass config_class = env->GetObjectClass(jconfig);
     jfieldID quality_field_id = env->GetFieldID(config_class, "quality", "Ljava/lang/Float;");
     jobject quality_field = env->GetObjectField(jconfig, quality_field_id);
@@ -297,7 +297,7 @@ float parseWebPQuality(JNIEnv *env, jobject jconfig) {
     return quality;
 }
 
-void parseEncoderOptions(
+void encoder::parseEncoderOptions(
         JNIEnv *env,
         jobject joptions,
         WebPAnimEncoderOptions *options
@@ -382,7 +382,7 @@ void parseEncoderOptions(
     options->anim_params = params;
 }
 
-void copyPixels(
+void encoder::copyPixels(
         const uint8_t *src,
         WebPPicture *pic
 ) {
