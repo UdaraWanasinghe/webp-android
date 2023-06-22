@@ -82,7 +82,7 @@ namespace bmp {
      *
      * @return Result code indicating the status of the copy operation.
      */
-    CodecResultCode copyPixels(
+    ResultCode copyPixels(
             JNIEnv *env,
             const uint8_t *src_pixels,
             jobject jdst_bitmap

@@ -39,7 +39,7 @@ namespace files {
      *
      * @return Result code that tells status of the read operation.
      */
-    CodecResultCode readFromUri(
+    std::pair<ResultCode, jobject> readFromUri(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,
@@ -59,7 +59,7 @@ namespace files {
      *
      * @return Result code that tells status of the write operation.
      */
-    CodecResultCode writeToUri(
+    ResultCode writeToUri(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,
@@ -87,7 +87,7 @@ namespace files {
      *
      * @return RESULT_FILE_EXISTS if file exists, RESULT_FILE_NOT_FOUND if not, ERROR_JAVA_EXCEPTION if error occurred.
      */
-    CodecResultCode fileExists(
+    ResultCode fileExists(
             JNIEnv *env,
             jobject jcontext,
             jobject jdirectory_uri,

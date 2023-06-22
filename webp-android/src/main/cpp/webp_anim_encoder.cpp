@@ -77,7 +77,7 @@ namespace {
          *
          * @return 0 if success or error code if failed.
          */
-        CodecResultCode addFrame(uint8_t *pixels, int width, int height, long timestamp);
+        ResultCode addFrame(uint8_t *pixels, int width, int height, long timestamp);
 
         /**
          * Assembles the animation with the provided timestamp and saves it to the specified output path.
@@ -86,7 +86,7 @@ namespace {
          * @param webp_data Pointer to the output buffer for the WebP data.
          * @param webp_size Pointer to store the size of the WebP data.
          */
-        CodecResultCode assemble(long timestamp, const uint8_t **webp_data, size_t *webp_size);
+        ResultCode assemble(long timestamp, const uint8_t **webp_data, size_t *webp_size);
 
         /**
          * Release resources associated with this encoder.
@@ -182,7 +182,7 @@ namespace {
         }
     }
 
-    CodecResultCode addBitmapFrame(
+    ResultCode addBitmapFrame(
             JNIEnv *env,
             jobject thiz,
             jlong jtimestamp,
@@ -202,7 +202,7 @@ namespace {
             return ERROR_INVALID_BITMAP_FORMAT;
         }
 
-        CodecResultCode result = RESULT_SUCCESS;
+        ResultCode result = RESULT_SUCCESS;
 
         bool bitmap_resized = false;
         if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
@@ -283,7 +283,7 @@ namespace {
         webPConfig = config;
     }
 
-    CodecResultCode WebPAnimationEncoder::addFrame(
+    ResultCode WebPAnimationEncoder::addFrame(
             uint8_t *pixels,
             int width,
             int height,
@@ -305,7 +305,7 @@ namespace {
         pic.user_data = frame_data;
         pic.progress_hook = &notifyProgressChanged;
 
-        CodecResultCode result;
+        ResultCode result;
         if (WebPAnimEncoderAdd(webPAnimEncoder, &pic, timestamp, &webPConfig)) {
             result = RESULT_SUCCESS;
 
@@ -316,7 +316,7 @@ namespace {
         return result;
     }
 
-    CodecResultCode WebPAnimationEncoder::assemble(
+    ResultCode WebPAnimationEncoder::assemble(
             long timestamp,
             const uint8_t **webp_data,
             size_t *const webp_size
@@ -326,7 +326,7 @@ namespace {
         }
         WebPData data;
         WebPDataInit(&data);
-        CodecResultCode result;
+        ResultCode result;
         if (WebPAnimEncoderAssemble(webPAnimEncoder, &data) != 0) {
             result = RESULT_SUCCESS;
             *webp_data = data.bytes;
@@ -375,7 +375,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
         jobject jconfig,
         jobject jpreset
 ) {
-    CodecResultCode result = RESULT_SUCCESS;
+    ResultCode result = RESULT_SUCCESS;
 
     auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
     if (encoder == nullptr) {
@@ -413,7 +413,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__Landro
         jlong jtimestamp,
         jobject jsrc_uri
 ) {
-    CodecResultCode result;
+    ResultCode result;
     jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
 
     if (type::isObjectNull(env, jbitmap)) {
@@ -439,7 +439,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__JLandr
         jlong jtimestamp,
         jobject jsrc_bitmap
 ) {
-    CodecResultCode result = addBitmapFrame(
+    ResultCode result = addBitmapFrame(
             env,
             thiz,
             jtimestamp,
@@ -458,7 +458,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
         jlong jtimestamp,
         jobject jdst_uri
 ) {
-    CodecResultCode result;
+    ResultCode result;
 
     const uint8_t *webp_data = nullptr;
     size_t webp_size = 0;

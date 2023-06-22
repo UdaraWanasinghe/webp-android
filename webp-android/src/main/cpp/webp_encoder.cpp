@@ -69,7 +69,7 @@ namespace {
          *
          * @return 0 if success, otherwise error code.
          */
-        CodecResultCode encode(
+        ResultCode encode(
                 const uint8_t *pixels,
                 int width,
                 int height,
@@ -165,14 +165,14 @@ namespace {
         return continue_encoding && !cancel_encode;
     }
 
-    CodecResultCode encodeBitmapFrame(
+    ResultCode encodeBitmapFrame(
             JNIEnv *env,
             jobject thiz,
             jobject jcontext,
             jobject jbitmap,
             jobject jdst_uri
     ) {
-        CodecResultCode result = RESULT_SUCCESS;
+        ResultCode result = RESULT_SUCCESS;
 
         auto *encoder = WebPEncoder::getInstance(env, thiz);
         if (encoder == nullptr) {
@@ -267,14 +267,14 @@ namespace {
         webPConfig = config;
     }
 
-    CodecResultCode WebPEncoder::encode(
+    ResultCode WebPEncoder::encode(
             const uint8_t *const pixels,
             const int width,
             const int height,
             const uint8_t **webp_data,
             size_t *webp_size
     ) {
-        CodecResultCode result = RESULT_SUCCESS;
+        ResultCode result = RESULT_SUCCESS;
 
         if (WebPValidateConfig(&webPConfig)) {
             // Setup the input data
@@ -363,7 +363,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
         jobject jconfig,
         jobject jpreset
 ) {
-    CodecResultCode result = RESULT_SUCCESS;
+    ResultCode result = RESULT_SUCCESS;
 
     WebPConfig config;
     if (WebPConfigInit(&config)) {
@@ -406,7 +406,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
         jobject jsrc_uri,
         jobject jdst_uri
 ) {
-    CodecResultCode result;
+    ResultCode result;
 
     jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
     if (type::isObjectNull(env, jbitmap)) {
@@ -430,7 +430,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
         jobject jsrc_bitmap,
         jobject jdst_uri
 ) {
-    CodecResultCode result = encodeBitmapFrame(
+    ResultCode result = encodeBitmapFrame(
             env,
             thiz,
             jcontext,

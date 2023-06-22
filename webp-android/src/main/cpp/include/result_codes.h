@@ -7,7 +7,7 @@
 #include <jni.h>
 #include <webp/encode.h>
 
-enum CodecResultCode {
+enum ResultCode {
     RESULT_SUCCESS = 0,
     RESULT_FILE_EXISTS,
     RESULT_FILE_NOT_FOUND,
@@ -47,10 +47,10 @@ enum CodecResultCode {
 
 namespace result {
 
-    std::string parseMessage(CodecResultCode result_code);
+    std::string parseMessage(ResultCode result_code);
 
-    void handleResult(JNIEnv *env, CodecResultCode result);
+    void handleResult(JNIEnv *env, ResultCode result);
 
-    CodecResultCode encodingErrorToResultCode(WebPEncodingError error_code);
+    ResultCode encodingErrorToResultCode(WebPEncodingError error_code);
 
 }

@@ -61,57 +61,50 @@ int files::openFileDescriptor(
     return fd;
 }
 
-CodecResultCode files::readFromUri(
+std::pair<ResultCode, jobject> files::readFromUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         uint8_t **const file_data,
         size_t *const file_size
 ) {
-    CodecResultCode result = RESULT_SUCCESS;
+    std::pair<ResultCode, jobject> ret;
 
-    const int fd = openFileDescriptor(env, jcontext, juri, "r");
-    if (fd == -1) {
-        result = ERROR_READ_URI_FAILED;
+    jclass uri_extensions_class = env->FindClass(
+            "com/aureusapps/android/extensions/UriExtensionsKt"
+    );
+    jmethodID read_bytes_method_id = env->GetStaticMethodID(
+            uri_extensions_class,
+            "readBytesToBuffer",
+            "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
+    );
+    jobject jbyte_buffer = env->CallStaticObjectMethod(
+            uri_extensions_class,
+            read_bytes_method_id,
+            juri,
+            jcontext
+    );
+    if (type::isObjectNull(env, jbyte_buffer)) {
+        ret = std::pair(ERROR_READ_URI_FAILED, nullptr);
+
+    } else {
+        *file_data = static_cast<uint8_t *>(env->GetDirectBufferAddress(jbyte_buffer));
+        *file_size = env->GetDirectBufferCapacity(jbyte_buffer);
+        ret = std::pair(RESULT_SUCCESS, jbyte_buffer);
     }
+    env->DeleteLocalRef(uri_extensions_class);
 
-    // Get file size
-    struct stat file_stat{};
-    if (result == RESULT_SUCCESS) {
-        if (fstat(fd, &file_stat) == -1) {
-            result = ERROR_READ_URI_FAILED;
-        }
-    }
-
-    // Read from file descriptor
-    if (result == RESULT_SUCCESS) {
-        auto *const buffer = reinterpret_cast<uint8_t *>(malloc(file_stat.st_size));
-        const ssize_t bytes_read = read(fd, buffer, file_stat.st_size);
-        if (bytes_read == file_stat.st_size) {
-            *file_data = buffer;
-            *file_size = file_stat.st_size;
-
-        } else {
-            free(buffer);
-            result = ERROR_READ_URI_FAILED;
-        }
-    }
-
-    if (fd != -1) {
-        close(fd);
-    }
-
-    return result;
+    return ret;
 }
 
-CodecResultCode files::writeToUri(
+ResultCode files::writeToUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         const uint8_t *file_data,
         size_t file_size
 ) {
-    CodecResultCode result = RESULT_SUCCESS;
+    ResultCode result = RESULT_SUCCESS;
 
     const int fd = openFileDescriptor(env, jcontext, juri, "w");
     if (fd == -1) {
@@ -144,7 +137,7 @@ std::string files::uriToString(JNIEnv *env, jobject juri) {
     return uri_string;
 }
 
-CodecResultCode files::fileExists(
+ResultCode files::fileExists(
         JNIEnv *env,
         jobject jcontext,
         jobject jdirectory_uri,
@@ -166,7 +159,7 @@ CodecResultCode files::fileExists(
             jcontext,
             jfile_name
     );
-    CodecResultCode result;
+    ResultCode result;
     if (jexists == 1) {
         result = RESULT_FILE_EXISTS;
     } else if (jexists == 0) {

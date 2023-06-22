@@ -92,12 +92,12 @@ namespace {
         return jinfo;
     }
 
-    CodecResultCode notifyInfoDecoded(
+    ResultCode notifyInfoDecoded(
             JNIEnv *env,
             jobject jdecoder,
             jobject jinfo
     ) {
-        CodecResultCode result = RESULT_SUCCESS;
+        ResultCode result = RESULT_SUCCESS;
         if (type::isObjectNull(env, jinfo)) {
             result = ERROR_WEBP_INFO_EXTRACT_FAILED;
 
@@ -118,7 +118,7 @@ namespace {
     }
 
     // process and write bitmap data
-    CodecResultCode processFrame(
+    ResultCode processFrame(
             JNIEnv *env,
             jobject jdecoder,
             jobject jcontext,
@@ -128,7 +128,7 @@ namespace {
             int timestamp,
             int index
     ) {
-        CodecResultCode result = bmp::copyPixels(env, pixels, jbitmap);
+        ResultCode result = bmp::copyPixels(env, pixels, jbitmap);
         if (result == RESULT_SUCCESS) {
             jclass decoder_class = env->FindClass(
                     "com/aureusapps/android/webpandroid/decoder/WebPDecoder"
@@ -191,7 +191,7 @@ namespace {
         return result;
     }
 
-    CodecResultCode decodeAnimFrames(
+    ResultCode decodeAnimFrames(
             JNIEnv *env,
             jobject jdecoder,
             jobject jcontext,
@@ -200,7 +200,7 @@ namespace {
             const uint8_t *file_data,
             size_t file_size
     ) {
-        CodecResultCode result;
+        ResultCode result;
 
         WebPAnimDecoderOptions options;
         if (WebPAnimDecoderOptionsInit(&options)) {
@@ -268,7 +268,7 @@ namespace {
         return result;
     }
 
-    CodecResultCode decodeStaticFrame(
+    ResultCode decodeStaticFrame(
             JNIEnv *env,
             jobject jdecoder,
             jobject jcontext,
@@ -278,7 +278,7 @@ namespace {
             size_t file_size
     ) {
         jobject jinfo = decodeInfo(env, features);
-        CodecResultCode result = notifyInfoDecoded(env, jdecoder, jinfo);
+        ResultCode result = notifyInfoDecoded(env, jdecoder, jinfo);
         env->DeleteLocalRef(jinfo);
 
         if (result == RESULT_SUCCESS) {
@@ -299,7 +299,7 @@ namespace {
         return result;
     }
 
-    CodecResultCode decode(
+    ResultCode decode(
             JNIEnv *env,
             jobject jdecoder,
             jobject jcontext,
@@ -308,8 +308,15 @@ namespace {
     ) {
         uint8_t *file_data = nullptr;
         size_t file_size = 0;
-        CodecResultCode result = files::readFromUri(env, jcontext, jsrc_uri, &file_data,
-                                                    &file_size);
+        auto read_result = files::readFromUri(
+                env,
+                jcontext,
+                jsrc_uri,
+                &file_data,
+                &file_size
+        );
+
+        ResultCode result = read_result.first;
 
         WebPBitstreamFeatures features;
         if (result == RESULT_SUCCESS
@@ -341,8 +348,8 @@ namespace {
             }
         }
 
-        if (file_data != nullptr) {
-            free(file_data);
+        if (read_result.first == RESULT_SUCCESS) {
+            env->DeleteLocalRef(read_result.second);
             file_data = nullptr;
         }
 
@@ -367,7 +374,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
         jobject jsrc_uri,
         jobject jdst_uri
 ) {
-    CodecResultCode result = decode(env, thiz, jcontext, jsrc_uri, jdst_uri);
+    ResultCode result = decode(env, thiz, jcontext, jsrc_uri, jdst_uri);
     result::handleResult(env, result);
 }
 
@@ -384,7 +391,9 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeInfo(
     // read file data
     uint8_t *file_data = nullptr;
     size_t file_size = 0;
-    CodecResultCode result = files::readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
+    auto read_result = files::readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
+
+    ResultCode result = read_result.first;
 
     if (result == RESULT_SUCCESS) {
         WebPBitstreamFeatures features;
@@ -415,8 +424,13 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeInfo(
         } else {
             result = ERROR_WEBP_INFO_EXTRACT_FAILED;
         }
-        free(file_data);
     }
+
+    if (read_result.first == RESULT_SUCCESS) {
+        env->DeleteLocalRef(read_result.second);
+        file_data = nullptr;
+    }
+
     result::handleResult(env, result);
     return jinfo;
 }

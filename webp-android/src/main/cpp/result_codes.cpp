@@ -6,7 +6,7 @@
 #include "include/result_codes.h"
 #include "include/exception_helper.h"
 
-std::string result::parseMessage(CodecResultCode result_code) {
+std::string result::parseMessage(ResultCode result_code) {
     switch (result_code) {
         case RESULT_SUCCESS:
             return "Operation success";
@@ -81,7 +81,7 @@ std::string result::parseMessage(CodecResultCode result_code) {
     }
 }
 
-void result::handleResult(JNIEnv *env, CodecResultCode result) {
+void result::handleResult(JNIEnv *env, ResultCode result) {
     if (result != RESULT_SUCCESS) {
         std::string message = parseMessage(result);
         if (result == ERROR_USER_ABORT) {
@@ -93,7 +93,7 @@ void result::handleResult(JNIEnv *env, CodecResultCode result) {
     }
 }
 
-CodecResultCode result::encodingErrorToResultCode(WebPEncodingError error_code) {
+ResultCode result::encodingErrorToResultCode(WebPEncodingError error_code) {
     switch (error_code) {
         case VP8_ENC_OK:
             return RESULT_SUCCESS;
