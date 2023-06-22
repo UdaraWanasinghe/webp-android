@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
+import java.util.concurrent.CancellationException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class CodecViewModel(application: Application) : AndroidViewModel(application) {
@@ -559,6 +560,13 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         .OnConvertFinished(state)
                 }
 
+            } catch (e: CancellationException) {
+                emitState { state ->
+                    ConvertState
+                        .ImageToWebP
+                        .OnConvertCancelled(state)
+                }
+
             } catch (e: Exception) {
                 emitState { state ->
                     ConvertState
@@ -640,9 +648,14 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 emitState { state ->
                     ConvertState
                         .ImagesToAnimatedWebP
-                        .OnConvertFinished(
-                            parent = state
-                        )
+                        .OnConvertFinished(state)
+                }
+
+            } catch (e: CancellationException) {
+                emitState { state ->
+                    ConvertState
+                        .ImagesToAnimatedWebP
+                        .OnConvertCancelled(state)
                 }
 
             } catch (e: Exception) {
@@ -744,6 +757,13 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                             parent = state,
                             dstUris = dstUris
                         )
+                }
+
+            } catch (e: CancellationException) {
+                emitState { state ->
+                    ConvertState
+                        .WebPToImages
+                        .OnConvertCancelled(state)
                 }
 
             } catch (e: Exception) {

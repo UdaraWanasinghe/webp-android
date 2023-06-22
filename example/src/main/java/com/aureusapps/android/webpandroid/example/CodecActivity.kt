@@ -309,6 +309,10 @@ class CodecActivity : AppCompatActivity() {
                             )
                         }
 
+                        is ConvertState.ImageToWebP.OnConvertCancelled -> {
+                            showSnackbar("Cancelled")
+                        }
+
                         is ConvertState.ImageToWebP.OnConvertError -> {
                             showSnackbar(state.errorMessage)
                         }
@@ -333,6 +337,10 @@ class CodecActivity : AppCompatActivity() {
                                 state.imageWidth,
                                 state.imageHeight
                             )
+                        }
+
+                        is ConvertState.ImagesToAnimatedWebP.OnConvertCancelled -> {
+                            showSnackbar("Cancelled")
                         }
 
                         is ConvertState.ImagesToAnimatedWebP.OnConvertError -> {
@@ -364,6 +372,10 @@ class CodecActivity : AppCompatActivity() {
                                 webPInfo?.width ?: 0,
                                 webPInfo?.height ?: 0
                             )
+                        }
+
+                        is ConvertState.WebPToImages.OnConvertCancelled -> {
+                            showSnackbar("Cancelled")
                         }
 
                         is ConvertState.WebPToImages.OnConvertError -> {

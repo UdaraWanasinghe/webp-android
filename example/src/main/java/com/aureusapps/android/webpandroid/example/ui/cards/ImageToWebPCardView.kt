@@ -59,6 +59,11 @@ internal class ImageToWebPCardView(
                 updateStartButton()
             }
 
+            is ConvertState.ImageToWebP.OnConvertCancelled -> {
+                progressIndicator.progress = 0
+                updateStartButton()
+            }
+
             is ConvertState.ImageToWebP.OnConvertError -> {
                 updateStartButton()
             }

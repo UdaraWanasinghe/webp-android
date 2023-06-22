@@ -66,6 +66,24 @@ internal interface ConvertState {
 
         }
 
+        data class OnConvertCancelled(
+            override val srcUri: Uri,
+            override val dstUri: Uri,
+            override val imageWidth: Int,
+            override val imageHeight: Int
+        ) : ImageToWebP() {
+
+            constructor(
+                parent: ImageToWebP
+            ) : this(
+                srcUri = parent.srcUri,
+                dstUri = parent.dstUri,
+                imageWidth = parent.imageWidth,
+                imageHeight = parent.imageHeight
+            )
+
+        }
+
         data class OnConvertError(
             override val srcUri: Uri,
             override val dstUri: Uri,
@@ -147,6 +165,24 @@ internal interface ConvertState {
                 dstUri = parent.dstUri,
                 imageWidth = parent.imageWidth,
                 imageHeight = parent.imageHeight
+            )
+
+        }
+
+        data class OnConvertCancelled(
+            override val srcUris: List<Uri>,
+            override val dstUri: Uri,
+            override val imageWidth: Int,
+            override val imageHeight: Int,
+        ) : ImagesToAnimatedWebP() {
+
+            constructor(
+                parent: ImagesToAnimatedWebP
+            ) : this(
+                srcUris = parent.srcUris,
+                dstUri = parent.dstUri,
+                imageWidth = parent.imageWidth,
+                imageHeight = parent.imageHeight,
             )
 
         }
@@ -238,6 +274,20 @@ internal interface ConvertState {
                 srcUri = parent.srcUri,
                 dstUri = parent.dstUri,
                 dstUris = dstUris
+            )
+
+        }
+
+        data class OnConvertCancelled(
+            override val srcUri: Uri,
+            override val dstUri: Uri
+        ) : WebPToImages() {
+
+            constructor(
+                parent: WebPToImages
+            ) : this(
+                srcUri = parent.srcUri,
+                dstUri = parent.dstUri
             )
 
         }

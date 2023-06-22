@@ -60,6 +60,11 @@ internal class ImagesToAnimatedWebPCardView(
                 updateStartButton()
             }
 
+            is ConvertState.ImagesToAnimatedWebP.OnConvertCancelled -> {
+                progressIndicator.progress = 0
+                updateStartButton()
+            }
+
             is ConvertState.ImagesToAnimatedWebP.OnConvertError -> {
                 updateStartButton()
             }
