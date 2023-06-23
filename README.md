@@ -6,8 +6,8 @@
 
 ## What's Inside
 
-    *️ Encode a series of android bitmap images to a static or an animated WebP image. 
-    * Extract bitmap images from an animated WebP image.
+* Encode a series of android bitmap images to a static or an animated WebP image.
+* Extract bitmap images from an animated WebP image.
 
 ## Using
 
