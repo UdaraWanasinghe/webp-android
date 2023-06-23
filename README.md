@@ -2,12 +2,12 @@
 
 [![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)](https://central.sonatype.com/artifact/com.aureusapps.android/webp-android/1.0.1)
+[![javadoc](https://javadoc.io/badge2/com.aureusapps.android/webp-android/javadoc.svg)](https://javadoc.io/doc/com.aureusapps.android/webp-android)
 
-## What's Inside?
+## What's Inside
 
-*️ Encode a series of android bitmap images to a static or an animated WebP image.
-
-* Extract bitmap images from an animated WebP image.
+    *️ Encode a series of android bitmap images to a static or an animated WebP image. 
+    * Extract bitmap images from an animated WebP image.
 
 ## Using
 
@@ -42,13 +42,13 @@ webPEncoder.addProgressListener {
 }
 
 // Encode frame
-webPEncoder.encode(context, bitmap, outputUri)
+webPEncoder.encode(context, srcBitmap, dstUri)
 
 // Release resources
 webPEncoder.release()
 ```
 
-### Encoding a list of bitmap with WebPAnimEncoder
+### Encoding a list of Bitmap with WebPAnimEncoder
 
 ```kotlin
 val webPAnimEncoder = WebPAnimEncoder(
