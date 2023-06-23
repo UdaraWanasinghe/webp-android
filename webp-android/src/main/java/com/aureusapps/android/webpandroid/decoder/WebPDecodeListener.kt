@@ -3,6 +3,9 @@ package com.aureusapps.android.webpandroid.decoder
 import android.graphics.Bitmap
 import android.net.Uri
 
+/**
+ * The [WebPDecodeListener] interface defines callback methods to receive decoding events during WebP decoding.
+ */
 interface WebPDecodeListener {
 
     /**
