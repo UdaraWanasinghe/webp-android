@@ -1,85 +1,123 @@
 # webp-android
 
-[![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml) ![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)
+[![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)](https://central.sonatype.com/artifact/com.aureusapps.android/webp-android/1.0.1)
 
 ## What's Inside?
 
-✔️ Encode a series of android bitmap images to an animated WebP image.
+*️ Encode a series of android bitmap images to a static or an animated WebP image.
 
-## TODO
-
-✘ Extract images from an animated WebP image.
+* Extract bitmap images from an animated WebP image.
 
 ## Using
 
-1. Import the library into your project.
+### Import the library into your project.
 
-   ```groovy
-   // module level build.gradle
-   dependencies {
-       implementation "com.aureusapps.android:webp-android:1.0.1"
-   }
-   ```
+```groovy
+// module level build.gradle
+dependencies {
+    implementation "com.aureusapps.android:webp-android:1.0.1"
+}
+```
 
-2. Create an encoder instance.
+### Encoding a Bitmap with WebPEncoder
 
-   ```kotlin
-   val encoder = WebPAnimEncoder(
-       width = 512,
-       height = 512,
-       WebPAnimEncoderOptions(
-           animParams = WebPMuxAnimParams(loopCount = 0)
-       )
-   )
-   ```
+```kotlin
+// Create encoder instance
+val webPEncoder = WebPEncoder(width, height)
 
-   See full list of encoder
-   options [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPAnimEncoderOptions.kt).
+// Configure the encoder
+webPEncoder.configure(
+    config = WebPConfig(
+        lossless = WebPConfig.COMPRESSION_LOSSLESS,
+        quality = 75f
+    ),
+    preset = WebPPreset.WEBP_PRESET_PICTURE
+)
 
-3. Configure the encoder.
+// Add progress listener if desired
+webPEncoder.addProgressListener {
+    // Handle progress updates
+    true // Return true to continue encoding, false to cancel
+}
 
-   ```kotlin
-   encoder.configure(
-       WebPConfig(
-           lossless = WebPConfig.COMPRESSION_LOSSLESS,
-           quality = 100f
-       )
-   )
-   ```
+// Encode frame
+webPEncoder.encode(context, bitmap, outputUri)
 
-   See full list of encoder
-   configurations [here](webp-android/src/main/java/com/aureusapps/android/webpandroid/encoder/WebPConfig.kt).
+// Release resources
+webPEncoder.release()
+```
 
-4. Add encoder progress listener.
+### Encoding a list of bitmap with WebPAnimEncoder
 
-   ```kotlin
-   encoder.addProgressListener(object : WebPAnimEncoderListener {
-       override fun onProgressUpdate(framePercent: Int, currentFrame: Int) {
-           // update progress here
-       }
-   })
-   ```
+```kotlin
+val webPAnimEncoder = WebPAnimEncoder(
+    width = width,
+    height = height,
+    options = WebPAnimEncoderOptions(
+        minimizeSize = true,
+        animParams = WebPMuxAnimParams(
+            backgroundColor = Color.GREEN,
+            loopCount = 3
+        )
+    )
+)
+webPAnimEncoder.configure(
+    config = WebPConfig(
+        lossless = WebPConfig.COMPRESSION_LOSSLESS,
+        quality = 75f
+    ),
+    preset = WebPPreset.WEBP_PRESET_PICTURE
+)
 
-5. Add frames with their timestamp.
+// Add progress listener if desired
+webPAnimEncoder.addProgressListener {
+    // Handle progress updates
+    true // Return true to continue encoding, false to cancel
+}
 
-   ```kotlin
-   encoder.addFrame(WebPFrame(bitmap1, 0))
-   encoder.addFrame(WebPFrame(bitmap2, 1000))
-   ```
+// Add frames to the animation
+webPAnimEncoder.addFrame(timestamp, srcBitmap)
+webPAnimEncoder.addFrame(context, timestamp, srcUri)
 
-6. Call assemble by giving the last timestamp and the save path.
+// Assemble the animation
+webPAnimEncoder.assemble(context, timestamp, dstUri)
 
-   ```kotlin
-   encoder.assemble(2000, path)
-   ```
+// Release resources
+webPAnimEncoder.release()
+```
 
-7. Release the encoder resources.
+### Decoding WebP Image with WebPDecoder
 
-   ```kotlin
-   encoder.release()
-   ```
+```kotlin
+// Create decoder instance
+val webPDecoder = WebPDecoder()
 
-## Updating version
+// Add decode listener to receive decoding events
+webPDecoder.addDecodeListener(
+    object : WebPDecodeListener {
+        override fun onInfoDecoded(info: WebPInfo) {
+            // Handle image information
+        }
+
+        override fun onFrameDecoded(index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri?) {
+            // Handle decoded frames
+            // Do not recycle the bitmap image as it is reused internally
+        }
+    }
+)
+
+// Decode frames from a WebP file
+webPDecoder.decodeFrames(context, srcUri, dstUri)
+
+// Decode only the image information from a WebP file
+val info = webPDecoder.decodeInfo(context, srcUri)
+
+// Release resources
+webPDecoder.release()
+```
+
+## Updating the version
 
 ```shell
 ./gradlew updateVersion --code=xx --name=xx.xx.xx
