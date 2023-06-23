@@ -4,193 +4,126 @@ import androidx.annotation.FloatRange
 import androidx.annotation.IntDef
 import androidx.annotation.IntRange
 
-class WebPConfig(
-
-    /**
-     * Lossless encoding (0=lossy(default), 1=lossless).
-     */
+/**
+ * Configuration options for the WebP encoder.
+ *
+ * The [WebPConfig] data class provides various options to configure the encoding process
+ * for WebP images. These options allow you to control the encoding parameters such as
+ * lossless/lossy encoding, quality, compression method, target size, segmentation,
+ * filtering, alpha channel encoding, preprocessing, multi-threading, memory usage, and more.
+ *
+ * @property lossless Enables or disables lossless encoding. Use [WebPConfig.COMPRESSION_LOSSY]
+ * for lossy encoding and [WebPConfig.COMPRESSION_LOSSLESS] for lossless encoding.
+ * @property quality Specifies the quality factor for lossy encoding. Valid values range from 0 to 100.
+ * @property method Specifies the compression method to be used. Valid values range from 0 to 6.
+ * @property targetSize Specifies the desired target size in bytes for the output image.
+ * @property targetPSNR Specifies the desired target PSNR (Peak Signal-to-Noise Ratio) value for the output image.
+ * @property segments Specifies the number of segments to use for multi-threaded encoding. Valid values range from 1 to 4.
+ * @property snsStrength Specifies the strength of the spatial noise shaping. Valid values range from 0 to 100.
+ * @property filterStrength Specifies the strength of the deblocking filter. Valid values range from 0 to 100.
+ * @property filterSharpness Specifies the sharpness of the deblocking filter. Valid values range from 0 to 7.
+ * @property filterType Specifies the filtering type. Use [WebPConfig.FILTER_SIMPLE] for simple filtering
+ * and [WebPConfig.FILTER_STRONG] for strong filtering.
+ * @property autoFilter Controls the automatic filtering strength. If set to true, automatic filtering is enabled.
+ * @property alphaCompression Specifies the compression method for the alpha channel. Use [WebPConfig.ALPHA_COMPRESSION_NONE]
+ * for no compression and [WebPConfig.ALPHA_COMPRESSION_WITH_LOSSLESS] for lossless compression.
+ * @property alphaFiltering Specifies the predictive filtering method for the alpha channel. Use [WebPConfig.ALPHA_FILTERING_NONE]
+ * for no filtering, [WebPConfig.ALPHA_FILTERING_FAST] for fast filtering, and [WebPConfig.ALPHA_FILTERING_BEST]
+ * for best filtering.
+ * @property alphaQuality Specifies the quality factor for lossy alpha encoding. Valid values range from 0 to 100.
+ * @property pass Specifies the number of entropy analysis passes. Valid values range from 0 to 10.
+ * @property showCompressed If true, export the compressed picture back. In-loop filtering is not applied.
+ * @property preprocessing Specifies the preprocessing filter to be applied to the input image. Use [WebPConfig.PREPROCESSING_NONE]
+ * for no preprocessing, [WebPConfig.PREPROCESSING_SEGMENT_SMOOTH] for segment smoothing, and
+ * [WebPConfig.PREPROCESSING_RANDOM_DITHERING] for pseudo-random dithering.
+ * @property partitions log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding.
+ * @property partitionLimit Specifies the maximum number of bytes to use for the internal partition size. Valid values range from 0 to 100.
+ * @property emulateJPEGSize If set to true, tries to emulate the compression behavior of JPEG.
+ * @property threadLevel If non-zero, specifies the level of effort to use for multi-threaded encoding.
+ * @property lowMemory If set to true, reduces memory usage but at the cost of increased CPU usage.
+ * @property nearLossless Specifies the level of near lossless encoding. Valid values range from 0 to 100. [0 = max loss .. 100 = off (default)]
+ * @property exact If set to true, preserves exact RGB values under transparent areas.
+ * @property useDeltaPalette If set to true, enables the use of delta palette encoding.
+ * @property useSharpYUV If set to true, uses a sharp RGB to YUV conversion method.
+ * @property qmin Specifies the minimum permissible quality factor.
+ * @property qmax Specifies the maximum permissible quality factor.
+ */
+data class WebPConfig(
     @get: Compression
-    @setparam:Compression
-    var lossless: Int? = null,
+    val lossless: Int? = null,
 
-    /**
-     * between 0 and 100. For lossy, 0 gives the smallest
-     * size and 100 the largest. For lossless, this
-     * parameter is the amount of effort put into the
-     * compression: 0 is the fastest but gives larger
-     * files compared to the slowest, but best, 100.
-     */
     @FloatRange(from = 0.0, to = 100.0)
-    var quality: Float? = null,
+    val quality: Float? = null,
 
-    /**
-     * quality/speed trade-off (0=fast, 6=slower-better)
-     */
     @IntRange(from = 0, to = 6)
-    var method: Int? = null,
+    val method: Int? = null,
 
-    /**
-     * if non-zero, set the desired target size in bytes.
-     * Takes precedence over the 'compression' parameter.
-     */
-    var targetSize: Int? = null,
+    val targetSize: Int? = null,
 
-    /**
-     * if non-zero, specifies the minimal distortion to
-     * try to achieve. Takes precedence over target_size.
-     */
-    var targetPSNR: Float? = null,
+    val targetPSNR: Float? = null,
 
-    /**
-     * maximum number of segments to use, in [1..4]
-     */
     @IntRange(from = 1, to = 4)
-    var segments: Int? = null,
+    val segments: Int? = null,
 
-    /**
-     * Spatial Noise Shaping. 0=off, 100=maximum.
-     */
     @IntRange(from = 0, to = 100)
-    var snsStrength: Int? = null,
+    val snsStrength: Int? = null,
 
-    /**
-     * range: [0 = off .. 100 = strongest]
-     */
     @IntRange(from = 0, to = 100)
-    var filterStrength: Int? = null,
+    val filterStrength: Int? = null,
 
-    /**
-     * range: [0 = off .. 7 = least sharp]
-     */
     @IntRange(from = 0, to = 7)
-    var filterSharpness: Int? = null,
+    val filterSharpness: Int? = null,
 
-    /**
-     * filtering type: 0 = simple, 1 = strong (only used
-     * if filter_strength > 0 or autofilter > 0)
-     */
     @get: FilterType
-    @setparam:FilterType
-    var filterType: Int? = null,
+    val filterType: Int? = null,
 
-    /**
-     * Auto adjust filter's strength [0 = off, 1 = on]
-     */
-    var autoFilter: Boolean? = null,
+    val autoFilter: Boolean? = null,
 
-    /**
-     * Algorithm for encoding the alpha plane (0 = none,
-     * 1 = compressed with WebP lossless). Default is 1.
-     */
     @get: AlphaCompression
-    @setparam:AlphaCompression
-    var alphaCompression: Int? = null,
+    val alphaCompression: Int? = null,
 
-    /**
-     * Predictive filtering method for alpha plane.
-     * 0: none, 1: fast, 2: best. Default if 1.
-     */
     @get: AlphaFiltering
-    @setparam:AlphaFiltering
-    var alphaFiltering: Int? = null,
+    val alphaFiltering: Int? = null,
 
-    /**
-     * Between 0 (smallest size) and 100 (lossless).
-     * Default is 100.
-     */
     @IntRange(from = 0, to = 100)
-    var alphaQuality: Int? = null,
+    val alphaQuality: Int? = null,
 
-    /**
-     * number of entropy-analysis passes (in [1..10]).
-     */
     @IntRange(from = 0, to = 10)
-    var pass: Int? = null,
+    val pass: Int? = null,
 
-    /**
-     * if true, export the compressed picture back.
-     * In-loop filtering is not applied.
-     */
-    var showCompressed: Boolean? = null,
+    val showCompressed: Boolean? = null,
 
-    /**
-     * preprocessing filter:
-     * 0=none, 1=segment-smooth, 2=pseudo-random dithering
-     */
     @get: Preprocessing
-    @setparam:Preprocessing
-    var preprocessing: Int? = null,
+    val preprocessing: Int? = null,
 
-    /**
-     * log2(number of token partitions) in [0..3]. Default
-     * is set to 0 for easier progressive decoding.
-     */
     @IntRange(from = 0, to = 3)
-    var partitions: Int? = null,
+    val partitions: Int? = null,
 
-    /**
-     * quality degradation allowed to fit the 512k limit
-     * on prediction modes coding (0: no degradation,
-     * 100: maximum possible degradation).
-     */
     @IntRange(from = 0, to = 100)
-    var partitionLimit: Int? = null,
+    val partitionLimit: Int? = null,
 
-    /**
-     * If true, compression parameters will be remapped
-     * to better match the expected output size from
-     * JPEG compression. Generally, the output size will
-     * be similar but the degradation will be lower.
-     */
-    var emulateJPEGSize: Boolean? = null,
+    val emulateJPEGSize: Boolean? = null,
 
-    /**
-     * If non-zero, try and use multi-threaded encoding.
-     */
-    var threadLevel: Int? = null,
+    val threadLevel: Int? = null,
 
-    /**
-     * If set, reduce memory usage (but increase CPU use).
-     */
-    var lowMemory: Boolean? = null,
+    val lowMemory: Boolean? = null,
 
-    /**
-     * Near lossless encoding [0 = max loss .. 100 = off
-     * (default)].
-     */
     @IntRange(from = 0, to = 100)
-    var nearLossless: Int? = null,
+    val nearLossless: Int? = null,
 
-    /**
-     * if non-zero, preserve the exact RGB values under
-     * transparent area. Otherwise, discard this invisible
-     * RGB information for better compression. The default
-     * value is 0.
-     */
-    var exact: Boolean? = null,
+    val exact: Boolean? = null,
 
-    /**
-     * reserved for future lossless feature
-     */
-    var useDeltaPalette: Boolean? = null,
+    val useDeltaPalette: Boolean? = null,
 
-    /**
-     * if needed, use sharp (and slow) RGB->YUV conversion
-     */
-    var useSharpYUV: Boolean? = null,
+    val useSharpYUV: Boolean? = null,
 
-    /**
-     * minimum permissible quality factor
-     */
-    var qmin: Int? = null,
+    val qmin: Int? = null,
 
-    /**
-     * maximum permissible quality factor
-     */
-    var qmax: Int? = null
-
+    val qmax: Int? = null
 ) {
+
     companion object {
+        // Constants for options with predefined values
         const val COMPRESSION_LOSSY = 0
         const val COMPRESSION_LOSSLESS = 1
         const val FILTER_SIMPLE = 0
@@ -203,14 +136,9 @@ class WebPConfig(
         const val PREPROCESSING_NONE = 0
         const val PREPROCESSING_SEGMENT_SMOOTH = 1
         const val PREPROCESSING_RANDOM_DITHERING = 2
-        const val WEBP_PRESET_DEFAULT = 0      // default preset
-        const val WEBP_PRESET_PICTURE = 1      // digital picture, like portrait, inner shot
-        const val WEBP_PRESET_PHOTO = 2        // outdoor photograph, with natural lighting
-        const val WEBP_PRESET_DRAWING = 3      // hand or line drawing, with high-contrast details
-        const val WEBP_PRESET_ICON = 4         // small-sized colorful images
-        const val WEBP_PRESET_TEXT = 5         // text-like
     }
 
+    // Annotation definitions for restricting the allowed values for properties
     @Retention(AnnotationRetention.SOURCE)
     @IntDef(COMPRESSION_LOSSY, COMPRESSION_LOSSLESS)
     private annotation class Compression

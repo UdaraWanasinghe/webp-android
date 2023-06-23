@@ -1,18 +1,12 @@
 package com.aureusapps.android.webpandroid.encoder
 
+/**
+ * The `WebPMuxAnimParams` class represents animation parameters for a WebP muxer.
+ *
+ * @property backgroundColor The background color of the canvas stored as an integer value. The color is stored in MSB order where bits 00-07 represent the alpha channel, bits 08-15 represent the red channel, bits 16-23 represent the green channel, and bits 24-31 represent the blue channel.
+ * @property loopCount The number of times to repeat the animation. Use 0 for infinite looping.
+ */
 data class WebPMuxAnimParams(
-
-    /**
-     * Background color of the canvas stored (in MSB order) as:
-     * Bits 00 to 07: Alpha.
-     * Bits 08 to 15: Red.
-     * Bits 16 to 23: Green.
-     * Bits 24 to 31: Blue.
-     */
     val backgroundColor: Int? = null,
-
-    /**
-     * Number of times to repeat the animation [0 = infinite].
-     */
-    val loopCount: Int? = null,
+    val loopCount: Int? = null
 )

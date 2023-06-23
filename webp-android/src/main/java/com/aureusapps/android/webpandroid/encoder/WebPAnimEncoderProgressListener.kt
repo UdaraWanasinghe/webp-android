@@ -1,5 +1,8 @@
 package com.aureusapps.android.webpandroid.encoder
 
+/**
+ * A functional interface for listening to the encoding progress of the WebP animation.
+ */
 fun interface WebPAnimEncoderProgressListener {
 
     /**
@@ -12,4 +15,5 @@ fun interface WebPAnimEncoderProgressListener {
      * @return Return false to cancel the encoding process, or true to continue the encoding.
      */
     fun onProgressChanged(currentFrame: Int, frameProgress: Int): Boolean
+    
 }
