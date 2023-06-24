@@ -6,8 +6,8 @@ plugins {
 }
 
 ext {
-    version_code = 3
-    version_name = '1.0.2'
+    version_code = 4
+    version_name = '1.0.3'
 
     libwebp_path = "../../../../../libwebp"
 }
