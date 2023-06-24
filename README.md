@@ -1,6 +1,6 @@
 # webp-android
 
-[![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml)
+[![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)](https://central.sonatype.com/artifact/com.aureusapps.android/webp-android/1.0.2)
 [![javadoc](https://javadoc.io/badge2/com.aureusapps.android/webp-android/javadoc.svg)](https://javadoc.io/doc/com.aureusapps.android/webp-android)
 
