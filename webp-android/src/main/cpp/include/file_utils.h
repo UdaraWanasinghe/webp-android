@@ -18,14 +18,16 @@ namespace files {
      * @param juri The Android Uri object representing the file.
      * @param mode File mode used to open the file.
      *
-     * @return The file descriptor associated with the Android Uri, or -1 if an error occurs.
+     * @return A pair of the file descriptor associated with the Android Uri and the parcel file descriptor, or -1 if an error occurred.
      */
-    int openFileDescriptor(
+    std::pair<int, jobject> openFileDescriptor(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,
             const char *mode
     );
+
+    ResultCode closeFileDescriptor(JNIEnv *env, jobject jparcel_fd);
 
     /**
      * Reads the contents of a file specified by the Android Uri into a dynamically allocated buffer.
@@ -66,16 +68,6 @@ namespace files {
             const uint8_t *file_data,
             size_t file_size
     );
-
-    /**
-     * Converts an Android Uri object to a C++ std::string representation.
-     *
-     * @param env Pointer to the JNI environment.
-     * @param juri The Android Uri object to convert.
-     *
-     * @return The Uri as a C++ std::string.
-     */
-    std::string uriToString(JNIEnv *env, jobject juri);
 
     /**
      * Checks if the file exists in the directory represented by Android Uri.

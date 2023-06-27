@@ -16,7 +16,7 @@
 #include "include/result_codes.h"
 #include "include/type_helper.h"
 
-int files::openFileDescriptor(
+std::pair<int, jobject> files::openFileDescriptor(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
@@ -29,36 +29,46 @@ int files::openFileDescriptor(
             "getContentResolver",
             "()Landroid/content/ContentResolver;"
     );
-    jobject content_resolver = env->CallObjectMethod(jcontext, get_content_resolver_method_id);
+    jobject jcontent_resolver = env->CallObjectMethod(jcontext, get_content_resolver_method_id);
     jmethodID open_file_descriptor_method_id = env->GetMethodID(
             content_resolver_class,
             "openFileDescriptor",
             "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
     );
-    jstring read_mode = env->NewStringUTF(mode);
-    jobject parcel_fd = env->CallObjectMethod(
-            content_resolver,
+    jstring jread_mode = env->NewStringUTF(mode);
+    jobject jparcel_fd = env->CallObjectMethod(
+            jcontent_resolver,
             open_file_descriptor_method_id,
             juri,
-            read_mode
+            jread_mode
     );
     int fd = 0;
     if (env->ExceptionCheck()) {
         env->ExceptionClear();
         fd = -1;
+
+    } else if (type::isObjectNull(env, jparcel_fd)) {
+        fd = -1;
     }
     if (fd == 0) {
         jclass fd_class = env->FindClass("android/os/ParcelFileDescriptor");
         jmethodID get_fd_method_id = env->GetMethodID(fd_class, "getFd", "()I");
-        fd = env->CallIntMethod(parcel_fd, get_fd_method_id);
+        fd = env->CallIntMethod(jparcel_fd, get_fd_method_id);
         env->DeleteLocalRef(fd_class);
     }
     env->DeleteLocalRef(context_class);
     env->DeleteLocalRef(content_resolver_class);
-    env->DeleteLocalRef(content_resolver);
-    env->DeleteLocalRef(read_mode);
-    env->DeleteLocalRef(parcel_fd);
-    return fd;
+    env->DeleteLocalRef(jcontent_resolver);
+    env->DeleteLocalRef(jread_mode);
+    return std::make_pair(fd, jparcel_fd);
+}
+
+ResultCode files::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
+    jclass parcel_file_descriptor_class = env->FindClass("android/os/ParcelFileDescriptor");
+    jmethodID close_method_id = env->GetMethodID(parcel_file_descriptor_class, "close", "()V");
+    env->CallVoidMethod(jparcel_fd, close_method_id);
+    env->DeleteLocalRef(parcel_file_descriptor_class);
+    return RESULT_SUCCESS;
 }
 
 std::pair<ResultCode, jobject> files::readFromUri(
@@ -75,7 +85,7 @@ std::pair<ResultCode, jobject> files::readFromUri(
     );
     jmethodID read_bytes_method_id = env->GetStaticMethodID(
             uri_extensions_class,
-            "readBytesToBuffer",
+            "readToBuffer",
             "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
     );
     jobject jbyte_buffer = env->CallStaticObjectMethod(
@@ -106,7 +116,11 @@ ResultCode files::writeToUri(
 ) {
     ResultCode result = RESULT_SUCCESS;
 
-    const int fd = openFileDescriptor(env, jcontext, juri, "w");
+    auto fd_pair = openFileDescriptor(env, jcontext, juri, "w");
+    int fd;
+    jobject jparcel_fd;
+    std::tie(fd, jparcel_fd) = fd_pair;
+
     if (fd == -1) {
         result = ERROR_WRITE_TO_URI_FAILED;
     }
@@ -119,22 +133,11 @@ ResultCode files::writeToUri(
     }
 
     if (fd != -1) {
-        close(fd);
+        files::closeFileDescriptor(env, jparcel_fd);
+        env->DeleteLocalRef(jparcel_fd);
     }
 
     return result;
-}
-
-std::string files::uriToString(JNIEnv *env, jobject juri) {
-    jclass uri_class = env->FindClass("android/net/Uri");
-    jmethodID to_string_method_id = env->GetMethodID(uri_class, "toString", "()Ljava/lang/String;");
-    const auto juri_string = (jstring) env->CallObjectMethod(juri, to_string_method_id);
-    std::string uri_string = type::jstringToString(env, juri_string);
-
-    env->DeleteLocalRef(uri_class);
-    env->DeleteLocalRef(juri_string);
-
-    return uri_string;
 }
 
 ResultCode files::fileExists(
