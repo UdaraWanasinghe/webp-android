@@ -27,7 +27,15 @@ namespace files {
             const char *mode
     );
 
-    ResultCode closeFileDescriptor(JNIEnv *env, jobject jparcel_fd);
+    /**
+     * Closes the file descriptor associated with a Java parcel file descriptor object.
+     *
+     * @param env The JNI environment pointer.
+     * @param jparcel_fd The Java parcel file descriptor object to close.
+     */
+    void closeFileDescriptor(JNIEnv *env, jobject jparcel_fd);
+
+    void closeFileDescriptorWithError(JNIEnv *env, jobject jparcel_fd, const std::string &error);
 
     /**
      * Reads the contents of a file specified by the Android Uri into a dynamically allocated buffer.

@@ -63,12 +63,28 @@ std::pair<int, jobject> files::openFileDescriptor(
     return std::make_pair(fd, jparcel_fd);
 }
 
-ResultCode files::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
+void files::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
     jclass parcel_file_descriptor_class = env->FindClass("android/os/ParcelFileDescriptor");
     jmethodID close_method_id = env->GetMethodID(parcel_file_descriptor_class, "close", "()V");
     env->CallVoidMethod(jparcel_fd, close_method_id);
     env->DeleteLocalRef(parcel_file_descriptor_class);
-    return RESULT_SUCCESS;
+}
+
+void files::closeFileDescriptorWithError(
+        JNIEnv *env,
+        jobject jparcel_fd,
+        const std::string &error
+) {
+    jclass parcel_file_descriptor_class = env->FindClass("android/os/ParcelFileDescriptor");
+    jmethodID close_with_error_method_id = env->GetMethodID(
+            parcel_file_descriptor_class,
+            "closeWithError",
+            "(Ljava/lang/String;)V"
+    );
+    jstring jerror = env->NewStringUTF(error.c_str());
+    env->CallVoidMethod(jparcel_fd, close_with_error_method_id, jerror);
+    env->DeleteLocalRef(parcel_file_descriptor_class);
+    env->DeleteLocalRef(jerror);
 }
 
 std::pair<ResultCode, jobject> files::readFromUri(
@@ -126,14 +142,23 @@ ResultCode files::writeToUri(
     }
 
     if (result == RESULT_SUCCESS) {
-        int bytes_wrote = write(fd, file_data, file_size);
-        if (bytes_wrote != file_size) {
+        int bytes_written = write(fd, file_data, file_size);
+        if (bytes_written == -1) {
             result = ERROR_WRITE_TO_URI_FAILED;
         }
     }
 
     if (fd != -1) {
-        files::closeFileDescriptor(env, jparcel_fd);
+        if (result == RESULT_SUCCESS) {
+            files::closeFileDescriptor(env, jparcel_fd);
+
+        } else {
+            closeFileDescriptorWithError(
+                    env,
+                    jparcel_fd,
+                    "Failed to write to the given file descriptor"
+            );
+        }
         env->DeleteLocalRef(jparcel_fd);
     }
 
