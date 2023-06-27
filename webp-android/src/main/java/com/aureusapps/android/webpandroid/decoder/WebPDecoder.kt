@@ -63,8 +63,7 @@ class WebPDecoder {
      *
      * @param context The Android [Context] object.
      * @param srcUri The [Uri] of the source WebP image.
-     * @param dstUri The [Uri] of the destination directory to save the decoded frames (optional).
-     * This could be a file [Uri] or a tree [Uri] returned from [Intent.ACTION_OPEN_DOCUMENT_TREE].
+     * @param dstUri The [Uri] of the destination directory to save the decoded frames (optional). This could be a file [Uri] or a tree [Uri] returned from [Intent.ACTION_OPEN_DOCUMENT_TREE].
      *
      * @throws [RuntimeException] If decoding error occurred.
      * @throws [CancellationException] If user cancelled the decoding process.

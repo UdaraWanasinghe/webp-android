@@ -97,8 +97,7 @@ class WebPAnimEncoder(
      *
      * @param context The Android context.
      * @param timestamp The timestamp of the frame.
-     * @param srcUri The source Uri pointing to the image file to be added as a frame.
-     * This could be an Android content provider Uri, file Uri, Android resource Uri or a http Uri.
+     * @param srcUri The source Uri pointing to the image file to be added as a frame. This could be an Android content provider Uri, file Uri, Android resource Uri or a http Uri.
      */
     external fun addFrame(context: Context, timestamp: Long, srcUri: Uri)
 
@@ -107,8 +106,7 @@ class WebPAnimEncoder(
      *
      * @param context The Android context.
      * @param timestamp The end timestamp of the animation.
-     * @param dstUri The destination Uri where the WebP animation will be saved.
-     * This could be a content provider Uri returned by [Intent.ACTION_CREATE_DOCUMENT] or a file Uri.
+     * @param dstUri The destination Uri where the WebP animation will be saved. This could be a content provider Uri returned by [Intent.ACTION_CREATE_DOCUMENT] or a file Uri.
      */
     external fun assemble(context: Context, timestamp: Long, dstUri: Uri)
 

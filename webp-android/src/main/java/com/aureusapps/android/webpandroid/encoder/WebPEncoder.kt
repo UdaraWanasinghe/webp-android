@@ -77,8 +77,7 @@ class WebPEncoder(width: Int, height: Int) {
      *
      * @param context The Android context.
      * @param srcBitmap The source [Bitmap] image to encode.
-     * @param dstUri The destination [Uri] to save the encoded image.
-     * This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
+     * @param dstUri The destination [Uri] to save the encoded image. This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
      *
      * @throws [RuntimeException] If encoding error occurred.
      * @throws [CancellationException] If encoding process cancelled.
@@ -89,10 +88,8 @@ class WebPEncoder(width: Int, height: Int) {
      * Encodes an image file from the given source [Uri] and saves the result to the specified destination [Uri].
      *
      * @param context The Android context.
-     * @param srcUri The source [Uri] of the image file to encode.
-     * This could be a content provider [Uri], file [Uri], Android resource [Uri] or a http [Uri].
-     * @param dstUri The destination [Uri] to save the encoded image.
-     * This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
+     * @param srcUri The source [Uri] of the image file to encode. This could be a content provider [Uri], file [Uri], Android resource [Uri] or a http [Uri].
+     * @param dstUri The destination [Uri] to save the encoded image. This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
      *
      * @throws [RuntimeException] If encoding error occurred.
      * @throws [CancellationException] If encoding process cancelled.

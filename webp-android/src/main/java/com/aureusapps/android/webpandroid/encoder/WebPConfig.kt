@@ -12,41 +12,34 @@ import androidx.annotation.IntRange
  * lossless/lossy encoding, quality, compression method, target size, segmentation,
  * filtering, alpha channel encoding, preprocessing, multi-threading, memory usage, and more.
  *
- * @property lossless Enables or disables lossless encoding. Use [WebPConfig.COMPRESSION_LOSSY]
- * for lossy encoding and [WebPConfig.COMPRESSION_LOSSLESS] for lossless encoding.
- * @property quality Specifies the quality factor for lossy encoding. Valid values range from 0 to 100.
- * @property method Specifies the compression method to be used. Valid values range from 0 to 6.
- * @property targetSize Specifies the desired target size in bytes for the output image.
- * @property targetPSNR Specifies the desired target PSNR (Peak Signal-to-Noise Ratio) value for the output image.
- * @property segments Specifies the number of segments to use for multi-threaded encoding. Valid values range from 1 to 4.
- * @property snsStrength Specifies the strength of the spatial noise shaping. Valid values range from 0 to 100.
- * @property filterStrength Specifies the strength of the deblocking filter. Valid values range from 0 to 100.
- * @property filterSharpness Specifies the sharpness of the deblocking filter. Valid values range from 0 to 7.
- * @property filterType Specifies the filtering type. Use [WebPConfig.FILTER_SIMPLE] for simple filtering
- * and [WebPConfig.FILTER_STRONG] for strong filtering.
- * @property autoFilter Controls the automatic filtering strength. If set to true, automatic filtering is enabled.
- * @property alphaCompression Specifies the compression method for the alpha channel. Use [WebPConfig.ALPHA_COMPRESSION_NONE]
- * for no compression and [WebPConfig.ALPHA_COMPRESSION_WITH_LOSSLESS] for lossless compression.
- * @property alphaFiltering Specifies the predictive filtering method for the alpha channel. Use [WebPConfig.ALPHA_FILTERING_NONE]
- * for no filtering, [WebPConfig.ALPHA_FILTERING_FAST] for fast filtering, and [WebPConfig.ALPHA_FILTERING_BEST]
- * for best filtering.
- * @property alphaQuality Specifies the quality factor for lossy alpha encoding. Valid values range from 0 to 100.
- * @property pass Specifies the number of entropy analysis passes. Valid values range from 0 to 10.
- * @property showCompressed If true, export the compressed picture back. In-loop filtering is not applied.
- * @property preprocessing Specifies the preprocessing filter to be applied to the input image. Use [WebPConfig.PREPROCESSING_NONE]
- * for no preprocessing, [WebPConfig.PREPROCESSING_SEGMENT_SMOOTH] for segment smoothing, and
- * [WebPConfig.PREPROCESSING_RANDOM_DITHERING] for pseudo-random dithering.
- * @property partitions log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding.
- * @property partitionLimit Specifies the maximum number of bytes to use for the internal partition size. Valid values range from 0 to 100.
- * @property emulateJPEGSize If set to true, tries to emulate the compression behavior of JPEG.
- * @property threadLevel If non-zero, specifies the level of effort to use for multi-threaded encoding.
- * @property lowMemory If set to true, reduces memory usage but at the cost of increased CPU usage.
- * @property nearLossless Specifies the level of near lossless encoding. Valid values range from 0 to 100. [0 = max loss .. 100 = off (default)]
- * @property exact If set to true, preserves exact RGB values under transparent areas.
- * @property useDeltaPalette If set to true, enables the use of delta palette encoding.
- * @property useSharpYUV If set to true, uses a sharp RGB to YUV conversion method.
- * @property qmin Specifies the minimum permissible quality factor.
- * @property qmax Specifies the maximum permissible quality factor.
+ * @param lossless Enables or disables lossless encoding. Use [WebPConfig.COMPRESSION_LOSSY] for lossy encoding and [WebPConfig.COMPRESSION_LOSSLESS] for lossless encoding.
+ * @param quality Specifies the quality factor for lossy encoding. Valid values range from 0 to 100.
+ * @param method Specifies the compression method to be used. Valid values range from 0 to 6.
+ * @param targetSize Specifies the desired target size in bytes for the output image.
+ * @param targetPSNR Specifies the desired target PSNR (Peak Signal-to-Noise Ratio) value for the output image.
+ * @param segments Specifies the number of segments to use for multi-threaded encoding. Valid values range from 1 to 4.
+ * @param snsStrength Specifies the strength of the spatial noise shaping. Valid values range from 0 to 100.
+ * @param filterStrength Specifies the strength of the deblocking filter. Valid values range from 0 to 100.
+ * @param filterSharpness Specifies the sharpness of the deblocking filter. Valid values range from 0 to 7.
+ * @param filterType Specifies the filtering type. Use [WebPConfig.FILTER_SIMPLE] for simple filtering and [WebPConfig.FILTER_STRONG] for strong filtering.
+ * @param autoFilter Controls the automatic filtering strength. If set to true, automatic filtering is enabled.
+ * @param alphaCompression Specifies the compression method for the alpha channel. Use [WebPConfig.ALPHA_COMPRESSION_NONE] for no compression and [WebPConfig.ALPHA_COMPRESSION_WITH_LOSSLESS] for lossless compression.
+ * @param alphaFiltering Specifies the predictive filtering method for the alpha channel. Use [WebPConfig.ALPHA_FILTERING_NONE] for no filtering, [WebPConfig.ALPHA_FILTERING_FAST] for fast filtering, and [WebPConfig.ALPHA_FILTERING_BEST] for best filtering.
+ * @param alphaQuality Specifies the quality factor for lossy alpha encoding. Valid values range from 0 to 100.
+ * @param pass Specifies the number of entropy analysis passes. Valid values range from 0 to 10.
+ * @param showCompressed If true, export the compressed picture back. In-loop filtering is not applied.
+ * @param preprocessing Specifies the preprocessing filter to be applied to the input image. Use [WebPConfig.PREPROCESSING_NONE] for no preprocessing, [WebPConfig.PREPROCESSING_SEGMENT_SMOOTH] for segment smoothing, and [WebPConfig.PREPROCESSING_RANDOM_DITHERING] for pseudo-random dithering.
+ * @param partitions log2(number of token partitions) in [0..3]. Default is set to 0 for easier progressive decoding.
+ * @param partitionLimit Specifies the maximum number of bytes to use for the internal partition size. Valid values range from 0 to 100.
+ * @param emulateJPEGSize If set to true, tries to emulate the compression behavior of JPEG.
+ * @param threadLevel If non-zero, specifies the level of effort to use for multi-threaded encoding.
+ * @param lowMemory If set to true, reduces memory usage but at the cost of increased CPU usage.
+ * @param nearLossless Specifies the level of near lossless encoding. Valid values range from 0 to 100. [0 = max loss .. 100 = off (default)]
+ * @param exact If set to true, preserves exact RGB values under transparent areas.
+ * @param useDeltaPalette If set to true, enables the use of delta palette encoding.
+ * @param useSharpYUV If set to true, uses a sharp RGB to YUV conversion method.
+ * @param qmin Specifies the minimum permissible quality factor.
+ * @param qmax Specifies the maximum permissible quality factor.
  */
 data class WebPConfig(
     @get: Compression
