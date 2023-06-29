@@ -26,6 +26,11 @@ class WebPEncoderInstrumentedTest {
 
     @Test
     fun test_encodeImage() {
+        testEncodeImage()
+        testEncodeImage(20, 20)
+    }
+
+    private fun testEncodeImage(outWidth: Int = -1, outHeight: Int = -1) {
         var bitmap: Bitmap? = null
         try {
             val width = 10
@@ -46,12 +51,14 @@ class WebPEncoderInstrumentedTest {
             Assert.assertTrue(compressed)
 
             val outputFile = File.createTempFile("img", null)
-            val encoder = WebPEncoder()
+            val encoder = WebPEncoder(outWidth, outHeight)
             encoder.encode(context, inputFile.toUri(), outputFile.toUri())
             encoder.release()
 
             bitmap.recycle()
             bitmap = BitmapFactory.decodeFile(outputFile.absolutePath)
+            Assert.assertEquals(if (outWidth < 0) width else outWidth, bitmap.width)
+            Assert.assertEquals(if (outHeight < 0) height else outHeight, bitmap.height)
             for (i in 0 until width) {
                 for (j in 0 until height) {
                     val pixel = bitmap.getPixel(i, j)
