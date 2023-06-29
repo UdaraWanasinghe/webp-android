@@ -254,6 +254,7 @@ namespace {
     WebPEncoder::WebPEncoder(int width, int height) {
         this->imageWidth = width;
         this->imageHeight = height;
+        WebPConfigInit(&webPConfig);
     }
 
     WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject jencoder) {
