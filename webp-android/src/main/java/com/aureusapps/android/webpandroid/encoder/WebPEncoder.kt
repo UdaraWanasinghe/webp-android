@@ -9,10 +9,10 @@ import java.util.concurrent.CancellationException
 /**
  * The [WebPEncoder] class provides functionality for encoding images to the WebP format.
  *
- * @param width The width of the image to be encoded.
- * @param height The height of the image to be encoded.
+ * @param width The width of the image to be encoded. If negative, original bitmap width will be used.
+ * @param height The height of the image to be encoded. If negative, original bitmap height will be used.
  */
-class WebPEncoder(width: Int, height: Int) {
+class WebPEncoder(width: Int = -1, height: Int = -1) {
 
     companion object {
         init {

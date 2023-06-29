@@ -8,13 +8,13 @@ import android.net.Uri
 /**
  * Constructs a WebP animation encoder with the specified width, height, and options.
  *
- * @param width The width of the animation frames in pixels.
- * @param height The height of the animation frames in pixels.
+ * @param width The width of the animation frames in pixels. If negative, width of the first bitmap will be used.
+ * @param height The height of the animation frames in pixels. If negative, height of the first bitmap will be used.
  * @param options The optional encoding options for the WebP animation. Default value is null.
  */
 class WebPAnimEncoder(
-    width: Int,
-    height: Int,
+    width: Int = -1,
+    height: Int = -1,
     options: WebPAnimEncoderOptions? = null
 ) {
 

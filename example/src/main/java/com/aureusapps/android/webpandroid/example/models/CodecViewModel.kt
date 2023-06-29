@@ -786,16 +786,12 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     private fun ConvertData.ImageToWebP.isConvertDataComplete(): Boolean {
         return srcUri != Uri.EMPTY
                 && dstUri != Uri.EMPTY
-                && imageWidth > 0
-                && imageHeight > 0
                 && convertQuality >= 0f
     }
 
     private fun ConvertData.ImagesToAnimatedWebP.isConvertDataComplete(): Boolean {
         return srcUris.isNotEmpty()
                 && dstUri != Uri.EMPTY
-                && imageWidth > 0
-                && imageHeight > 0
                 && convertQuality >= 0f
                 && frameDuration >= 0
     }

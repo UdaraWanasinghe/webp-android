@@ -7,8 +7,6 @@ import com.aureusapps.android.webpandroid.encoder.WebPPreset
 // For an example: clicking a button.
 internal sealed interface UiAction {
 
-    object DeleteCacheAction : UiAction
-
     sealed class ImageToWebP : UiAction {
 
         abstract val tag: Any?
@@ -21,8 +19,8 @@ internal sealed interface UiAction {
             val defaultSrcUri: Uri = Uri.EMPTY,
             val defaultDstUri: Uri = Uri.EMPTY,
             val defaultConvertQuality: Float = 70f,
-            val defaultImageWidth: Int = 512,
-            val defaultImageHeight: Int = 512,
+            val defaultImageWidth: Int = -1,
+            val defaultImageHeight: Int = -1,
             val defaultWebPPreset: WebPPreset? = WebPPreset.WEBP_PRESET_DEFAULT,
             val startConvert: Boolean = false,
             override val tag: Any? = null
@@ -84,8 +82,8 @@ internal sealed interface UiAction {
             val defaultDstUri: Uri = Uri.EMPTY,
             val defaultFrameDuration: Int = 1000,
             val defaultConvertQuality: Float = 70f,
-            val defaultImageWidth: Int = 512,
-            val defaultImageHeight: Int = 512,
+            val defaultImageWidth: Int = -1,
+            val defaultImageHeight: Int = -1,
             val defaultWebPPreset: WebPPreset? = WebPPreset.WEBP_PRESET_DEFAULT,
             val startConvert: Boolean = false,
             override val tag: Any? = null

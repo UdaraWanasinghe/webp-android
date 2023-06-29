@@ -177,10 +177,10 @@ ResultCode files::fileExists(
     jmethodID file_exists_method_id = env->GetStaticMethodID(
             uri_extensions_class,
             "fileExists",
-            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)I"
+            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
     );
     jstring jfile_name = env->NewStringUTF(file_name.c_str());
-    jint jexists = env->CallStaticIntMethod(
+    jboolean jexists = env->CallStaticBooleanMethod(
             uri_extensions_class,
             file_exists_method_id,
             jdirectory_uri,
@@ -188,12 +188,10 @@ ResultCode files::fileExists(
             jfile_name
     );
     ResultCode result;
-    if (jexists == 1) {
+    if (jexists == JNI_TRUE) {
         result = RESULT_FILE_EXISTS;
-    } else if (jexists == 0) {
-        result = RESULT_FILE_NOT_FOUND;
     } else {
-        result = ERROR_JAVA_EXCEPTION;
+        result = RESULT_FILE_NOT_FOUND;
     }
     env->DeleteLocalRef(uri_extensions_class);
     env->DeleteLocalRef(jfile_name);
@@ -214,9 +212,6 @@ std::pair<bool, std::string> files::generateFileName(
         std::stringstream ss;
         ss << prefix << "_" << std::setfill('0') << std::setw(4) << counter++ << suffix;
         int exists = files::fileExists(env, jcontext, jdirectory_uri, ss.str());
-        if (exists == ERROR_JAVA_EXCEPTION) {
-            break;
-        }
         if (exists == RESULT_FILE_NOT_FOUND) {
             result = std::pair(true, ss.str());
             break;

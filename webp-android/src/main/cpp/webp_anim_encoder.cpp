@@ -205,12 +205,22 @@ namespace {
         ResultCode result = RESULT_SUCCESS;
 
         bool bitmap_resized = false;
-        if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
+        int imageWidth = encoder->imageWidth;
+        if (imageWidth <= 0) {
+            imageWidth = static_cast<int>(info.width);
+            encoder->imageWidth = imageWidth;
+        }
+        int imageHeight = encoder->imageHeight;
+        if (imageHeight <= 0) {
+            imageHeight = static_cast<int>(info.height);
+            encoder->imageHeight = imageHeight;
+        }
+        if (info.width != imageWidth || info.height != imageHeight) {
             jbitmap = bmp::resizeBitmap(
                     env,
                     jbitmap,
-                    encoder->imageWidth,
-                    encoder->imageHeight
+                    imageWidth,
+                    imageHeight
             );
             if (type::isObjectNull(env, jbitmap)) {
                 result = ERROR_BITMAP_RESIZE_FAILED;
@@ -261,7 +271,7 @@ namespace {
         this->imageHeight = height;
         this->frameCount = 0;
         this->encoderOptions = options;
-        this->webPAnimEncoder = WebPAnimEncoderNew(width, height, &encoderOptions);
+        this->webPAnimEncoder = nullptr;
     }
 
     WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
@@ -306,6 +316,9 @@ namespace {
         pic.progress_hook = &notifyProgressChanged;
 
         ResultCode result;
+        if (webPAnimEncoder == nullptr) {
+            webPAnimEncoder = WebPAnimEncoderNew(width, height, &encoderOptions);
+        }
         if (WebPAnimEncoderAdd(webPAnimEncoder, &pic, timestamp, &webPConfig)) {
             result = RESULT_SUCCESS;
 
@@ -339,7 +352,9 @@ namespace {
     }
 
     void WebPAnimationEncoder::release() {
-        WebPAnimEncoderDelete(webPAnimEncoder);
+        if (webPAnimEncoder != nullptr) {
+            WebPAnimEncoderDelete(webPAnimEncoder);
+        }
     }
 
 }

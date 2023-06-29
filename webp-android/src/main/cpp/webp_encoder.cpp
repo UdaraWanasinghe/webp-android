@@ -185,12 +185,20 @@ namespace {
         }
 
         bool bitmap_resized = false;
-        if (info.width != encoder->imageWidth || info.height != encoder->imageHeight) {
+        int imageWidth = encoder->imageWidth;
+        if (imageWidth <= 0) {
+            imageWidth = static_cast<int>(info.width);
+        }
+        int imageHeight = encoder->imageHeight;
+        if (imageHeight <= 0) {
+            imageHeight = static_cast<int>(info.height);
+        }
+        if (info.width != imageWidth || info.height != imageHeight) {
             jbitmap = bmp::resizeBitmap(
                     env,
                     jbitmap,
-                    encoder->imageWidth,
-                    encoder->imageHeight
+                    imageWidth,
+                    imageHeight
             );
             if (type::isObjectNull(env, jbitmap)) {
                 result = ERROR_BITMAP_RESIZE_FAILED;
