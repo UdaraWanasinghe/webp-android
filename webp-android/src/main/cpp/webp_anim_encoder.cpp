@@ -272,6 +272,7 @@ namespace {
         this->frameCount = 0;
         this->encoderOptions = options;
         this->webPAnimEncoder = nullptr;
+        WebPConfigInit(&webPConfig);
     }
 
     WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
