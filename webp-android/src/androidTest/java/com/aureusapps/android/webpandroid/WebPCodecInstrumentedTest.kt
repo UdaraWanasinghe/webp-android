@@ -59,39 +59,47 @@ class WebPCodecInstrumentedTest {
         dstHeight: Int = -1,
         imageColor: Int = Color.argb(255, 0, 255, 0)
     ) {
-        // create bitmap image
-        val inputFile = createBitmapImage(srcWidth, srcHeight, imageColor)
+        var inputFile: File? = null
+        var outputFile: File? = null
+        try {
+            // create bitmap image
+            inputFile = createBitmapImage(srcWidth, srcHeight, imageColor)
 
-        // encode
-        val outputFile = File.createTempFile("img", null)
-        val encoder = WebPEncoder(dstWidth, dstHeight)
-        encoder.configure(
-            config = WebPConfig(
-                lossless = WebPConfig.COMPRESSION_LOSSY,
-                quality = 100f
-            ),
-            preset = WebPPreset.WEBP_PRESET_DEFAULT
-        )
-        var listenerTriggered = false
-        encoder.addProgressListener {
-            listenerTriggered = true
-            true
+            // encode
+            outputFile = File.createTempFile("img", null)
+            val encoder = WebPEncoder(dstWidth, dstHeight)
+            encoder.configure(
+                config = WebPConfig(
+                    lossless = WebPConfig.COMPRESSION_LOSSY,
+                    quality = 100f
+                ),
+                preset = WebPPreset.WEBP_PRESET_DEFAULT
+            )
+            var listenerTriggered = false
+            encoder.addProgressListener {
+                listenerTriggered = true
+                true
+            }
+            encoder.encode(context, inputFile.toUri(), outputFile.toUri())
+            encoder.release()
+            assertTrue("Did not trigger the progress listener", listenerTriggered)
+
+            // verify
+            val expectedWidth = if (dstWidth < 0) srcWidth else dstWidth
+            val expectedHeight = if (dstHeight < 0) srcHeight else dstHeight
+            verifyWebPData(
+                file = outputFile,
+                expectedWidth = expectedWidth,
+                expectedHeight = expectedHeight,
+                expectedColors = listOf(imageColor),
+                expectedHasAnimation = false,
+                expectedHasAlphas = listOf(imageColor.alpha < 255),
+            )
+
+        } finally {
+            inputFile?.delete()
+            outputFile?.delete()
         }
-        encoder.encode(context, inputFile.toUri(), outputFile.toUri())
-        encoder.release()
-        assertTrue("Did not trigger the progress listener", listenerTriggered)
-
-        // verify
-        val expectedWidth = if (dstWidth < 0) srcWidth else dstWidth
-        val expectedHeight = if (dstHeight < 0) srcHeight else dstHeight
-        verifyWebPData(
-            file = outputFile,
-            expectedWidth = expectedWidth,
-            expectedHeight = expectedHeight,
-            expectedColors = listOf(imageColor),
-            expectedHasAnimation = false,
-            expectedHasAlphas = listOf(imageColor.alpha < 255),
-        )
     }
 
     private fun testEncodeAnimatedImage(
@@ -110,61 +118,69 @@ class WebPCodecInstrumentedTest {
         backgroundColor: Int = Color.WHITE,
         loopCount: Int = 0
     ) {
-        // create bitmap images
-        val images = imageColors.map {
-            createBitmapImage(srcWidth, srcHeight, it)
-        }
+        var inputFiles: List<File>? = null
+        var outputFile: File? = null
+        try {
+            // create bitmap images
+            inputFiles = imageColors.map {
+                createBitmapImage(srcWidth, srcHeight, it)
+            }
 
-        // encode
-        val outputFile = File.createTempFile("img", null)
-        val encoder = WebPAnimEncoder(
-            width = dstWidth,
-            height = dstHeight,
-            options = WebPAnimEncoderOptions(
-                minimizeSize = true,
-                kmin = 1,
-                kmax = 1,
-                animParams = WebPMuxAnimParams(
-                    backgroundColor = backgroundColor,
-                    loopCount = loopCount
+            // encode
+            outputFile = File.createTempFile("img", null)
+            val encoder = WebPAnimEncoder(
+                width = dstWidth,
+                height = dstHeight,
+                options = WebPAnimEncoderOptions(
+                    minimizeSize = true,
+                    kmin = 1,
+                    kmax = 1,
+                    animParams = WebPMuxAnimParams(
+                        backgroundColor = backgroundColor,
+                        loopCount = loopCount
+                    )
                 )
             )
-        )
-        encoder.configure(
-            config = WebPConfig(
-                lossless = WebPConfig.COMPRESSION_LOSSY,
-                quality = 100f
-            ),
-            preset = WebPPreset.WEBP_PRESET_DEFAULT
-        )
-        var listenerTriggered = false
-        encoder.addProgressListener { _, _ ->
-            listenerTriggered = true
-            true
-        }
-        var frameTimestamp = 0L
-        images.forEachIndexed { index, file ->
-            encoder.addFrame(context, frameTimestamp, file.toUri())
-            frameTimestamp += frameDurations[index]
-        }
-        encoder.assemble(context, frameTimestamp, outputFile.toUri())
-        encoder.release()
-        assertTrue("Did not trigger the progress listener", listenerTriggered)
+            encoder.configure(
+                config = WebPConfig(
+                    lossless = WebPConfig.COMPRESSION_LOSSY,
+                    quality = 100f
+                ),
+                preset = WebPPreset.WEBP_PRESET_DEFAULT
+            )
+            var listenerTriggered = false
+            encoder.addProgressListener { _, _ ->
+                listenerTriggered = true
+                true
+            }
+            var frameTimestamp = 0L
+            inputFiles.forEachIndexed { index, file ->
+                encoder.addFrame(context, frameTimestamp, file.toUri())
+                frameTimestamp += frameDurations[index]
+            }
+            encoder.assemble(context, frameTimestamp, outputFile.toUri())
+            encoder.release()
+            assertTrue("Did not trigger the progress listener", listenerTriggered)
 
-        // verify
-        val expectedWidth = if (dstWidth < 0) srcWidth else dstWidth
-        val expectedHeight = if (dstHeight < 0) srcHeight else dstHeight
-        verifyWebPData(
-            file = outputFile,
-            expectedWidth = expectedWidth,
-            expectedHeight = expectedHeight,
-            expectedColors = imageColors,
-            expectedBackgroundColor = backgroundColor,
-            expectedLoopCount = loopCount,
-            expectedHasAnimation = imageColors.isNotEmpty(),
-            expectedFrameDuration = frameDurations,
-            expectedHasAlphas = imageColors.map { it.alpha < 255 }
-        )
+            // verify
+            val expectedWidth = if (dstWidth < 0) srcWidth else dstWidth
+            val expectedHeight = if (dstHeight < 0) srcHeight else dstHeight
+            verifyWebPData(
+                file = outputFile,
+                expectedWidth = expectedWidth,
+                expectedHeight = expectedHeight,
+                expectedColors = imageColors,
+                expectedBackgroundColor = backgroundColor,
+                expectedLoopCount = loopCount,
+                expectedHasAnimation = imageColors.isNotEmpty(),
+                expectedFrameDuration = frameDurations,
+                expectedHasAlphas = imageColors.map { it.alpha < 255 }
+            )
+
+        } finally {
+            inputFiles?.forEach { it.delete() }
+            outputFile?.delete()
+        }
     }
 
     private fun createBitmapImage(
@@ -327,10 +343,10 @@ class WebPCodecInstrumentedTest {
             .putString(dataFormat)
             .putInt(chunkSize)
             .put(vp8Data)
-        val frameBytes = ByteArray(fileSize)
+        val frameBytes = ByteArray(frameBuffer.capacity())
         frameBuffer.position(0)
         frameBuffer.get(frameBytes)
-        val bitmap = BitmapFactory.decodeByteArray(frameBytes, 0, fileSize)
+        val bitmap = BitmapFactory.decodeByteArray(frameBytes, 0, frameBytes.size)
         assertEquals("Invalid frame width", expectedWidth, bitmap.width)
         assertEquals("Invalid frame height", expectedHeight, bitmap.height)
         for (i in 0 until expectedWidth) {
