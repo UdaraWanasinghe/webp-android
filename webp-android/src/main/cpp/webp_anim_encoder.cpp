@@ -362,7 +362,7 @@ namespace {
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeCreate(
         JNIEnv *env,
         jobject thiz,
         jint jwidth,
@@ -385,7 +385,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_create(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_configure(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeConfigure(
         JNIEnv *env,
         jobject thiz,
         jobject jconfig,

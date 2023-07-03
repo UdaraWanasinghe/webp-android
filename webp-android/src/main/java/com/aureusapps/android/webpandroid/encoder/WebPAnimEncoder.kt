@@ -29,7 +29,7 @@ class WebPAnimEncoder(
     private val progressListeners: ArrayList<WebPAnimEncoderProgressListener> = ArrayList()
 
     init {
-        nativePointer = create(width, height, options)
+        nativePointer = nativeCreate(width, height, options)
         if (nativePointer == 0L) {
             throw RuntimeException("Failed to create native encoder")
         }
@@ -67,21 +67,15 @@ class WebPAnimEncoder(
         return encode
     }
 
-    private external fun create(
+    private external fun nativeCreate(
         width: Int,
         height: Int,
         options: WebPAnimEncoderOptions?
     ): Long
 
-    /**
-     * Configures the WebP encoder with the specified configuration.
-     *
-     * @param config The WebP configuration to be applied.
-     * @param preset The optional preset to be used for configuring the encoder. Default value is null.
-     */
-    external fun configure(
+    private external fun nativeConfigure(
         config: WebPConfig,
-        preset: WebPPreset? = null
+        preset: WebPPreset?
     )
 
     /**
@@ -119,5 +113,16 @@ class WebPAnimEncoder(
      * Releases any resources associated with the WebP encoder.
      */
     external fun release()
+
+    /**
+     * Configures the WebP encoder with the specified configuration.
+     *
+     * @param config The WebP configuration to be applied.
+     * @param preset The optional preset to be used for configuring the encoder. Default value is null.
+     */
+    fun configure(config: WebPConfig, preset: WebPPreset? = null): WebPAnimEncoder {
+        nativeConfigure(config, preset)
+        return this
+    }
 
 }
