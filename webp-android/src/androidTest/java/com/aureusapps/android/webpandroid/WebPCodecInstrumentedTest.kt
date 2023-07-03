@@ -43,13 +43,29 @@ class WebPCodecInstrumentedTest {
     @Test
     fun test_encodeImage() {
         testEncodeImage()
-        testEncodeImage(20, 20)
+        testEncodeImage(
+            srcWidth = 24,
+            srcHeight = 24
+        )
+        testEncodeImage(
+            srcWidth = 16,
+            srcHeight = 16,
+            lossless = WebPConfig.COMPRESSION_LOSSY
+        )
     }
 
     @Test
     fun test_encodeAnimatedImage() {
         testEncodeAnimatedImage()
-        testEncodeAnimatedImage(20, 20)
+        testEncodeAnimatedImage(
+            srcWidth = 24,
+            srcHeight = 24
+        )
+        testEncodeAnimatedImage(
+            srcWidth = 16,
+            srcHeight = 16,
+            lossless = WebPConfig.COMPRESSION_LOSSY
+        )
     }
 
     private fun testEncodeImage(
@@ -57,7 +73,8 @@ class WebPCodecInstrumentedTest {
         srcHeight: Int = 10,
         dstWidth: Int = -1,
         dstHeight: Int = -1,
-        imageColor: Int = Color.argb(255, 0, 255, 0)
+        imageColor: Int = Color.argb(255, 0, 255, 0),
+        lossless: Int = WebPConfig.COMPRESSION_LOSSLESS
     ) {
         var inputFile: File? = null
         var outputFile: File? = null
@@ -70,7 +87,7 @@ class WebPCodecInstrumentedTest {
             val encoder = WebPEncoder(dstWidth, dstHeight)
             encoder.configure(
                 config = WebPConfig(
-                    lossless = WebPConfig.COMPRESSION_LOSSY,
+                    lossless = lossless,
                     quality = 100f
                 ),
                 preset = WebPPreset.WEBP_PRESET_DEFAULT
@@ -116,7 +133,8 @@ class WebPCodecInstrumentedTest {
             2000
         ),
         backgroundColor: Int = Color.WHITE,
-        loopCount: Int = 0
+        loopCount: Int = 0,
+        lossless: Int = WebPConfig.COMPRESSION_LOSSLESS
     ) {
         var inputFiles: List<File>? = null
         var outputFile: File? = null
@@ -143,7 +161,7 @@ class WebPCodecInstrumentedTest {
             )
             encoder.configure(
                 config = WebPConfig(
-                    lossless = WebPConfig.COMPRESSION_LOSSY,
+                    lossless = lossless,
                     quality = 100f
                 ),
                 preset = WebPPreset.WEBP_PRESET_DEFAULT
@@ -243,7 +261,7 @@ class WebPCodecInstrumentedTest {
 
         var frameIndex = 0
 
-        while (buffer.hasRemaining()) {
+        while (buffer.hasRemaining() && buffer.remaining() >= 4) {
             val (fourCC, chunkSize) = buffer.readChunkHeader()
             when (fourCC) {
                 "VP8 " -> {
@@ -301,7 +319,9 @@ class WebPCodecInstrumentedTest {
                 }
 
                 else -> {
-                    buffer.skipBytes(chunkSize)
+                    if (chunkSize <= buffer.remaining()) {
+                        buffer.skipBytes(chunkSize)
+                    }
                 }
             }
         }
@@ -333,7 +353,14 @@ class WebPCodecInstrumentedTest {
     ) {
         val vp8Data = ByteArray(chunkSize)
         buffer.get(vp8Data)
-        val fileSize = 20 + chunkSize
+        val padding = if (chunkSize % 2 == 1) {
+            // add padding byte if chunk size is odd
+            // see VP8EncWrite() of enc/syntax_enc.c and WriteImage() of enc/vp8l_enc.c
+            1
+        } else {
+            0
+        }
+        val fileSize = 20 + chunkSize + padding
         val frameBuffer = ByteBuffer
             .allocate(fileSize)
             .order(ByteOrder.LITTLE_ENDIAN)
@@ -343,6 +370,9 @@ class WebPCodecInstrumentedTest {
             .putString(dataFormat)
             .putInt(chunkSize)
             .put(vp8Data)
+        if (padding > 0) {
+            frameBuffer.put(0)
+        }
         val frameBytes = ByteArray(frameBuffer.capacity())
         frameBuffer.position(0)
         frameBuffer.get(frameBytes)
