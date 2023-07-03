@@ -352,7 +352,7 @@ namespace {
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_create(
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeCreate(
         JNIEnv *env,
         jobject thiz,
         jint jwidth,
@@ -366,7 +366,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_create(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeConfigure(
         JNIEnv *env,
         jobject thiz,
         jobject jconfig,
@@ -408,7 +408,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_configure(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_content_Context_2Landroid_net_Uri_2Landroid_net_Uri_2(
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeEncode1(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
@@ -432,7 +432,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_content_Context_2Landroid_graphics_Bitmap_2Landroid_net_Uri_2(
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeEncode2(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
@@ -452,7 +452,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_encode__Landroid_con
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_cancel(JNIEnv *, jobject) {
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeCancel(JNIEnv *, jobject) {
     auto *data = progressHookData;
     if (data != nullptr) {
         data->cancel_flag = true;
@@ -461,7 +461,8 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_cancel(JNIEnv *, job
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_release(JNIEnv *env, jobject thiz) {
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeRelease(JNIEnv *env,
+                                                                          jobject thiz) {
     auto *encoder = WebPEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
 

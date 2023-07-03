@@ -19,10 +19,25 @@ class WebPDecoder {
     private val decodeListeners = mutableSetOf<WebPDecodeListener>()
 
     init {
-        nativePointer = create()
+        nativePointer = nativeCreate()
     }
 
-    private external fun create(): Long
+    private external fun nativeCreate(): Long
+
+    private external fun nativeDecodeFrames(
+        context: Context,
+        srcUri: Uri,
+        dstUri: Uri?
+    )
+
+    private external fun nativeDecodeInfo(
+        context: Context,
+        srcUri: Uri
+    ): WebPInfo
+
+    private external fun nativeCancel()
+
+    private external fun nativeRelease()
 
     private fun notifyInfoDecoded(info: WebPInfo) {
         decodeListeners.forEach {
@@ -68,7 +83,9 @@ class WebPDecoder {
      * @throws [RuntimeException] If decoding error occurred.
      * @throws [CancellationException] If user cancelled the decoding process.
      */
-    external fun decodeFrames(context: Context, srcUri: Uri, dstUri: Uri? = null)
+    fun decodeFrames(context: Context, srcUri: Uri, dstUri: Uri? = null) {
+        nativeDecodeFrames(context, srcUri, dstUri)
+    }
 
     /**
      * Decodes the image information of a WebP image.
@@ -79,16 +96,22 @@ class WebPDecoder {
      * @return The [WebPInfo] object containing the decoded image information.
      * @throws [RuntimeException] If error occurred.
      */
-    external fun decodeInfo(context: Context, srcUri: Uri): WebPInfo
+    fun decodeInfo(context: Context, srcUri: Uri): WebPInfo {
+        return nativeDecodeInfo(context, srcUri)
+    }
 
     /**
      * Cancels the decoding process.
      */
-    external fun cancel()
+    fun cancel() {
+        nativeCancel()
+    }
 
     /**
      * Releases the resources used by the [WebPDecoder] object.
      */
-    external fun release()
+    fun release() {
+        nativeRelease()
+    }
 
 }

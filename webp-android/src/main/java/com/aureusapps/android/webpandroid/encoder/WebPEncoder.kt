@@ -24,21 +24,47 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
     private val nativePointer: Long
 
     init {
-        nativePointer = create(width, height)
+        nativePointer = nativeCreate(width, height)
         if (nativePointer == 0L) {
             throw RuntimeException("Failed to create native encoder")
         }
     }
 
-    private external fun create(width: Int, height: Int): Long
+    private external fun nativeCreate(
+        width: Int,
+        height: Int
+    ): Long
 
-    /**
-     * Configures the WebP encoder.
-     *
-     * @param config The WebP configuration object.
-     * @param preset The optional WebP preset configuration.
-     */
-    external fun configure(config: WebPConfig, preset: WebPPreset? = null)
+    private external fun nativeConfigure(
+        config: WebPConfig,
+        preset: WebPPreset? = null
+    )
+
+    private external fun nativeEncode1(
+        context: Context,
+        srcUri: Uri,
+        dstUri: Uri
+    )
+
+    private external fun nativeEncode2(
+        context: Context,
+        srcBitmap: Bitmap,
+        dstUri: Uri
+    )
+
+    private external fun nativeCancel()
+
+    private external fun nativeRelease()
+
+    private fun notifyProgressChanged(progress: Int): Boolean {
+        var encode = true
+        progressListeners.forEach {
+            if (!it.onProgressChanged(progress)) {
+                encode = false
+            }
+        }
+        return encode
+    }
 
     /**
      * Adds a progress listener to receive encoding progress updates.
@@ -62,14 +88,35 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
         return progressListeners.remove(listener)
     }
 
-    private fun notifyProgressChanged(progress: Int): Boolean {
-        var encode = true
-        progressListeners.forEach {
-            if (!it.onProgressChanged(progress)) {
-                encode = false
-            }
-        }
-        return encode
+    /**
+     * Configures the WebP encoder.
+     *
+     * @return this encoder instance.
+     *
+     * @param config The WebP configuration object.
+     * @param preset The optional WebP preset configuration.
+     */
+    fun configure(config: WebPConfig, preset: WebPPreset? = null): WebPEncoder {
+        nativeConfigure(config, preset)
+        return this
+    }
+
+    /**
+     * Encodes an image file from the given source [Uri] and saves the result to the specified destination [Uri].
+     *
+     * @param context The Android context.
+     * @param srcUri The source [Uri] of the image file to encode. This could be a content provider [Uri], file [Uri], Android resource [Uri] or a http [Uri].
+     * @param dstUri The destination [Uri] to save the encoded image. This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
+     *
+     * @return this encoder instance.
+     *
+     * @throws [RuntimeException] If encoding error occurred.
+     * @throws [CancellationException] If encoding process cancelled.
+     *
+     */
+    fun encode(context: Context, srcUri: Uri, dstUri: Uri): WebPEncoder {
+        nativeEncode1(context, srcUri, dstUri)
+        return this
     }
 
     /**
@@ -79,31 +126,28 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
      * @param srcBitmap The source [Bitmap] image to encode.
      * @param dstUri The destination [Uri] to save the encoded image. This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
      *
-     * @throws [RuntimeException] If encoding error occurred.
-     * @throws [CancellationException] If encoding process cancelled.
-     */
-    external fun encode(context: Context, srcBitmap: Bitmap, dstUri: Uri)
-
-    /**
-     * Encodes an image file from the given source [Uri] and saves the result to the specified destination [Uri].
-     *
-     * @param context The Android context.
-     * @param srcUri The source [Uri] of the image file to encode. This could be a content provider [Uri], file [Uri], Android resource [Uri] or a http [Uri].
-     * @param dstUri The destination [Uri] to save the encoded image. This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
+     * @return this encoder instance.
      *
      * @throws [RuntimeException] If encoding error occurred.
      * @throws [CancellationException] If encoding process cancelled.
      */
-    external fun encode(context: Context, srcUri: Uri, dstUri: Uri)
+    fun encode(context: Context, srcBitmap: Bitmap, dstUri: Uri): WebPEncoder {
+        nativeEncode2(context, srcBitmap, dstUri)
+        return this
+    }
 
     /**
      * Cancels the ongoing encoding process.
      */
-    external fun cancel()
+    fun cancel() {
+        nativeCancel()
+    }
 
     /**
      * Releases the resources associated with the [WebPEncoder] instance.
      */
-    external fun release()
+    fun release() {
+        nativeRelease()
+    }
 
 }

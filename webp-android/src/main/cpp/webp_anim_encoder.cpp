@@ -422,7 +422,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeConfigure(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__Landroid_content_Context_2JLandroid_net_Uri_2(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeAddFrame1(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
@@ -449,7 +449,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__Landro
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__JLandroid_graphics_Bitmap_2(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeAddFrame2(
         JNIEnv *env,
         jobject thiz,
         jlong jtimestamp,
@@ -467,7 +467,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_addFrame__JLandr
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeAssemble(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
@@ -501,7 +501,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_assemble(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_cancel(JNIEnv *, jobject) {
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeCancel(JNIEnv *, jobject) {
     auto *data = progressHookData;
     if (data != nullptr) {
         data->cancel_flag = true;
@@ -510,7 +510,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_cancel(JNIEnv *,
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_release(
+Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeRelease(
         JNIEnv *env,
         jobject thiz
 ) {

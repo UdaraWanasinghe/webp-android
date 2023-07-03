@@ -359,14 +359,14 @@ namespace {
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_create(JNIEnv *, jobject) {
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeCreate(JNIEnv *, jobject) {
     auto *decoder = new WebPDecoder();
     return reinterpret_cast<jlong>(decoder);
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeDecodeFrames(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
@@ -379,7 +379,7 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeFrames(
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeInfo(
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeDecodeInfo(
         JNIEnv *env,
         jobject,
         jobject jcontext,
@@ -436,7 +436,8 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_decodeInfo(
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_cancel(JNIEnv *env, jobject thiz) {
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeCancel(JNIEnv *env,
+                                                                         jobject thiz) {
     auto *decoder = WebPDecoder::getInstance(env, thiz);
     if (decoder != nullptr) {
         decoder->cancel_flag = true;
@@ -445,7 +446,8 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_cancel(JNIEnv *env, 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_release(JNIEnv *env, jobject thiz) {
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeRelease(JNIEnv *env,
+                                                                          jobject thiz) {
     auto *decoder = WebPDecoder::getInstance(env, thiz);
     if (decoder == nullptr) return;
 
