@@ -43,56 +43,71 @@ import androidx.annotation.IntRange
  */
 data class WebPConfig(
     @get: Compression
+    @param:Compression
     val lossless: Int? = null,
 
-    @FloatRange(from = 0.0, to = 100.0)
+    @get:FloatRange(from = 0.0, to = 100.0)
+    @param:FloatRange(from = 0.0, to = 100.0)
     val quality: Float? = null,
 
-    @IntRange(from = 0, to = 6)
+    @get:IntRange(from = 0, to = 6)
+    @param:IntRange(from = 0, to = 6)
     val method: Int? = null,
 
     val targetSize: Int? = null,
 
     val targetPSNR: Float? = null,
 
-    @IntRange(from = 1, to = 4)
+    @get:IntRange(from = 1, to = 4)
+    @param:IntRange(from = 1, to = 4)
     val segments: Int? = null,
 
-    @IntRange(from = 0, to = 100)
+    @get:IntRange(from = 0, to = 100)
+    @param:IntRange(from = 0, to = 100)
     val snsStrength: Int? = null,
 
-    @IntRange(from = 0, to = 100)
+    @get:IntRange(from = 0, to = 100)
+    @param:IntRange(from = 0, to = 100)
     val filterStrength: Int? = null,
 
-    @IntRange(from = 0, to = 7)
+    @get:IntRange(from = 0, to = 7)
+    @param:IntRange(from = 0, to = 7)
     val filterSharpness: Int? = null,
 
     @get: FilterType
+    @param: FilterType
     val filterType: Int? = null,
 
     val autoFilter: Boolean? = null,
 
     @get: AlphaCompression
+    @param: AlphaCompression
     val alphaCompression: Int? = null,
 
     @get: AlphaFiltering
+    @param: AlphaFiltering
     val alphaFiltering: Int? = null,
 
-    @IntRange(from = 0, to = 100)
+    @get:IntRange(from = 0, to = 100)
+    @param:IntRange(from = 0, to = 100)
     val alphaQuality: Int? = null,
 
-    @IntRange(from = 0, to = 10)
+    @get:IntRange(from = 0, to = 10)
+    @param:IntRange(from = 0, to = 10)
     val pass: Int? = null,
 
     val showCompressed: Boolean? = null,
 
     @get: Preprocessing
+    @param: Preprocessing
     val preprocessing: Int? = null,
 
-    @IntRange(from = 0, to = 3)
+    @get:IntRange(from = 0, to = 3)
+    @param:IntRange(from = 0, to = 3)
     val partitions: Int? = null,
 
-    @IntRange(from = 0, to = 100)
+    @get:IntRange(from = 0, to = 100)
+    @param:IntRange(from = 0, to = 100)
     val partitionLimit: Int? = null,
 
     val emulateJPEGSize: Boolean? = null,
@@ -101,7 +116,8 @@ data class WebPConfig(
 
     val lowMemory: Boolean? = null,
 
-    @IntRange(from = 0, to = 100)
+    @get:IntRange(from = 0, to = 100)
+    @param:IntRange(from = 0, to = 100)
     val nearLossless: Int? = null,
 
     val exact: Boolean? = null,

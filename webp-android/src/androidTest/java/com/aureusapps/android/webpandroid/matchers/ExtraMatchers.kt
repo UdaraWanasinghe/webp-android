@@ -9,17 +9,17 @@ fun inRange(start: Int, end: Int): Matcher<Int> {
 }
 
 private class InRangeMatcher(
-    private val start: Int,
-    private val end: Int
+    private val first: Int,
+    private val last: Int
 ) : BaseMatcher<Int>() {
 
     override fun describeTo(description: Description) {
-        description.appendText("value should be in range [$start, $end]")
+        description.appendText("value should be in range [$first, $last]")
     }
 
     override fun matches(item: Any?): Boolean {
         if (item is Int) {
-            return item in start..end
+            return item in first..last
         }
         return false
     }
@@ -30,7 +30,7 @@ private class InRangeMatcher(
             return
         }
 
-        mismatchDescription.appendText("value is $item, which is not in range [$start, $end]")
+        mismatchDescription.appendText("value is $item, which is not in range [$first, $last]")
     }
 
 }

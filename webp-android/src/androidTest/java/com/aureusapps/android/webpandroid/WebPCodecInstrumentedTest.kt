@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
@@ -11,20 +12,19 @@ import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aureusapps.android.extensions.getBits
+import com.aureusapps.android.extensions.nextBytes
+import com.aureusapps.android.extensions.nextInt
+import com.aureusapps.android.extensions.nextString
+import com.aureusapps.android.extensions.putString
+import com.aureusapps.android.extensions.skipBytes
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
 import com.aureusapps.android.webpandroid.encoder.WebPConfig
 import com.aureusapps.android.webpandroid.encoder.WebPEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
-import com.aureusapps.android.webpandroid.extensions.getBits
-import com.aureusapps.android.webpandroid.extensions.nextByte
-import com.aureusapps.android.webpandroid.extensions.nextBytes
-import com.aureusapps.android.webpandroid.extensions.nextInt
-import com.aureusapps.android.webpandroid.extensions.nextString
-import com.aureusapps.android.webpandroid.extensions.nextUInt
+import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import com.aureusapps.android.webpandroid.matchers.inRange
-import org.hamcrest.CoreMatchers.either
-import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -35,7 +35,6 @@ import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-@OptIn(ExperimentalUnsignedTypes::class)
 @RunWith(AndroidJUnit4::class)
 class WebPCodecInstrumentedTest {
 
@@ -49,21 +48,30 @@ class WebPCodecInstrumentedTest {
 
     @Test
     fun test_encodeAnimatedImage() {
-        testAnimatedImage()
+        testEncodeAnimatedImage()
+        testEncodeAnimatedImage(20, 20)
     }
 
-    private fun testEncodeImage(outWidth: Int = -1, outHeight: Int = -1) {
-        // configs
-        val width = 10
-        val height = 10
-        val color = Color.argb(255, 0, 255, 0)
-
+    private fun testEncodeImage(
+        srcWidth: Int = 10,
+        srcHeight: Int = 10,
+        dstWidth: Int = -1,
+        dstHeight: Int = -1,
+        imageColor: Int = Color.argb(255, 0, 255, 0)
+    ) {
         // create bitmap image
-        val inputFile = createBitmapImage(width, height, color)
+        val inputFile = createBitmapImage(srcWidth, srcHeight, imageColor)
 
         // encode
         val outputFile = File.createTempFile("img", null)
-        val encoder = WebPEncoder(outWidth, outHeight)
+        val encoder = WebPEncoder(dstWidth, dstHeight)
+        encoder.configure(
+            config = WebPConfig(
+                lossless = WebPConfig.COMPRESSION_LOSSY,
+                quality = 100f
+            ),
+            preset = WebPPreset.WEBP_PRESET_DEFAULT
+        )
         var listenerTriggered = false
         encoder.addProgressListener {
             listenerTriggered = true
@@ -71,80 +79,99 @@ class WebPCodecInstrumentedTest {
         }
         encoder.encode(context, inputFile.toUri(), outputFile.toUri())
         encoder.release()
-        assertTrue(listenerTriggered)
+        assertTrue("Did not trigger the progress listener", listenerTriggered)
 
-        // test encoded image
-        val bitmap = BitmapFactory.decodeFile(outputFile.absolutePath)
-        assertEquals(if (outWidth < 0) width else outWidth, bitmap.width)
-        assertEquals(if (outHeight < 0) height else outHeight, bitmap.height)
-        for (i in 0 until width) {
-            for (j in 0 until height) {
-                val pixel = bitmap.getPixel(i, j)
-                assertColorChannel(pixel.red, color.red)
-                assertColorChannel(pixel.green, color.green)
-                assertColorChannel(pixel.blue, color.blue)
-            }
-        }
-        bitmap.recycle()
+        // verify
+        val expectedWidth = if (dstWidth < 0) srcWidth else dstWidth
+        val expectedHeight = if (dstHeight < 0) srcHeight else dstHeight
+        verifyWebPData(
+            file = outputFile,
+            expectedWidth = expectedWidth,
+            expectedHeight = expectedHeight,
+            expectedColors = listOf(imageColor),
+            expectedHasAnimation = false,
+            expectedHasAlphas = listOf(imageColor.alpha < 255),
+        )
     }
 
-    private fun testAnimatedImage(outWidth: Int = -1, outHeight: Int = -1) {
-        // configs
-        val width = 5
-        val height = 5
-        val color1 = Color.argb(250, 0, 255, 0)
-        val color2 = Color.argb(250, 255, 0, 0)
-
+    private fun testEncodeAnimatedImage(
+        srcWidth: Int = 5,
+        srcHeight: Int = 5,
+        dstWidth: Int = -1,
+        dstHeight: Int = -1,
+        imageColors: List<Int> = listOf(
+            Color.argb(255, 0, 255, 0),
+            Color.argb(255, 255, 0, 0)
+        ),
+        frameDurations: List<Int> = listOf(
+            1000,
+            2000
+        ),
+        backgroundColor: Int = Color.WHITE,
+        loopCount: Int = 0
+    ) {
         // create bitmap images
-        val inputFile1 = createBitmapImage(width, height, color1)
-        val inputFile2 = createBitmapImage(width, height, color2)
+        val images = imageColors.map {
+            createBitmapImage(srcWidth, srcHeight, it)
+        }
 
         // encode
         val outputFile = File.createTempFile("img", null)
-        val options = WebPAnimEncoderOptions(
-            minimizeSize = false,
-            kmin = 1,
-            kmax = 2,
-            allowMixed = false,
-            verbose = true,
-            animParams = WebPMuxAnimParams(
-                backgroundColor = Color.WHITE,
-                loopCount = 10
+        val encoder = WebPAnimEncoder(
+            width = dstWidth,
+            height = dstHeight,
+            options = WebPAnimEncoderOptions(
+                minimizeSize = true,
+                kmin = 1,
+                kmax = 1,
+                animParams = WebPMuxAnimParams(
+                    backgroundColor = backgroundColor,
+                    loopCount = loopCount
+                )
             )
         )
-        val encoder = WebPAnimEncoder(
-            width = outWidth,
-            height = outHeight,
-            options = options
-        )
-        val config = WebPConfig(
-            lossless = WebPConfig.COMPRESSION_LOSSLESS,
-            quality = 100f,
-            method = 6
-        )
         encoder.configure(
-            config = config
+            config = WebPConfig(
+                lossless = WebPConfig.COMPRESSION_LOSSY,
+                quality = 100f
+            ),
+            preset = WebPPreset.WEBP_PRESET_DEFAULT
         )
         var listenerTriggered = false
         encoder.addProgressListener { _, _ ->
             listenerTriggered = true
             true
         }
-        encoder.addFrame(context, 1000, inputFile1.toUri())
-        encoder.addFrame(context, 2000, inputFile2.toUri())
-        encoder.assemble(context, 3000, outputFile.toUri())
+        var frameTimestamp = 0L
+        images.forEachIndexed { index, file ->
+            encoder.addFrame(context, frameTimestamp, file.toUri())
+            frameTimestamp += frameDurations[index]
+        }
+        encoder.assemble(context, frameTimestamp, outputFile.toUri())
         encoder.release()
-        assertTrue(listenerTriggered)
+        assertTrue("Did not trigger the progress listener", listenerTriggered)
 
-        // test encoded images
-        decodeAnimatedWebPFrames(
+        // verify
+        val expectedWidth = if (dstWidth < 0) srcWidth else dstWidth
+        val expectedHeight = if (dstHeight < 0) srcHeight else dstHeight
+        verifyWebPData(
             file = outputFile,
-            expectedBackgroundColor = options.animParams?.backgroundColor,
-            expectedLoopCount = options.animParams?.loopCount
+            expectedWidth = expectedWidth,
+            expectedHeight = expectedHeight,
+            expectedColors = imageColors,
+            expectedBackgroundColor = backgroundColor,
+            expectedLoopCount = loopCount,
+            expectedHasAnimation = imageColors.isNotEmpty(),
+            expectedFrameDuration = frameDurations,
+            expectedHasAlphas = imageColors.map { it.alpha < 255 }
         )
     }
 
-    private fun createBitmapImage(width: Int, height: Int, color: Int): File {
+    private fun createBitmapImage(
+        width: Int,
+        height: Int,
+        color: Int
+    ): File {
         val file = File.createTempFile("img", null)
         val bitmap = Bitmap.createBitmap(
             IntArray(width * height) { color },
@@ -155,129 +182,302 @@ class WebPCodecInstrumentedTest {
         val out = FileOutputStream(file)
         val compressed = bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         bitmap.recycle()
-        assertTrue(compressed)
+        assertTrue("Could not compress the bitmap", compressed)
         return file
     }
 
-    private fun assertColorChannel(actual: Int, expected: Int, tolerance: Int = 2) {
-        assertThat(actual, inRange(expected - tolerance, expected + tolerance))
-    }
-
-    private fun decodeAnimatedWebPFrames(
+    private fun verifyWebPData(
         file: File,
-        expectedBackgroundColor: Int?,
-        expectedLoopCount: Int?
-    ): List<Bitmap> {
-        val input = FileInputStream(file)
-        val buffer = ByteBuffer.wrap(input.readBytes())
-        buffer.order(ByteOrder.LITTLE_ENDIAN)
-        buffer.position(0)
+        expectedWidth: Int,
+        expectedHeight: Int,
+        expectedColors: List<Int>,
+        expectedHasAnimation: Boolean,
+        expectedHasAlphas: List<Boolean>,
+        expectedBackgroundColor: Int = Color.WHITE,
+        expectedLoopCount: Int = 0,
+        expectedFrameDuration: List<Int> = emptyList()
+    ) {
+        val inputStream = FileInputStream(file)
+        val fileData = inputStream.readBytes()
+        val buffer = ByteBuffer.wrap(fileData)
+            .order(ByteOrder.LITTLE_ENDIAN)
 
         // 0...3   "RIFF" 4-byte tag
-        val riff = buffer.nextString(4)
-        assertEquals("RIFF", riff)
         // 4...7   size of image data (including metadata) starting at offset 8
-        val fileSize = buffer.nextUInt()
-        assertEquals((buffer.capacity() - 8).toUInt(), fileSize)
+        val (riffFourCC, riffPayloadSize) = buffer.readChunkHeader()
+        assertEquals("Expected RIFF FourCC", "RIFF", riffFourCC)
+        assertEquals("Invalid RIFF chunk capacity", buffer.capacity() - 8, riffPayloadSize)
 
         // 8...11  "WEBP"   our form-type signature
         // The RIFF container (12 bytes) is followed by appropriate chunks:
-        val webp = buffer.nextString(4)
-        assertEquals("WEBP", webp)
+        val webpFourCC = buffer.nextString(4)
+        assertEquals("Expected WEBP FourCC", "WEBP", webpFourCC)
+
+        // 12..15  "VP8 ": 4-bytes tags, signaling the use of VP8 video format
+        // 16..19  size of the raw VP8 image data, starting at offset 20
+        // 20....  the VP8 bytes
+        // OR
+        // 12..15  "VP8L": 4-bytes tags, signaling the use of VP8L lossless format
+        // 16..19  size of the raw VP8L image data, starting at offset 20
+        // 20....  the VP8L bytes
+        // OR
         // 12..15  "VP8X": 4-bytes tags, describing the extended-VP8 chunk.
-        val vp8x = buffer.nextString(4)
-        assertEquals("VP8X", vp8x)
         // 16..19  size of the VP8X chunk starting at offset 20.
-        val vp8xChunkSize = buffer.nextUInt()
-        assertTrue(vp8xChunkSize > 0u)
-        // 20..23  VP8X flags bit-map corresponding to the chunk-types present.
-        val features = buffer.nextUInt()
-        val leadingReserved = features.getBits(0)
-        val hasAnimation = features.getBits(1) != 0u
-        val hasXMPMetadata = features.getBits(2) != 0u
-        val hasExifMetadata = features.getBits(3) != 0u
-        val hasAlpha = features.getBits(4) != 0u
-        val hasICCP = features.getBits(5) != 0u
-        val trailingReserved = features.getBits(6, 7)
-        assertEquals(0u, leadingReserved)
-        assertTrue(hasAnimation)
-        assertTrue(hasAlpha)
-        assertEquals(0u, trailingReserved)
-        // 24..26  Width of the Canvas Image.
-        val canvasWidth = buffer.nextBytes(3) + 1u
-        assertEquals(5u, canvasWidth)
-        // 27..29  Height of the Canvas Image.
-        val canvasHeight = buffer.nextBytes(3) + 1u
-        assertEquals(5u, canvasHeight)
+        // 20....  the VP8X bytes
 
-        // anim chunk
-        if (hasAnimation) {
-            // FourCC
-            val anim = buffer.nextString(4)
-            assertEquals("ANIM", anim)
-            // size
-            val animChunkSize = buffer.nextUInt()
-            assertTrue(animChunkSize > 0u)
-            // payload
-            // background color
-            val backgroundColor = buffer.nextInt()
-            assertEquals(expectedBackgroundColor ?: Color.WHITE, backgroundColor)
-            // loop count
-            val loopCount = buffer.nextBytes(2)
-            assertEquals(expectedLoopCount ?: 0, loopCount.toInt())
+        var frameIndex = 0
 
-            // anmf chunk
-            // header
-            val anmf = buffer.nextString(4)
-            assertEquals("ANMF", anmf)
-            // size
-            val anmfChunkSize = buffer.nextUInt()
-            assertTrue(anmfChunkSize > 0u)
-            // payload
-            // x coordinate of upper left corner of the frame
-            val frameX = 2u * buffer.nextBytes(3)
-            assertEquals(0u, frameX)
-            // y coordinate of upper right corner of the frame
-            val frameY = 2u * buffer.nextBytes(3)
-            assertEquals(0u, frameY)
-            val frameWidth = buffer.nextBytes(3) + 1u
-            assertEquals(5u, frameWidth)
-            val frameHeight = buffer.nextBytes(3) + 1u
-            assertEquals(5u, frameHeight)
-            val frameDuration = buffer.nextBytes(3)
-            assertEquals(1000u, frameDuration)
-            val frameRight = frameX + frameWidth
-            val frameBottom = frameY + frameHeight
+        while (buffer.hasRemaining()) {
+            val (fourCC, chunkSize) = buffer.readChunkHeader()
+            when (fourCC) {
+                "VP8 " -> {
+                    verifyVP8(
+                        buffer = buffer,
+                        chunkSize = chunkSize,
+                        expectedWidth = expectedWidth,
+                        expectedHeight = expectedHeight,
+                        expectedColors[frameIndex++]
+                    )
+                }
 
-            val frameFlags = buffer.nextByte()
-            val disposalMethod = frameFlags.getBits(0)
-            assertThat(disposalMethod, either(equalTo(0u)).or(equalTo(1u)))
-            val blendingMethod = frameFlags.getBits(1)
-            val reservedFrameFlags = frameFlags.getBits(2, 3, 4, 5, 6, 7)
-            assertEquals(0u, reservedFrameFlags)
+                "VP8L" -> {
+                    verifyVP8L(
+                        buffer = buffer,
+                        chunkSize = chunkSize,
+                        expectedWidth = expectedWidth,
+                        expectedHeight = expectedHeight,
+                        expectedColors[frameIndex++]
+                    )
+                }
 
-            var nextChunkHeader = buffer.nextString(4)
-            if (nextChunkHeader == "ALPH") {
-                val alphChunkSize = buffer.nextUInt()
-                val alphFlags = buffer.nextByte()
-                val compressionMethod = alphFlags.getBits(0, 1)
-                val filteringMethod = alphFlags.getBits(2, 3)
-                val preprocessing = alphFlags.getBits(4, 5)
-                val alphReserved = alphFlags.getBits(6, 7)
-                assertEquals(0u, alphReserved)
-                nextChunkHeader = buffer.nextString(4)
-            }
+                "VP8X" -> {
+                    verifyVP8X(
+                        buffer = buffer,
+                        expectedWidth = expectedWidth,
+                        expectedHeight = expectedHeight,
+                        expectedHasAnimation = expectedHasAnimation,
+                        expectedHasAlpha = expectedHasAlphas[frameIndex]
+                    )
+                }
 
-            if (nextChunkHeader == "VP8 ") {
-                val vp8ChunkSize = buffer.nextUInt()
+                "ALPH" -> {
+                    verifyALPH(
+                        buffer = buffer,
+                        chunkSize = chunkSize
+                    )
+                }
 
-            } else if (nextChunkHeader == "VP8L") {
-                val vp8lChunkSize = buffer.nextUInt()
+                "ANIM" -> {
+                    verifyANIM(
+                        buffer = buffer,
+                        expectedBackgroundColor = expectedBackgroundColor,
+                        expectedLoopCount = expectedLoopCount
+                    )
+                }
 
+                "ANMF" -> {
+                    verifyANMF(
+                        buffer = buffer,
+                        expectedWidth = expectedWidth,
+                        expectedHeight = expectedHeight,
+                        expectedFrameDuration = expectedFrameDuration[frameIndex]
+                    )
+                }
+
+                else -> {
+                    buffer.skipBytes(chunkSize)
+                }
             }
         }
+    }
 
-        return emptyList()
+    private fun verifyVP8(
+        buffer: ByteBuffer,
+        chunkSize: Int,
+        expectedWidth: Int,
+        expectedHeight: Int,
+        expectedColor: Int
+    ) = verifyVP8_VP8L(buffer, chunkSize, "VP8 ", expectedWidth, expectedHeight, expectedColor)
+
+    private fun verifyVP8L(
+        buffer: ByteBuffer,
+        chunkSize: Int,
+        expectedWidth: Int,
+        expectedHeight: Int,
+        expectedColor: Int
+    ) = verifyVP8_VP8L(buffer, chunkSize, "VP8L", expectedWidth, expectedHeight, expectedColor)
+
+    private fun verifyVP8_VP8L(
+        buffer: ByteBuffer,
+        chunkSize: Int,
+        dataFormat: String,
+        expectedWidth: Int,
+        expectedHeight: Int,
+        expectedColor: Int
+    ) {
+        val vp8Data = ByteArray(chunkSize)
+        buffer.get(vp8Data)
+        val fileSize = 20 + chunkSize
+        val frameBuffer = ByteBuffer
+            .allocate(fileSize)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .putString("RIFF")
+            .putInt(fileSize - 8)
+            .putString("WEBP")
+            .putString(dataFormat)
+            .putInt(chunkSize)
+            .put(vp8Data)
+        val frameBytes = ByteArray(fileSize)
+        frameBuffer.position(0)
+        frameBuffer.get(frameBytes)
+        val bitmap = BitmapFactory.decodeByteArray(frameBytes, 0, fileSize)
+        assertEquals("Invalid frame width", expectedWidth, bitmap.width)
+        assertEquals("Invalid frame height", expectedHeight, bitmap.height)
+        for (i in 0 until expectedWidth) {
+            for (j in 0 until expectedHeight) {
+                val pixelColor = bitmap.getPixel(i, j)
+                assertColorChannel(pixelColor.red, expectedColor.red) {
+                    "Invalid red channel value"
+                }
+                assertColorChannel(pixelColor.green, expectedColor.green) {
+                    "Invalid green channel value"
+                }
+                assertColorChannel(pixelColor.blue, expectedColor.blue) {
+                    "Invalid blue channel value"
+                }
+            }
+        }
+        bitmap.recycle()
+    }
+
+    private fun verifyVP8X(
+        buffer: ByteBuffer,
+        expectedWidth: Int,
+        expectedHeight: Int,
+        expectedHasAnimation: Boolean,
+        expectedHasAlpha: Boolean
+    ) {
+        // 20..23  VP8X flags bit-map corresponding to the chunk-types present.
+        val featureFlags = buffer.nextInt()
+
+        val hasAnimation = featureFlags.getBits(1) != 0
+        assertEquals(
+            "Expected hasAnimation = $expectedHasAnimation",
+            expectedHasAnimation,
+            hasAnimation
+        )
+
+        val hasAlpha = featureFlags.getBits(4) != 0
+        assertEquals(
+            "Expected hasAlpha = $expectedHasAlpha",
+            expectedHasAlpha,
+            hasAlpha
+        )
+
+        // 24..26  Width of the Canvas Image.
+        val canvasWidth = buffer.nextBytes(3) + 1
+        assertEquals(
+            "Expected canvasWidth = $expectedWidth",
+            expectedWidth,
+            canvasWidth
+        )
+
+        // 27..29  Height of the Canvas Image.
+        val canvasHeight = buffer.nextBytes(3) + 1
+        assertEquals(
+            "Expected canvasHeight = $expectedHeight",
+            expectedHeight,
+            canvasHeight
+        )
+    }
+
+    private fun verifyANIM(
+        buffer: ByteBuffer,
+        expectedBackgroundColor: Int,
+        expectedLoopCount: Int
+    ) {
+        val backgroundColor = buffer.nextInt()
+        assertEquals(
+            "Expected backgroundColor = $expectedBackgroundColor",
+            expectedBackgroundColor,
+            backgroundColor
+        )
+
+        val loopCount = buffer.nextBytes(2)
+        assertEquals(
+            "Expected loopCount = $expectedLoopCount",
+            expectedLoopCount,
+            loopCount
+        )
+    }
+
+    private fun verifyANMF(
+        buffer: ByteBuffer,
+        expectedWidth: Int,
+        expectedHeight: Int,
+        expectedFrameDuration: Int,
+    ) {
+        // x coordinate of upper left corner of the frame
+        // y coordinate of upper right corner of the frame
+        buffer.skipBytes(6)
+
+        val frameWidth = buffer.nextBytes(3) + 1
+        assertEquals(
+            "Expected frameWidth = $expectedWidth",
+            expectedWidth,
+            frameWidth
+        )
+
+        val frameHeight = buffer.nextBytes(3) + 1
+        assertEquals(
+            "Expected frameHeight = $expectedHeight",
+            expectedHeight,
+            frameHeight
+        )
+
+        val frameDuration = buffer.nextBytes(3)
+        assertEquals(
+            "Expected frameDuration = $expectedFrameDuration",
+            expectedFrameDuration,
+            frameDuration
+        )
+
+        // flags
+        buffer.skipBytes(1)
+    }
+
+    private fun verifyALPH(
+        buffer: ByteBuffer,
+        chunkSize: Int
+    ) {
+        buffer.skipBytes(chunkSize)
+    }
+
+    /**
+     * Verify given color channel value.
+     */
+    private fun assertColorChannel(
+        actual: Int,
+        expected: Int,
+        tolerance: Int = 15,
+        message: () -> String
+    ) {
+        assertThat(
+            message(),
+            actual,
+            inRange(expected - tolerance, expected + tolerance)
+        )
+    }
+
+    /**
+     * Reads a chunk header from the ByteBuffer.
+     *
+     * @return A Pair consisting of a String and an Int value. The String represents the chunk fourCC. The Int represents the size of the payload in bytes.
+     */
+    private fun ByteBuffer.readChunkHeader(): Pair<String, Int> {
+        val fourCC = nextString(4)
+        val chunkSize = nextInt()
+        return fourCC to chunkSize
     }
 
 }

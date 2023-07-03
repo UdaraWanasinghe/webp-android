@@ -74,6 +74,7 @@ dependencies {
     androidTestImplementation libs.junit.ext
     androidTestImplementation libs.espresso.core
     androidTestImplementation libs.core.ktx
+    androidTestImplementation libs.aureusapps.extensions
 
 }
 
