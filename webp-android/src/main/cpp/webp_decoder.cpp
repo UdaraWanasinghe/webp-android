@@ -111,7 +111,6 @@ namespace {
                     "(Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;)V"
             );
             env->CallVoidMethod(jdecoder, notify_method_id, jinfo);
-            env->DeleteLocalRef(jinfo);
             env->DeleteLocalRef(decoder_class);
         }
         return result;

@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -18,6 +19,9 @@ import com.aureusapps.android.extensions.nextInt
 import com.aureusapps.android.extensions.nextString
 import com.aureusapps.android.extensions.putString
 import com.aureusapps.android.extensions.skipBytes
+import com.aureusapps.android.webpandroid.decoder.WebPDecodeListener
+import com.aureusapps.android.webpandroid.decoder.WebPDecoder
+import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoderOptions
 import com.aureusapps.android.webpandroid.encoder.WebPConfig
@@ -26,6 +30,7 @@ import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
 import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import com.aureusapps.android.webpandroid.matchers.inRange
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,6 +39,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.file.Files
 
 @RunWith(AndroidJUnit4::class)
 class WebPCodecInstrumentedTest {
@@ -68,6 +74,16 @@ class WebPCodecInstrumentedTest {
         )
     }
 
+    @Test
+    fun test_decodeImage() {
+        testDecodeImage()
+    }
+
+    @Test
+    fun test_decodeAnimatedImage() {
+
+    }
+
     private fun testEncodeImage(
         srcWidth: Int = 10,
         srcHeight: Int = 10,
@@ -80,7 +96,8 @@ class WebPCodecInstrumentedTest {
         var outputFile: File? = null
         try {
             // create bitmap image
-            inputFile = createBitmapImage(srcWidth, srcHeight, imageColor)
+            val bitmapImage = createBitmapImage(srcWidth, srcHeight, imageColor)
+            inputFile = saveBitmapImage(bitmapImage)
 
             // encode
             outputFile = File.createTempFile("img", null)
@@ -141,7 +158,8 @@ class WebPCodecInstrumentedTest {
         try {
             // create bitmap images
             inputFiles = imageColors.map {
-                createBitmapImage(srcWidth, srcHeight, it)
+                val bitmap = createBitmapImage(srcWidth, srcHeight, it)
+                saveBitmapImage(bitmap)
             }
 
             // encode
@@ -201,21 +219,103 @@ class WebPCodecInstrumentedTest {
         }
     }
 
+    private fun testDecodeImage(
+        imageWidth: Int = 5,
+        imageHeight: Int = 5,
+        imageColor: Int = Color.argb(255, 255, 0, 0)
+    ) {
+        var outputDirectory: File? = null
+        var bitmapFile: File? = null
+        try {
+            // create webp image
+            val bitmapImage = createBitmapImage(imageWidth, imageHeight, imageColor)
+            bitmapFile = saveBitmapImage(bitmapImage, Bitmap.CompressFormat.WEBP)
+
+            // decode
+            outputDirectory = Files.createTempDirectory("media").toFile()
+            val decoder = WebPDecoder()
+            var webPInfo: WebPInfo? = null
+            var frameCount = 0
+            var frameUri: Uri? = null
+            decoder.addDecodeListener(
+                object : WebPDecodeListener {
+                    override fun onInfoDecoded(info: WebPInfo) {
+                        webPInfo = info
+                    }
+
+                    override fun onFrameDecoded(
+                        index: Int,
+                        timestamp: Long,
+                        bitmap: Bitmap,
+                        uri: Uri?
+                    ) {
+                        frameCount++
+                        frameUri = uri
+                    }
+                }
+            )
+            decoder.decodeFrames(context, bitmapFile.toUri(), outputDirectory.toUri())
+            decoder.release()
+
+            // verify
+            val expectedFrame = File(outputDirectory, "IMG_0000.png")
+            assertNotNull(webPInfo)
+            assertNotNull(frameUri)
+            assertEquals("Expected webPInfo.width = $imageWidth", imageWidth, webPInfo?.width)
+            assertEquals("Expected webPInfo.height = $imageHeight", imageHeight, webPInfo?.height)
+            assertEquals("Expected webPInfo.hasAnimation = false", false, webPInfo?.hasAnimation)
+            assertEquals(
+                "Expected frameUri = ${expectedFrame.toUri()}",
+                expectedFrame.toUri(),
+                frameUri
+            )
+            val outputBitmap = BitmapFactory.decodeFile(expectedFrame.absolutePath)
+            assertNotNull(outputBitmap)
+            for (i in 0 until imageWidth) {
+                for (j in 0 until imageHeight) {
+                    val pixelColor = outputBitmap.getPixel(i, j)
+                    assertColorChannel(pixelColor.red, imageColor.red) {
+                        "Expected pixel red channel = ${imageColor.red}"
+                    }
+                    assertColorChannel(pixelColor.green, imageColor.green) {
+                        "Expected pixel green channel = ${imageColor.green}"
+                    }
+                    assertColorChannel(pixelColor.blue, imageColor.blue) {
+                        "Expected pixel blue channel = ${imageColor.blue}"
+                    }
+                }
+            }
+
+        } finally {
+            bitmapFile?.delete()
+            outputDirectory?.delete()
+        }
+    }
+
+    private fun testDecodeAnimatedImage() {
+
+    }
+
     private fun createBitmapImage(
         width: Int,
         height: Int,
         color: Int
-    ): File {
-        val file = File.createTempFile("img", null)
-        val bitmap = Bitmap.createBitmap(
+    ): Bitmap {
+        return Bitmap.createBitmap(
             IntArray(width * height) { color },
             width,
             height,
             Bitmap.Config.ARGB_8888
         )
+    }
+
+    private fun saveBitmapImage(
+        bitmap: Bitmap,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG
+    ): File {
+        val file = File.createTempFile("img", null)
         val out = FileOutputStream(file)
-        val compressed = bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-        bitmap.recycle()
+        val compressed = bitmap.compress(format, 100, out)
         assertTrue("Could not compress the bitmap", compressed)
         return file
     }
