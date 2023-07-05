@@ -35,7 +35,6 @@ namespace {
                     "J"
             );
             native_pointer = env->GetLongField(jdecoder, native_pointer_field_id);
-
         } else {
             native_pointer = 0;
         }
@@ -168,7 +167,6 @@ namespace {
                     );
                     if (type::isObjectNull(env, jbitmap_uri)) {
                         result = ERROR_BITMAP_WRITE_TO_URI_FAILED;
-
                     } else {
                         env->CallVoidMethod(
                                 jdecoder,
@@ -180,7 +178,6 @@ namespace {
                         );
                         env->DeleteLocalRef(jbitmap_uri);
                     }
-
                 } else {
                     result = ERROR_FILE_NAME_GENERATION_FAILED;
                 }
@@ -216,7 +213,6 @@ namespace {
 
             if (type::isObjectNull(env, jinfo)) {
                 result = ERROR_WEBP_INFO_EXTRACT_FAILED;
-
             } else {
                 result = notifyInfoDecoded(env, jdecoder, jinfo);
             }
@@ -230,7 +226,6 @@ namespace {
                 auto *decoder = WebPDecoder::getInstance(env, jdecoder);
                 if (decoder == nullptr) {
                     result = ERROR_NULL_DECODER;
-
                 } else if (decoder->cancel_flag) {
                     result = ERROR_USER_ABORT;
                 }
@@ -254,13 +249,10 @@ namespace {
                         );
                     }
                 }
-
                 bmp::recycleBitmap(env, jbitmap);
                 env->DeleteLocalRef(jbitmap);
-
             }
             WebPAnimDecoderDelete(anim_decoder);
-
         } else {
             result = ERROR_VERSION_MISMATCH;
         }
@@ -287,7 +279,6 @@ namespace {
 
             if (pixels == nullptr) {
                 result = ERROR_WEBP_DECODE_FAILED;
-
             } else {
                 jobject jbitmap = bmp::createBitmap(env, width, height);
                 result = processFrame(env, jdecoder, jcontext, jbitmap, jdst_uri, pixels, 0, 0);
@@ -411,15 +402,12 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeDecodeInfo(
 
                     jinfo = decodeAnimInfo(env, anim_decoder, features);
                     WebPAnimDecoderDelete(anim_decoder);
-
                 } else {
                     result = ERROR_VERSION_MISMATCH;
                 }
-
             } else {
                 jinfo = decodeInfo(env, features);
             }
-
         } else {
             result = ERROR_WEBP_INFO_EXTRACT_FAILED;
         }

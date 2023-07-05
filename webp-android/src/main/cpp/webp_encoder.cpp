@@ -101,7 +101,6 @@ namespace {
             data->progress_observable = env->NewWeakGlobalRef(jencoder);
             data->progress_method_id = progress_method_id;
             progressHookData = data;
-
         } else {
             result = ERROR_INVALID_ENCODER;
         }
@@ -202,7 +201,6 @@ namespace {
             );
             if (type::isObjectNull(env, jbitmap)) {
                 result = ERROR_BITMAP_RESIZE_FAILED;
-
             } else {
                 bitmap_resized = true;
                 if (AndroidBitmap_getInfo(env, jbitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
@@ -233,7 +231,6 @@ namespace {
                     WebPFree((void *) webp_data);
                     webp_data = nullptr;
                 }
-
             } else {
                 result = ERROR_LOCK_BITMAP_PIXELS_FAILED;
             }
@@ -284,7 +281,6 @@ namespace {
             size_t *webp_size
     ) {
         ResultCode result = RESULT_SUCCESS;
-
         if (WebPValidateConfig(&webPConfig)) {
             // Setup the input data
             WebPPicture pic;
@@ -320,24 +316,19 @@ namespace {
                         // -> compressed data is the memory buffer described by wtr.mem / wtr.size
                         *webp_data = wtr.mem;
                         *webp_size = wtr.size;
-
                     } else {
                         result = result::encodingErrorToResultCode(pic.error_code);
-
                     }
 
                     // Release resources.
                     // must be called independently of the encode success result.
                     WebPPictureFree(&pic);
-
                 } else {
                     result = ERROR_MEMORY_ERROR;
                 }
-
             } else {
                 result = ERROR_VERSION_MISMATCH;
             }
-
         } else {
             result = ERROR_INVALID_WEBP_CONFIG;
         }
@@ -373,36 +364,40 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeConfigure(
         jobject jpreset
 ) {
     ResultCode result = RESULT_SUCCESS;
-
     WebPConfig config;
     if (WebPConfigInit(&config)) {
-        if (!type::isObjectNull(env, jpreset)) {
-            float quality = encoder::parseWebPQuality(env, jconfig);
+        bool is_config_null = type::isObjectNull(env, jconfig);
+        bool is_preset_null = type::isObjectNull(env, jpreset);
+        if (!is_preset_null) {
+            float quality;
+            if (is_config_null) {
+                quality = 70.0f;
+            } else {
+                quality = encoder::parseWebPQuality(env, jconfig);
+            }
             WebPPreset preset = encoder::parseWebPPreset(env, jpreset);
             if (!WebPConfigPreset(&config, preset, quality)) {
                 result = ERROR_INVALID_WEBP_CONFIG;
             }
         }
         if (result == RESULT_SUCCESS) {
-            encoder::applyWebPConfig(env, jconfig, &config);
-            if (WebPValidateConfig(&config) != 0) {
-                WebPEncoder *encoder = WebPEncoder::getInstance(env, thiz);
+            if (!is_config_null) {
+                encoder::applyWebPConfig(env, jconfig, &config);
+            }
+            if (WebPValidateConfig(&config)) {
+                auto *encoder = WebPEncoder::getInstance(env, thiz);
                 if (encoder == nullptr) {
                     result = ERROR_NULL_ENCODER;
-
                 } else {
                     encoder->configure(config);
                 }
-
             } else {
                 result = ERROR_INVALID_WEBP_CONFIG;
             }
         }
-
     } else {
         result = ERROR_VERSION_MISMATCH;
     }
-
     result::handleResult(env, result);
 }
 
@@ -416,17 +411,14 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeEncode1(
         jobject jdst_uri
 ) {
     ResultCode result;
-
     jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
     if (type::isObjectNull(env, jbitmap)) {
         result = ERROR_BITMAP_URI_DECODE_FAILED;
-
     } else {
         result = encodeBitmapFrame(env, thiz, jcontext, jbitmap, jdst_uri);
         bmp::recycleBitmap(env, jbitmap);
         env->DeleteLocalRef(jbitmap);
     }
-
     result::handleResult(env, result);
 }
 
@@ -446,7 +438,6 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeEncode2(
             jsrc_bitmap,
             jdst_uri
     );
-
     result::handleResult(env, result);
 }
 

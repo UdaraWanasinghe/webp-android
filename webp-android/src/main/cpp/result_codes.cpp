@@ -86,7 +86,6 @@ void result::handleResult(JNIEnv *env, ResultCode result) {
         std::string message = parseMessage(result);
         if (result == ERROR_USER_ABORT) {
             throwCancellationException(env, message.c_str());
-
         } else {
             throwRuntimeException(env, message.c_str());
         }

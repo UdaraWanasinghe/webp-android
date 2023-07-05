@@ -103,11 +103,13 @@ class WebPAnimEncoder(
      * Configures the WebP encoder with the specified configuration.
      *
      * @param config The WebP configuration to be applied.
-     * @param preset The optional preset to be used for configuring the encoder. Default value is null.
+     * @param preset The optional preset to be used for configuring the encoder.
      * @return this animation encoder instance.
      */
     fun configure(config: WebPConfig? = null, preset: WebPPreset? = null): WebPAnimEncoder {
-        if (config == null && preset == null) return this
+        if (config == null && preset == null) {
+            throw IllegalStateException("Both config and preset cannot be null at the same time")
+        }
         nativeConfigure(config, preset)
         return this
     }

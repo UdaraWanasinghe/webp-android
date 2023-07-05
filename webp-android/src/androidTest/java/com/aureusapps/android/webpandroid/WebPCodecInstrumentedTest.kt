@@ -318,7 +318,9 @@ class WebPCodecInstrumentedTest {
         try {
             // encode image
             val encoder = WebPAnimEncoder(dstWidth, dstHeight)
-            encoder.configure()
+            encoder.configure(
+                preset = WebPPreset.WEBP_PRESET_DEFAULT
+            )
             var frameTimestamp = 0L
             imageColors.forEachIndexed { index, color ->
                 val image = createBitmapImage(srcWidth, srcHeight, color)

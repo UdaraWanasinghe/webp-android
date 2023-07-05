@@ -287,11 +287,9 @@ float encoder::parseWebPQuality(JNIEnv *env, jobject jconfig) {
     float quality;
     if (type::isObjectNull(env, quality_field)) {
         quality = 70.0f;
-
     } else {
         quality = type::getFloatValue(env, quality_field);
         env->DeleteLocalRef(quality_field);
-
     }
     env->DeleteLocalRef(config_class);
     return quality;
@@ -374,7 +372,6 @@ void encoder::parseEncoderOptions(
             params.loop_count = 1;
         }
         env->DeleteLocalRef(jparams);
-
     } else {
         params.bgcolor = 0;
         params.loop_count = 1;

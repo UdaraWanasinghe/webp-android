@@ -36,8 +36,8 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
     ): Long
 
     private external fun nativeConfigure(
-        config: WebPConfig,
-        preset: WebPPreset? = null
+        config: WebPConfig?,
+        preset: WebPPreset?
     )
 
     private external fun nativeEncode1(
@@ -96,7 +96,10 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
      * @param config The WebP configuration object.
      * @param preset The optional WebP preset configuration.
      */
-    fun configure(config: WebPConfig, preset: WebPPreset? = null): WebPEncoder {
+    fun configure(config: WebPConfig? = null, preset: WebPPreset? = null): WebPEncoder {
+        if (config == null && preset == null) {
+            throw IllegalStateException("Both config and preset cannot be null at the same time")
+        }
         nativeConfigure(config, preset)
         return this
     }

@@ -46,7 +46,6 @@ std::pair<int, jobject> files::openFileDescriptor(
     if (env->ExceptionCheck()) {
         env->ExceptionClear();
         fd = -1;
-
     } else if (type::isObjectNull(env, jparcel_fd)) {
         fd = -1;
     }
@@ -112,7 +111,6 @@ std::pair<ResultCode, jobject> files::readFromUri(
     );
     if (type::isObjectNull(env, jbyte_buffer)) {
         ret = std::pair(ERROR_READ_URI_FAILED, nullptr);
-
     } else {
         *file_data = static_cast<uint8_t *>(env->GetDirectBufferAddress(jbyte_buffer));
         *file_size = env->GetDirectBufferCapacity(jbyte_buffer);
@@ -151,7 +149,6 @@ ResultCode files::writeToUri(
     if (fd != -1) {
         if (result == RESULT_SUCCESS) {
             files::closeFileDescriptor(env, jparcel_fd);
-
         } else {
             closeFileDescriptorWithError(
                     env,
