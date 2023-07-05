@@ -13,6 +13,7 @@ import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aureusapps.android.extensions.BitmapUtils
 import com.aureusapps.android.extensions.getBits
 import com.aureusapps.android.extensions.nextBytes
 import com.aureusapps.android.extensions.nextInt
@@ -32,6 +33,7 @@ import com.aureusapps.android.webpandroid.matchers.inRange
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -81,7 +83,7 @@ class WebPCodecInstrumentedTest {
 
     @Test
     fun test_decodeAnimatedImage() {
-
+        testDecodeAnimatedImage()
     }
 
     private fun testEncodeImage(
@@ -219,6 +221,7 @@ class WebPCodecInstrumentedTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun testDecodeImage(
         imageWidth: Int = 5,
         imageHeight: Int = 5,
@@ -254,7 +257,11 @@ class WebPCodecInstrumentedTest {
                     }
                 }
             )
-            decoder.decodeFrames(context, bitmapFile.toUri(), outputDirectory.toUri())
+            decoder.decodeFrames(
+                context,
+                bitmapFile.toUri(),
+                outputDirectory.toUri()
+            )
             decoder.release()
 
             // verify
@@ -288,12 +295,118 @@ class WebPCodecInstrumentedTest {
 
         } finally {
             bitmapFile?.delete()
-            outputDirectory?.delete()
+            outputDirectory?.deleteRecursively()
         }
     }
 
-    private fun testDecodeAnimatedImage() {
+    private fun testDecodeAnimatedImage(
+        srcWidth: Int = 10,
+        srcHeight: Int = 10,
+        dstWidth: Int = -1,
+        dstHeight: Int = -1,
+        imageColors: List<Int> = listOf(
+            Color.argb(255, 255, 0, 0),
+            Color.argb(255, 0, 255, 0)
+        ),
+        frameDurations: List<Int> = listOf(
+            1000,
+            2000
+        )
+    ) {
+        var imageFile: File? = null
+        var outputDirectory: File? = null
+        try {
+            // encode image
+            val encoder = WebPAnimEncoder(dstWidth, dstHeight)
+            encoder.configure()
+            var frameTimestamp = 0L
+            imageColors.forEachIndexed { index, color ->
+                val image = createBitmapImage(srcWidth, srcHeight, color)
+                encoder.addFrame(frameTimestamp, image)
+                frameTimestamp += frameDurations[index]
+            }
+            imageFile = File.createTempFile("img", null)
+            encoder.assemble(context, frameTimestamp, imageFile.toUri())
+            encoder.release()
 
+            // decode images
+            outputDirectory = Files.createTempDirectory("media").toFile()
+            var webPInfo: WebPInfo? = null
+            val imageFrames = mutableListOf<Pair<Long, Uri>>()
+            val decoder = WebPDecoder()
+            decoder.addDecodeListener(
+                object : WebPDecodeListener {
+                    override fun onInfoDecoded(info: WebPInfo) {
+                        webPInfo = info
+                    }
+
+                    override fun onFrameDecoded(
+                        index: Int,
+                        timestamp: Long,
+                        bitmap: Bitmap,
+                        uri: Uri?
+                    ) {
+                        if (uri != null) {
+                            imageFrames.add(
+                                timestamp to uri
+                            )
+
+                        } else {
+                            fail("Image uri is null")
+                        }
+                    }
+                }
+            )
+            decoder.decodeFrames(
+                context,
+                imageFile.toUri(),
+                outputDirectory.toUri()
+            )
+            decoder.release()
+
+            // verify
+            assertNotNull(webPInfo)
+            assertTrue(
+                "Expected hasAnimation = true",
+                webPInfo?.hasAnimation ?: false
+            )
+            assertEquals(
+                "Expected frameCount = ${imageColors.size}",
+                imageColors.size,
+                webPInfo?.frameCount
+            )
+            frameTimestamp = 0L
+            imageFrames.forEachIndexed { index, pair ->
+                val (timestamp, uri) = pair
+                frameTimestamp += frameDurations[index]
+                assertEquals("Expected timestamp = $frameTimestamp", frameTimestamp, timestamp)
+                val bmp = BitmapUtils.decodeUri(context, uri)
+                if (bmp == null) {
+                    fail("Expected bitmap != null")
+
+                } else {
+                    val color = imageColors[index]
+                    for (i in 0 until bmp.width) {
+                        for (j in 0 until bmp.height) {
+                            val pixel = bmp.getPixel(i, j)
+                            assertColorChannel(pixel.red, color.red) {
+                                "Expected red = ${color.red}"
+                            }
+                            assertColorChannel(pixel.green, color.green) {
+                                "Expected green = ${color.green}"
+                            }
+                            assertColorChannel(pixel.blue, color.blue) {
+                                "Expected blue = ${color.blue}"
+                            }
+                        }
+                    }
+                }
+            }
+
+        } finally {
+            imageFile?.delete()
+            outputDirectory?.deleteRecursively()
+        }
     }
 
     private fun createBitmapImage(

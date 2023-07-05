@@ -42,7 +42,7 @@ class WebPAnimEncoder(
     ): Long
 
     private external fun nativeConfigure(
-        config: WebPConfig,
+        config: WebPConfig?,
         preset: WebPPreset?
     )
 
@@ -106,7 +106,8 @@ class WebPAnimEncoder(
      * @param preset The optional preset to be used for configuring the encoder. Default value is null.
      * @return this animation encoder instance.
      */
-    fun configure(config: WebPConfig, preset: WebPPreset? = null): WebPAnimEncoder {
+    fun configure(config: WebPConfig? = null, preset: WebPPreset? = null): WebPAnimEncoder {
+        if (config == null && preset == null) return this
         nativeConfigure(config, preset)
         return this
     }
