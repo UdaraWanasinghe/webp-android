@@ -361,7 +361,7 @@ class WebPCodecInstrumentedTest {
 
         var frameIndex = 0
 
-        while (buffer.hasRemaining() && buffer.remaining() >= 4) {
+        while (buffer.remaining() >= 4) {
             val (fourCC, chunkSize) = buffer.readChunkHeader()
             when (fourCC) {
                 "VP8 " -> {
