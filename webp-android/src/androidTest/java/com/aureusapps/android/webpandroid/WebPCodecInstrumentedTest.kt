@@ -20,6 +20,7 @@ import com.aureusapps.android.extensions.nextInt
 import com.aureusapps.android.extensions.nextString
 import com.aureusapps.android.extensions.putString
 import com.aureusapps.android.extensions.skipBytes
+import com.aureusapps.android.webpandroid.decoder.DecoderConfig
 import com.aureusapps.android.webpandroid.decoder.WebPDecodeListener
 import com.aureusapps.android.webpandroid.decoder.WebPDecoder
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
@@ -225,7 +226,12 @@ class WebPCodecInstrumentedTest {
     private fun testDecodeImage(
         imageWidth: Int = 5,
         imageHeight: Int = 5,
-        imageColor: Int = Color.argb(255, 255, 0, 0)
+        imageColor: Int = Color.argb(255, 255, 0, 0),
+        namePrefix: String = "IMAGE_",
+        repeatCharacter: Char = '#',
+        repeatCharacterCount: Int = 6,
+        compressFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
+        compressQuality: Int = 100
     ) {
         var outputDirectory: File? = null
         var bitmapFile: File? = null
@@ -240,58 +246,81 @@ class WebPCodecInstrumentedTest {
             var webPInfo: WebPInfo? = null
             var frameCount = 0
             var frameUri: Uri? = null
-            decoder.addDecodeListener(
-                object : WebPDecodeListener {
-                    override fun onInfoDecoded(info: WebPInfo) {
-                        webPInfo = info
-                    }
-
-                    override fun onFrameDecoded(
-                        index: Int,
-                        timestamp: Long,
-                        bitmap: Bitmap,
-                        uri: Uri?
-                    ) {
-                        frameCount++
-                        frameUri = uri
-                    }
+            val decodeListener = object : WebPDecodeListener {
+                override fun onInfoDecoded(info: WebPInfo) {
+                    webPInfo = info
                 }
+
+                override fun onFrameDecoded(
+                    index: Int,
+                    timestamp: Long,
+                    bitmap: Bitmap,
+                    uri: Uri?
+                ) {
+                    frameCount++
+                    frameUri = uri
+                }
+            }
+            decoder.addDecodeListener(decodeListener)
+            decoder.configure(
+                config = DecoderConfig(
+                    namePrefix = namePrefix,
+                    repeatCharacter = repeatCharacter,
+                    repeatCharacterCount = repeatCharacterCount,
+                    compressFormat = compressFormat,
+                    compressQuality = compressQuality
+                )
             )
             decoder.decodeFrames(
                 context,
                 bitmapFile.toUri(),
                 outputDirectory.toUri()
             )
+            val decodedInfo = decoder.decodeInfo(context, bitmapFile.toUri())
+            decoder.removeDecodeListener(decodeListener)
             decoder.release()
 
             // verify
-            val expectedFrame = File(outputDirectory, "IMG_0000.png")
+            // verify images
+            val middleName = repeatCharacter
+                .toString()
+                .repeat(repeatCharacterCount - 1) + "0"
+            val nameSuffix = when (compressFormat) {
+                Bitmap.CompressFormat.JPEG -> ".jpeg"
+                Bitmap.CompressFormat.PNG -> ".png"
+                Bitmap.CompressFormat.WEBP,
+                Bitmap.CompressFormat.WEBP_LOSSY,
+                Bitmap.CompressFormat.WEBP_LOSSLESS -> ".webp"
+            }
+            val imageName = "${namePrefix}${middleName}${nameSuffix}"
+            val expectedFrame = File(outputDirectory, imageName)
             assertNotNull(webPInfo)
             assertNotNull(frameUri)
-            assertEquals("Expected webPInfo.width = $imageWidth", imageWidth, webPInfo?.width)
-            assertEquals("Expected webPInfo.height = $imageHeight", imageHeight, webPInfo?.height)
-            assertEquals("Expected webPInfo.hasAnimation = false", false, webPInfo?.hasAnimation)
-            assertEquals(
-                "Expected frameUri = ${expectedFrame.toUri()}",
-                expectedFrame.toUri(),
-                frameUri
-            )
+            assertEquals("Unexpected WebPInfo.width value", imageWidth, webPInfo?.width)
+            assertEquals("Unexpected WebPInfo.height value", imageHeight, webPInfo?.height)
+            assertEquals("Unexpected WebPInfo.hasAnimation value", false, webPInfo?.hasAnimation)
+            assertEquals("Unexpected output uri value", expectedFrame.toUri(), frameUri)
             val outputBitmap = BitmapFactory.decodeFile(expectedFrame.absolutePath)
             assertNotNull(outputBitmap)
             for (i in 0 until imageWidth) {
                 for (j in 0 until imageHeight) {
                     val pixelColor = outputBitmap.getPixel(i, j)
                     assertColorChannel(pixelColor.red, imageColor.red) {
-                        "Expected pixel red channel = ${imageColor.red}"
+                        "Unexpected red channel value"
                     }
                     assertColorChannel(pixelColor.green, imageColor.green) {
-                        "Expected pixel green channel = ${imageColor.green}"
+                        "Unexpected green channel value"
                     }
                     assertColorChannel(pixelColor.blue, imageColor.blue) {
-                        "Expected pixel blue channel = ${imageColor.blue}"
+                        "Unexpected blue channel value"
                     }
                 }
             }
+
+            // verify decode info
+            assertEquals("Unexpected WebPInfo.width value", imageWidth, decodedInfo.width)
+            assertEquals("Unexpected WebPInfo.height value", imageHeight, decodedInfo.height)
+            assertEquals("Unexpected WebPInfo.hasAnimation value", false, decodedInfo.hasAnimation)
 
         } finally {
             bitmapFile?.delete()
@@ -369,11 +398,11 @@ class WebPCodecInstrumentedTest {
             // verify
             assertNotNull(webPInfo)
             assertTrue(
-                "Expected hasAnimation = true",
+                "Unexpected WebPInfo.hasAnimation value",
                 webPInfo?.hasAnimation ?: false
             )
             assertEquals(
-                "Expected frameCount = ${imageColors.size}",
+                "Unexpected WebPInfo.frameCount value",
                 imageColors.size,
                 webPInfo?.frameCount
             )
@@ -381,10 +410,10 @@ class WebPCodecInstrumentedTest {
             imageFrames.forEachIndexed { index, pair ->
                 val (timestamp, uri) = pair
                 frameTimestamp += frameDurations[index]
-                assertEquals("Expected timestamp = $frameTimestamp", frameTimestamp, timestamp)
+                assertEquals("Unexpected frame timestamp", frameTimestamp, timestamp)
                 val bmp = BitmapUtils.decodeUri(context, uri)
                 if (bmp == null) {
-                    fail("Expected bitmap != null")
+                    fail("Bitmap is null")
 
                 } else {
                     val color = imageColors[index]
@@ -392,13 +421,13 @@ class WebPCodecInstrumentedTest {
                         for (j in 0 until bmp.height) {
                             val pixel = bmp.getPixel(i, j)
                             assertColorChannel(pixel.red, color.red) {
-                                "Expected red = ${color.red}"
+                                "Unexpected red color channel value"
                             }
                             assertColorChannel(pixel.green, color.green) {
-                                "Expected green = ${color.green}"
+                                "Unexpected green color channel value"
                             }
                             assertColorChannel(pixel.blue, color.blue) {
-                                "Expected blue = ${color.blue}"
+                                "Unexpected blue color channel value"
                             }
                         }
                     }
@@ -455,7 +484,7 @@ class WebPCodecInstrumentedTest {
         // 4...7   size of image data (including metadata) starting at offset 8
         val (riffFourCC, riffPayloadSize) = buffer.readChunkHeader()
         assertEquals("Expected RIFF FourCC", "RIFF", riffFourCC)
-        assertEquals("Invalid RIFF chunk capacity", buffer.capacity() - 8, riffPayloadSize)
+        assertEquals("Unexpected RIFF chunk capacity", buffer.capacity() - 8, riffPayloadSize)
 
         // 8...11  "WEBP"   our form-type signature
         // The RIFF container (12 bytes) is followed by appropriate chunks:
@@ -592,19 +621,19 @@ class WebPCodecInstrumentedTest {
         frameBuffer.position(0)
         frameBuffer.get(frameBytes)
         val bitmap = BitmapFactory.decodeByteArray(frameBytes, 0, frameBytes.size)
-        assertEquals("Invalid frame width", expectedWidth, bitmap.width)
-        assertEquals("Invalid frame height", expectedHeight, bitmap.height)
+        assertEquals("Unexpected frame width", expectedWidth, bitmap.width)
+        assertEquals("Unexpected frame height", expectedHeight, bitmap.height)
         for (i in 0 until expectedWidth) {
             for (j in 0 until expectedHeight) {
                 val pixelColor = bitmap.getPixel(i, j)
                 assertColorChannel(pixelColor.red, expectedColor.red) {
-                    "Invalid red channel value"
+                    "Unexpected red channel value"
                 }
                 assertColorChannel(pixelColor.green, expectedColor.green) {
-                    "Invalid green channel value"
+                    "Unexpected green channel value"
                 }
                 assertColorChannel(pixelColor.blue, expectedColor.blue) {
-                    "Invalid blue channel value"
+                    "Unexpected blue channel value"
                 }
             }
         }
@@ -623,14 +652,14 @@ class WebPCodecInstrumentedTest {
 
         val hasAnimation = featureFlags.getBits(1) != 0
         assertEquals(
-            "Expected hasAnimation = $expectedHasAnimation",
+            "Unexpected hasAnimation value",
             expectedHasAnimation,
             hasAnimation
         )
 
         val hasAlpha = featureFlags.getBits(4) != 0
         assertEquals(
-            "Expected hasAlpha = $expectedHasAlpha",
+            "Unexpected hasAlpha value",
             expectedHasAlpha,
             hasAlpha
         )
@@ -638,7 +667,7 @@ class WebPCodecInstrumentedTest {
         // 24..26  Width of the Canvas Image.
         val canvasWidth = buffer.nextBytes(3) + 1
         assertEquals(
-            "Expected canvasWidth = $expectedWidth",
+            "Unexpected canvasWidth value",
             expectedWidth,
             canvasWidth
         )
@@ -646,7 +675,7 @@ class WebPCodecInstrumentedTest {
         // 27..29  Height of the Canvas Image.
         val canvasHeight = buffer.nextBytes(3) + 1
         assertEquals(
-            "Expected canvasHeight = $expectedHeight",
+            "Unexpected canvasHeight value",
             expectedHeight,
             canvasHeight
         )
@@ -659,14 +688,14 @@ class WebPCodecInstrumentedTest {
     ) {
         val backgroundColor = buffer.nextInt()
         assertEquals(
-            "Expected backgroundColor = $expectedBackgroundColor",
+            "Unexpected backgroundColor",
             expectedBackgroundColor,
             backgroundColor
         )
 
         val loopCount = buffer.nextBytes(2)
         assertEquals(
-            "Expected loopCount = $expectedLoopCount",
+            "Unexpected loopCount value",
             expectedLoopCount,
             loopCount
         )
@@ -684,21 +713,21 @@ class WebPCodecInstrumentedTest {
 
         val frameWidth = buffer.nextBytes(3) + 1
         assertEquals(
-            "Expected frameWidth = $expectedWidth",
+            "Unexpected frameWidth value",
             expectedWidth,
             frameWidth
         )
 
         val frameHeight = buffer.nextBytes(3) + 1
         assertEquals(
-            "Expected frameHeight = $expectedHeight",
+            "Unexpected frameHeight value",
             expectedHeight,
             frameHeight
         )
 
         val frameDuration = buffer.nextBytes(3)
         assertEquals(
-            "Expected frameDuration = $expectedFrameDuration",
+            "Unexpected frameDuration value",
             expectedFrameDuration,
             frameDuration
         )

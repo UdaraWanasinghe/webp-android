@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <utility>
 #include <webp/demux.h>
 #include <android/bitmap.h>
 
@@ -16,11 +17,99 @@
 
 namespace {
 
+    struct DecoderConfig {
+        std::string namePrefix = "IMG_";
+        char repeatCharacter = '0';
+        int repeatCharacterCount = 4;
+        int compressFormatOrdinal = 1;
+        int compressQuality = 100;
+    };
+
+    DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig) {
+        jclass config_class = env->FindClass(
+                "com/aureusapps/android/webpandroid/decoder/DecoderConfig"
+        );
+        // image name name_prefix
+        jfieldID prefix_field_id = env->GetFieldID(
+                config_class,
+                "namePrefix",
+                "Ljava/lang/String;"
+        );
+        auto jprefix = (jstring) env->GetObjectField(jconfig, prefix_field_id);
+        const char *prefix_cstr = env->GetStringUTFChars(jprefix, nullptr);
+        std::string name_prefix(prefix_cstr);
+        env->ReleaseStringUTFChars(jprefix, prefix_cstr);
+
+        // image name repeat character
+        jfieldID name_repeat_character_field_id = env->GetFieldID(
+                config_class,
+                "repeatCharacter",
+                "C"
+        );
+        char repeat_character = (char) env->GetCharField(
+                jconfig,
+                name_repeat_character_field_id
+        );
+
+        // image name character count
+        jfieldID name_character_count_field_id = env->GetFieldID(
+                config_class,
+                "repeatCharacterCount",
+                "I"
+        );
+        int repeat_character_count = env->GetIntField(jconfig, name_character_count_field_id);
+
+        // image compress format
+        jfieldID compress_format_field_id = env->GetFieldID(
+                config_class,
+                "compressFormat",
+                "Landroid/graphics/Bitmap$CompressFormat;"
+        );
+        auto jcompress_format = env->GetObjectField(jconfig, compress_format_field_id);
+        jclass compress_format_class = env->FindClass("android/graphics/Bitmap$CompressFormat");
+        jmethodID ordinal_method_id = env->GetMethodID(compress_format_class, "ordinal", "()I");
+        int compress_format_ordinal = env->CallIntMethod(jcompress_format, ordinal_method_id);
+        env->DeleteLocalRef(jcompress_format);
+        env->DeleteLocalRef(compress_format_class);
+
+        // image compress quality
+        jfieldID compress_quality_field_id = env->GetFieldID(
+                config_class,
+                "compressQuality",
+                "I"
+        );
+        int compress_quality = env->GetIntField(jconfig, compress_quality_field_id);
+
+        env->DeleteLocalRef(config_class);
+        return DecoderConfig{
+                name_prefix,
+                repeat_character,
+                repeat_character_count,
+                compress_format_ordinal,
+                compress_quality
+        };
+    }
+
+    std::string parseImageNameSuffix(int compress_format_ordinal) {
+        switch (compress_format_ordinal) {
+            case 0:
+                return ".jpeg";
+            case 1:
+                return ".png";
+            default:
+                return ".webp";
+        }
+    }
+
     class WebPDecoder {
+
     public:
+        DecoderConfig decoderConfig;
         bool cancel_flag = false;
 
         static WebPDecoder *getInstance(JNIEnv *env, jobject jdecoder);
+
+        void configure(DecoderConfig config);
     };
 
     WebPDecoder *WebPDecoder::getInstance(JNIEnv *env, jobject jdecoder) {
@@ -40,6 +129,10 @@ namespace {
         }
         env->DeleteLocalRef(decoder_class);
         return reinterpret_cast<WebPDecoder *>(native_pointer);
+    }
+
+    void WebPDecoder::configure(DecoderConfig config) {
+        decoderConfig = std::move(config);
     }
 
     jobject decodeInfo(
@@ -126,6 +219,9 @@ namespace {
             int timestamp,
             int index
     ) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return ERROR_NULL_DECODER;
+
         ResultCode result = bmp::copyPixels(env, pixels, jbitmap);
         if (result == RESULT_SUCCESS) {
             jclass decoder_class = env->FindClass(
@@ -148,14 +244,20 @@ namespace {
                 );
 
             } else {
+                auto decoder_config = decoder->decoderConfig;
+                std::string image_name_suffix = parseImageNameSuffix(
+                        decoder_config.compressFormatOrdinal
+                );
                 // save bitmap to dst uri
                 auto name_result = files::generateFileName(
                         env,
                         jcontext,
                         jdst_uri,
                         index,
-                        "IMG",
-                        ".png"
+                        decoder_config.namePrefix,
+                        image_name_suffix,
+                        decoder_config.repeatCharacterCount,
+                        decoder_config.repeatCharacter
                 );
                 if (name_result.first) {
                     jobject jbitmap_uri = bmp::saveToDirectory(
@@ -163,6 +265,8 @@ namespace {
                             jcontext,
                             jbitmap,
                             jdst_uri,
+                            decoder_config.compressFormatOrdinal,
+                            decoder_config.compressQuality,
                             name_result.second
                     );
                     if (type::isObjectNull(env, jbitmap_uri)) {
@@ -353,6 +457,24 @@ JNIEXPORT jlong JNICALL
 Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeCreate(JNIEnv *, jobject) {
     auto *decoder = new WebPDecoder();
     return reinterpret_cast<jlong>(decoder);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeConfigure(
+        JNIEnv *env,
+        jobject thiz,
+        jobject jconfig
+) {
+    auto decoder_config = parseDecoderConfig(env, jconfig);
+    auto *decoder = WebPDecoder::getInstance(env, thiz);
+    ResultCode result = RESULT_SUCCESS;
+    if (decoder == nullptr) {
+        result = ERROR_NULL_DECODER;
+    } else {
+        decoder->configure(decoder_config);
+    }
+    result::handleResult(env, result);
 }
 
 extern "C"

@@ -24,6 +24,8 @@ class WebPDecoder {
 
     private external fun nativeCreate(): Long
 
+    private external fun nativeConfigure(config: DecoderConfig)
+
     private external fun nativeDecodeFrames(
         context: Context,
         srcUri: Uri,
@@ -71,6 +73,17 @@ class WebPDecoder {
      */
     fun removeDecodeListener(listener: WebPDecodeListener): Boolean {
         return decodeListeners.remove(listener)
+    }
+
+    /**
+     * Configures this webp decoder.
+     *
+     * @param config DecoderConfig to apply.
+     * @return this WebPDecoder instance.
+     */
+    fun configure(config: DecoderConfig): WebPDecoder {
+        nativeConfigure(config)
+        return this
     }
 
     /**

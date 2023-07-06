@@ -95,14 +95,15 @@ namespace files {
     );
 
     /**
-     * Generates file name with the pattern prefix_####suffix.
+     * Generates file name with the pattern prefix_####name_suffix.
      *
      * @param env Pointer to the JNI environment.
      * @param jcontext The Android context.
      * @param jdirectory_uri The directory Uri. This could be a file Uri or a tree Uri.
      * @param index Expected file index. Index will be incremented if file exists.
-     * @param prefix File name prefix.
-     * @param suffix File name suffix.
+     * @param name_prefix File name name_prefix.
+     * @param name_suffix File name name_suffix.
+     * @param name_character_count Number of characters in the code of the file name.
      *
      * @return A pair indicating success flag and the generated file name.
      */
@@ -111,8 +112,10 @@ namespace files {
             jobject jcontext,
             jobject jdirectory_uri,
             int index,
-            const std::string &prefix,
-            const std::string &suffix
+            const std::string &name_prefix,
+            const std::string &name_suffix,
+            int name_character_count,
+            char name_repeat_character
     );
 
 }

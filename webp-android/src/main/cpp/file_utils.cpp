@@ -200,14 +200,20 @@ std::pair<bool, std::string> files::generateFileName(
         jobject jcontext,
         jobject jdirectory_uri,
         int index,
-        const std::string &prefix,
-        const std::string &suffix
+        const std::string &name_prefix,
+        const std::string &name_suffix,
+        int name_character_count,
+        char name_repeat_character
 ) {
     int counter = index;
     std::pair<bool, std::string> result(false, "");
     while (true) {
         std::stringstream ss;
-        ss << prefix << "_" << std::setfill('0') << std::setw(4) << counter++ << suffix;
+        ss << name_prefix
+           << std::setfill(name_repeat_character)
+           << std::setw(name_character_count)
+           << counter++
+           << name_suffix;
         int exists = files::fileExists(env, jcontext, jdirectory_uri, ss.str());
         if (exists == RESULT_FILE_NOT_FOUND) {
             result = std::pair(true, ss.str());

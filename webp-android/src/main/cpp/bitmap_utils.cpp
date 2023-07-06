@@ -41,17 +41,6 @@ jobject bmp::createBitmap(
     return jbitmap;
 }
 
-jobject bmp::createBitmap(
-        JNIEnv *env,
-        int width,
-        int height,
-        const uint8_t *pixels
-) {
-    jobject bitmap = createBitmap(env, width, height);
-    bmp::copyPixels(env, pixels, bitmap);
-    return bitmap;
-}
-
 jobject bmp::decodeBitmapUri(
         JNIEnv *env,
         jobject jcontext,
@@ -126,6 +115,8 @@ jobject bmp::saveToDirectory(
         jobject jcontext,
         jobject jbitmap,
         jobject jdirectory_uri,
+        int compress_format,
+        int compress_quality,
         const std::string &file_name
 ) {
     jclass bitmap_utils_class = env->FindClass("com/aureusapps/android/extensions/BitmapUtils");
@@ -134,14 +125,9 @@ jobject bmp::saveToDirectory(
             "saveInDirectory",
             "(Landroid/content/Context;Landroid/graphics/Bitmap;Landroid/net/Uri;Ljava/lang/String;Landroid/graphics/Bitmap$CompressFormat;I)Landroid/net/Uri;"
     );
-    jclass compress_format_class = env->FindClass("android/graphics/Bitmap$CompressFormat");
-    jfieldID png_field_id = env->GetStaticFieldID(
-            compress_format_class,
-            "PNG",
-            "Landroid/graphics/Bitmap$CompressFormat;"
-    );
-    jobject jpng = env->GetStaticObjectField(compress_format_class, png_field_id);
+
     jstring jdisplay_name = env->NewStringUTF(file_name.c_str());
+    jobject jcompress_format = bmp::parseBitmapCompressFormat(env, compress_format);
     jobject jbitmap_uri = env->CallStaticObjectMethod(
             bitmap_utils_class,
             save_method_id,
@@ -149,14 +135,64 @@ jobject bmp::saveToDirectory(
             jbitmap,
             jdirectory_uri,
             jdisplay_name,
-            jpng,
-            100
+            jcompress_format,
+            compress_quality
     );
     env->DeleteLocalRef(bitmap_utils_class);
-    env->DeleteLocalRef(compress_format_class);
-    env->DeleteLocalRef(jpng);
+    env->DeleteLocalRef(jcompress_format);
     env->DeleteLocalRef(jdisplay_name);
     return jbitmap_uri;
+}
+
+jobject bmp::parseBitmapCompressFormat(JNIEnv *env, int compress_format_ordinal) {
+    jclass compress_format_class = env->FindClass("android/graphics/Bitmap$CompressFormat");
+    jfieldID compress_format_field_id;
+
+    switch (compress_format_ordinal) {
+        case 0:
+            compress_format_field_id = env->GetStaticFieldID(
+                    compress_format_class,
+                    "JPEG",
+                    "Landroid/graphics/Bitmap$CompressFormat;"
+            );
+            break;
+        case 1:
+            compress_format_field_id = env->GetStaticFieldID(
+                    compress_format_class,
+                    "PNG",
+                    "Landroid/graphics/Bitmap$CompressFormat;"
+            );
+            break;
+        case 2:
+            compress_format_field_id = env->GetStaticFieldID(
+                    compress_format_class,
+                    "WEBP",
+                    "Landroid/graphics/Bitmap$CompressFormat;"
+            );
+            break;
+        case 3:
+            compress_format_field_id = env->GetStaticFieldID(
+                    compress_format_class,
+                    "WEBP_LOSSY",
+                    "Landroid/graphics/Bitmap$CompressFormat;"
+            );
+            break;
+        case 4:
+            compress_format_field_id = env->GetStaticFieldID(
+                    compress_format_class,
+                    "WEBP_LOSSLESS",
+                    "Landroid/graphics/Bitmap$CompressFormat;"
+            );
+            break;
+        default:
+            throw std::runtime_error("Unknown compress format");
+    }
+
+    jobject jcompress_format = env->GetStaticObjectField(
+            compress_format_class,
+            compress_format_field_id
+    );
+    return jcompress_format;
 }
 
 void bmp::recycleBitmap(
