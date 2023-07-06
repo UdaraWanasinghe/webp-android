@@ -107,8 +107,22 @@ webPDecoder.addDecodeListener(
     }
 )
 
+// Configure decoder
+webPDecoder.configure(
+    config = DecoderConfig(
+        namePrefix = "IMAGE_",
+        repeatCharacter = '0',
+        repeatCharacterCount = 6,
+        compressFormat = Bitmap.CompressFormat.PNG,
+        compressQuality = 100
+    )
+)
+
 // Decode frames from a WebP file
 webPDecoder.decodeFrames(context, srcUri, dstUri)
+
+// Decode WebP file information
+val webPInfo = webPDecoder.decodeInfo(context, srcUri)
 
 // Decode only the image information from a WebP file
 val info = webPDecoder.decodeInfo(context, srcUri)
