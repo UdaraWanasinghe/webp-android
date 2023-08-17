@@ -121,9 +121,6 @@ webPDecoder.configure(
 // Decode frames from a WebP file
 webPDecoder.decodeFrames(context, srcUri, dstUri)
 
-// Decode WebP file information
-val webPInfo = webPDecoder.decodeInfo(context, srcUri)
-
 // Decode only the image information from a WebP file
 val info = webPDecoder.decodeInfo(context, srcUri)
 
