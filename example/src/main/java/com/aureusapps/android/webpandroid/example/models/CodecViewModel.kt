@@ -1,12 +1,10 @@
 package com.aureusapps.android.webpandroid.example.models
 
 import android.app.Application
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aureusapps.android.extensions.scanNotNull
-import com.aureusapps.android.webpandroid.decoder.WebPDecodeListener
 import com.aureusapps.android.webpandroid.decoder.WebPDecoder
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
@@ -16,6 +14,7 @@ import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.data.ConvertData
 import com.aureusapps.android.webpandroid.example.events.UiEvent
 import com.aureusapps.android.webpandroid.example.states.ConvertState
+import com.aureusapps.android.webpandroid.extensions.addDecodeListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -706,46 +705,38 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                 var webPInfo: WebPInfo? = null
                 val dstUris = mutableListOf<Uri>()
                 webPDecoder.addDecodeListener(
-                    object : WebPDecodeListener {
-                        override fun onInfoDecoded(info: WebPInfo) {
-                            webPInfo = info
-                            emitState { state ->
-                                ConvertState
-                                    .WebPToImages
-                                    .OnReceiveWebPInfo(
-                                        parent = state,
-                                        webPInfo = info
-                                    ) {
-                                        webPDecoder.cancel()
-                                    }
-                            }
-                        }
-
-                        override fun onFrameDecoded(
-                            index: Int,
-                            timestamp: Long,
-                            bitmap: Bitmap,
-                            uri: Uri?
-                        ) {
-                            if (uri != null) {
-                                dstUris.add(uri)
-                            }
-                            val frameCount = webPInfo?.frameCount ?: 0
-                            emitState { state ->
-                                val progress = if (frameCount != 0) {
-                                    100 * (index + 1) / frameCount
-                                } else {
-                                    0
+                    onInfoDecoded = { info ->
+                        webPInfo = info
+                        emitState { state ->
+                            ConvertState
+                                .WebPToImages
+                                .OnReceiveWebPInfo(
+                                    parent = state,
+                                    webPInfo = info
+                                ) {
+                                    webPDecoder.cancel()
                                 }
-                                ConvertState
-                                    .WebPToImages
-                                    .OnConvertProgress(
-                                        parent = state,
-                                        progress = progress
-                                    ) {
-                                        webPDecoder.cancel()
-                                    }
+                        }
+                    },
+                    onFrameDecoded = { index, _, _, uri ->
+                        if (uri != null) {
+                            dstUris.add(uri)
+                        }
+                        val frameCount = webPInfo?.frameCount ?: 0
+                        emitState { state ->
+                            val progress = if (frameCount != 0) {
+                                100 * (index + 1) / frameCount
+                            } else {
+                                0
                             }
+                            ConvertState
+                                .WebPToImages
+                                .OnConvertProgress(
+                                    parent = state,
+                                    progress = progress
+                                ) {
+                                    webPDecoder.cancel()
+                                }
                         }
                     }
                 )
