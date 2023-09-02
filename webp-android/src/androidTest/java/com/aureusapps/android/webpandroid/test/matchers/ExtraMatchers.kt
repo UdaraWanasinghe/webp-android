@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid.matchers
+package com.aureusapps.android.webpandroid.test.matchers
 
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">webp-android</string>
+    <string name="app_name">WebPAndroid</string>
     <string name="bitmap_to_webp">Bitmap to WebP</string>
     <string name="bitmap_to_animated_webp">Bitmap to Animated WebP</string>
     <string name="webp_to_bitmap">WebP to Bitmap</string>

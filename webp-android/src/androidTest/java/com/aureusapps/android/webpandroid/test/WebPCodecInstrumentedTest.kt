@@ -1,4 +1,4 @@
-package com.aureusapps.android.webpandroid
+package com.aureusapps.android.webpandroid.test
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -30,7 +30,7 @@ import com.aureusapps.android.webpandroid.encoder.WebPConfig
 import com.aureusapps.android.webpandroid.encoder.WebPEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
 import com.aureusapps.android.webpandroid.encoder.WebPPreset
-import com.aureusapps.android.webpandroid.matchers.inRange
+import com.aureusapps.android.webpandroid.test.matchers.inRange
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

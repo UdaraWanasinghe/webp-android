@@ -14,7 +14,7 @@
 ### Import the library into your project.
 
 ```groovy
-// module level build.gradle
+// module level build.gradle.kts
 dependencies {
     implementation "com.aureusapps.android:webp-android:1.0.6"
 }
