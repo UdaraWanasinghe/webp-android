@@ -232,17 +232,16 @@ namespace {
                     "notifyFrameDecoded",
                     "(IJLandroid/graphics/Bitmap;Landroid/net/Uri;)V"
             );
+            jobject jbitmap_uri;
             if (type::isObjectNull(env, jdst_uri)) {
-                jobject jbitmap_uri = nullptr;
-                env->CallVoidMethod(
-                        jdecoder,
-                        notify_method_id,
-                        index,
-                        static_cast<jlong>(timestamp),
-                        jbitmap,
-                        jbitmap_uri
+                jclass uri_class = env->FindClass("android/net/Uri");
+                jfieldID empty_field_id = env->GetStaticFieldID(
+                        uri_class,
+                        "EMPTY",
+                        "Landroid/net/Uri;"
                 );
-
+                jbitmap_uri = env->GetStaticObjectField(uri_class, empty_field_id);
+                env->DeleteLocalRef(uri_class);
             } else {
                 auto decoder_config = decoder->decoderConfig;
                 std::string image_name_suffix = parseImageNameSuffix(
@@ -260,7 +259,7 @@ namespace {
                         decoder_config.repeatCharacter
                 );
                 if (name_result.first) {
-                    jobject jbitmap_uri = bmp::saveToDirectory(
+                    jbitmap_uri = bmp::saveToDirectory(
                             env,
                             jcontext,
                             jbitmap,
@@ -271,20 +270,21 @@ namespace {
                     );
                     if (type::isObjectNull(env, jbitmap_uri)) {
                         result = ERROR_BITMAP_WRITE_TO_URI_FAILED;
-                    } else {
-                        env->CallVoidMethod(
-                                jdecoder,
-                                notify_method_id,
-                                index,
-                                static_cast<jlong>(timestamp),
-                                jbitmap,
-                                jbitmap_uri
-                        );
-                        env->DeleteLocalRef(jbitmap_uri);
                     }
                 } else {
                     result = ERROR_FILE_NAME_GENERATION_FAILED;
                 }
+            }
+            if (result == RESULT_SUCCESS) {
+                env->CallVoidMethod(
+                        jdecoder,
+                        notify_method_id,
+                        index,
+                        static_cast<jlong>(timestamp),
+                        jbitmap,
+                        jbitmap_uri
+                );
+                env->DeleteLocalRef(jbitmap_uri);
             }
             env->DeleteLocalRef(decoder_class);
         }

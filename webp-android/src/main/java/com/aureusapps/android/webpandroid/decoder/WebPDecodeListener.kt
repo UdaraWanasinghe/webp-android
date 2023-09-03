@@ -22,8 +22,8 @@ interface WebPDecodeListener {
      * @param index The index of the frame.
      * @param bitmap The frame of the image.
      * @param timestamp The timestamp of the frame.
-     * @param uri Uri of the saved frame or null if the frame is not saved.
+     * @param uri Uri of the saved frame or [Uri.EMPTY] if the frame is not saved.
      */
-    fun onFrameDecoded(index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri?)
+    fun onFrameDecoded(index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri)
 
 }

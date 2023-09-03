@@ -719,7 +719,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         }
                     },
                     onFrameDecoded = { index, _, _, uri ->
-                        if (uri != null) {
+                        if (uri != Uri.EMPTY) {
                             dstUris.add(uri)
                         }
                         val frameCount = webPInfo?.frameCount ?: 0

@@ -47,7 +47,7 @@ class WebPDecoder {
         }
     }
 
-    private fun notifyFrameDecoded(index: Int, timestamp: Long, frame: Bitmap, uri: Uri?) {
+    private fun notifyFrameDecoded(index: Int, timestamp: Long, frame: Bitmap, uri: Uri) {
         decodeListeners.forEach {
             it.onFrameDecoded(index, timestamp, frame, uri)
         }

@@ -18,14 +18,14 @@ import com.aureusapps.android.webpandroid.decoder.WebPInfo
  */
 inline fun WebPDecoder.addDecodeListener(
     crossinline onInfoDecoded: (info: WebPInfo) -> Unit = {},
-    crossinline onFrameDecoded: (index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri?) -> Unit = { _, _, _, _ -> }
+    crossinline onFrameDecoded: (index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri) -> Unit = { _, _, _, _ -> }
 ): WebPDecodeListener {
     val listener = object : WebPDecodeListener {
         override fun onInfoDecoded(info: WebPInfo) {
             onInfoDecoded(info)
         }
 
-        override fun onFrameDecoded(index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri?) {
+        override fun onFrameDecoded(index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri) {
             onFrameDecoded(index, timestamp, bitmap, uri)
         }
     }
