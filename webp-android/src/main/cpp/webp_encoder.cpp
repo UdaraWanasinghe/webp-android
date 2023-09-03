@@ -12,6 +12,7 @@
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
 #include "include/result_codes.h"
+#include "include/native_helper.h"
 
 namespace {
 
@@ -88,12 +89,9 @@ namespace {
         delete progressHookData;
         int result = RESULT_SUCCESS;
 
-        jclass encoder_class = env->FindClass(
-                "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
-        );
-        if (env->IsInstanceOf(jencoder, encoder_class) != 0) {
+        if (env->IsInstanceOf(jencoder, JavaClass::encoderClass) != 0) {
             jmethodID progress_method_id = env->GetMethodID(
-                    encoder_class,
+                    JavaClass::encoderClass,
                     "notifyProgressChanged",
                     "(I)Z"
             );
@@ -104,7 +102,6 @@ namespace {
         } else {
             result = ERROR_INVALID_ENCODER;
         }
-        env->DeleteLocalRef(encoder_class);
         return result;
     }
 
@@ -255,17 +252,17 @@ namespace {
     }
 
     WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject jencoder) {
-        jclass encoder_class = env->FindClass(
-                "com/aureusapps/android/webpandroid/encoder/WebPEncoder"
-        );
         jlong native_pointer;
-        if (env->IsInstanceOf(jencoder, encoder_class) != 0) {
-            jfieldID pointer_field_id = env->GetFieldID(encoder_class, "nativePointer", "J");
+        if (env->IsInstanceOf(jencoder, JavaClass::encoderClass) != 0) {
+            jfieldID pointer_field_id = env->GetFieldID(
+                    JavaClass::encoderClass,
+                    "nativePointer",
+                    "J"
+            );
             native_pointer = env->GetLongField(jencoder, pointer_field_id);
         } else {
             native_pointer = 0;
         }
-        env->DeleteLocalRef(encoder_class);
         return reinterpret_cast<WebPEncoder *>(native_pointer);
     }
 
@@ -452,17 +449,17 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeCancel(JNIEnv 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeRelease(JNIEnv *env,
-                                                                          jobject thiz) {
+Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeRelease(
+        JNIEnv *env,
+        jobject thiz
+) {
     auto *encoder = WebPEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
 
-    jclass encoder_class = env->GetObjectClass(thiz);
-    jfieldID pointer_field_id = env->GetFieldID(encoder_class, "nativePointer", "J");
+    jfieldID pointer_field_id = env->GetFieldID(JavaClass::encoderClass, "nativePointer", "J");
     env->SetLongField(thiz, pointer_field_id, (jlong) 0);
 
     // Release resources
-    env->DeleteLocalRef(encoder_class);
     clearProgressHookData(env);
     encoder->release();
     delete encoder;
