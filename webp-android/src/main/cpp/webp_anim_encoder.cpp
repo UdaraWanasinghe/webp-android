@@ -150,9 +150,9 @@ namespace {
         delete progressHookData;
         bool result = RESULT_SUCCESS;
 
-        if (env->IsInstanceOf(jencoder, JavaClass::animEncoderClass)) {
+        if (env->IsInstanceOf(jencoder, ClassRegistry::animEncoderClass)) {
             jmethodID progress_method_id = env->GetMethodID(
-                    JavaClass::animEncoderClass,
+                    ClassRegistry::animEncoderClass,
                     "notifyProgressChanged",
                     "(II)Z"
             );
@@ -272,9 +272,9 @@ namespace {
     WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
 
         jlong native_pointer;
-        if (env->IsInstanceOf(jencoder, JavaClass::animEncoderClass)) {
+        if (env->IsInstanceOf(jencoder, ClassRegistry::animEncoderClass)) {
             jfieldID pointer_field_id = env->GetFieldID(
-                    JavaClass::animEncoderClass,
+                    ClassRegistry::animEncoderClass,
                     "nativePointer",
                     "J"
             );
@@ -363,7 +363,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeCreate(
         jint jheight,
         jobject joptions
 ) {
-    JavaClass::initialize(env);
+    ClassRegistry::initialize(env);
     env->GetJavaVM(&jvm);
     setProgressHookData(env, thiz);
 
@@ -519,7 +519,8 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeRelease(
     auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
 
-    jfieldID pointer_field_id = env->GetFieldID(JavaClass::animEncoderClass, "nativePointer", "J");
+    jfieldID pointer_field_id = env->GetFieldID(ClassRegistry::animEncoderClass, "nativePointer",
+                                                "J");
     env->SetLongField(thiz, pointer_field_id, (jlong) 0);
 
     // Release resources
@@ -527,5 +528,5 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeRelease(
     encoder->release();
     delete encoder;
     jvm = nullptr;
-    JavaClass::release(env);
+    ClassRegistry::release(env);
 }

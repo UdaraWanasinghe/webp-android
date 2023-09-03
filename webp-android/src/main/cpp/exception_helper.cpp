@@ -26,84 +26,84 @@ namespace {
 void throwNullPointerException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::nullPointerExceptionClass, format, args);
+    throwException(env, ClassRegistry::nullPointerExceptionClass, format, args);
     va_end(args);
 }
 
 void throwIllegalArgumentException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::illegalArgumentExceptionClass, format, args);
+    throwException(env, ClassRegistry::illegalArgumentExceptionClass, format, args);
     va_end(args);
 }
 
 void throwArrayIndexOutOfBoundsException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::arrayIndexOutOfBoundsExceptionClass, format, args);
+    throwException(env, ClassRegistry::arrayIndexOutOfBoundsExceptionClass, format, args);
     va_end(args);
 }
 
 void throwIOException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::ioExceptionClass, format, args);
+    throwException(env, ClassRegistry::ioExceptionClass, format, args);
     va_end(args);
 }
 
 void throwFileNotFoundException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::fileNotFoundExceptionClass, format, args);
+    throwException(env, ClassRegistry::fileNotFoundExceptionClass, format, args);
     va_end(args);
 }
 
 void throwArithmeticException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::arithmeticExceptionClass, format, args);
+    throwException(env, ClassRegistry::arithmeticExceptionClass, format, args);
     va_end(args);
 }
 
 void throwUnsupportedOperationException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::unsupportedOperationExceptionClass, format, args);
+    throwException(env, ClassRegistry::unsupportedOperationExceptionClass, format, args);
     va_end(args);
 }
 
 void throwIllegalStateException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::illegalStateExceptionClass, format, args);
+    throwException(env, ClassRegistry::illegalStateExceptionClass, format, args);
     va_end(args);
 }
 
 void throwNoSuchElementException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::noSuchElementExceptionClass, format, args);
+    throwException(env, ClassRegistry::noSuchElementExceptionClass, format, args);
     va_end(args);
 }
 
 void throwNumberFormatException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::numberFormatExceptionClass, format, args);
+    throwException(env, ClassRegistry::numberFormatExceptionClass, format, args);
     va_end(args);
 }
 
 void throwRuntimeException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::runtimeExceptionClass, format, args);
+    throwException(env, ClassRegistry::runtimeExceptionClass, format, args);
     va_end(args);
 }
 
 void throwCancellationException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, JavaClass::cancellationExceptionClass, format, args);
+    throwException(env, ClassRegistry::cancellationExceptionClass, format, args);
     va_end(args);
 }
 
@@ -114,7 +114,7 @@ std::string getExceptionMessage(JNIEnv *env, const char *format, ...) {
     jthrowable exception = env->ExceptionOccurred();
     env->ExceptionClear();
     jmethodID message_method_id = env->GetMethodID(
-            JavaClass::throwableClass,
+            ClassRegistry::throwableClass,
             "getMessage",
             "()Ljava/lang/String;"
     );

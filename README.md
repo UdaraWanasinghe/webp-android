@@ -24,7 +24,7 @@ dependencies {
 
 ```kotlin
 // Create encoder instance
-val webPEncoder = WebPEncoder(width, height)
+val webPEncoder = WebPEncoder(context, width, height)
 
 // Configure the encoder
 webPEncoder.configure(
@@ -42,16 +42,17 @@ webPEncoder.addProgressListener {
 }
 
 // Encode frame
-webPEncoder.encode(context, srcBitmap, dstUri)
+webPEncoder.encode(srcBitmap, dstUri)
 
 // Release resources
 webPEncoder.release()
 ```
 
-### Encoding a list of Bitmap with WebPAnimEncoder
+### Encoding a list of Bitmaps with WebPAnimEncoder
 
 ```kotlin
 val webPAnimEncoder = WebPAnimEncoder(
+    context = context,
     width = width,
     height = height,
     options = WebPAnimEncoderOptions(
@@ -78,10 +79,10 @@ webPAnimEncoder.addProgressListener {
 
 // Add frames to the animation
 webPAnimEncoder.addFrame(timestamp, srcBitmap)
-webPAnimEncoder.addFrame(context, timestamp, srcUri)
+webPAnimEncoder.addFrame(timestamp, srcUri)
 
 // Assemble the animation
-webPAnimEncoder.assemble(context, timestamp, dstUri)
+webPAnimEncoder.assemble(timestamp, dstUri)
 
 // Release resources
 webPAnimEncoder.release()
@@ -91,7 +92,7 @@ webPAnimEncoder.release()
 
 ```kotlin
 // Create decoder instance
-val webPDecoder = WebPDecoder()
+val webPDecoder = WebPDecoder(context)
 
 // Add decode listener to receive decoding events
 webPDecoder.addDecodeListener(
@@ -119,19 +120,13 @@ webPDecoder.configure(
 )
 
 // Decode frames from a WebP file
-webPDecoder.decodeFrames(context, srcUri, dstUri)
+webPDecoder.decodeFrames(srcUri, dstUri)
 
 // Decode only the image information from a WebP file
-val info = webPDecoder.decodeInfo(context, srcUri)
+val info = webPDecoder.decodeInfo(srcUri)
 
 // Release resources
 webPDecoder.release()
-```
-
-## Updating the version
-
-```shell
-./gradlew updateVersion --code=xx --name=xx.xx.xx
 ```
 
 ## Appreciate my work!

@@ -89,9 +89,9 @@ namespace {
         delete progressHookData;
         int result = RESULT_SUCCESS;
 
-        if (env->IsInstanceOf(jencoder, JavaClass::encoderClass) != 0) {
+        if (env->IsInstanceOf(jencoder, ClassRegistry::encoderClass) != 0) {
             jmethodID progress_method_id = env->GetMethodID(
-                    JavaClass::encoderClass,
+                    ClassRegistry::encoderClass,
                     "notifyProgressChanged",
                     "(I)Z"
             );
@@ -253,9 +253,9 @@ namespace {
 
     WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject jencoder) {
         jlong native_pointer;
-        if (env->IsInstanceOf(jencoder, JavaClass::encoderClass) != 0) {
+        if (env->IsInstanceOf(jencoder, ClassRegistry::encoderClass) != 0) {
             jfieldID pointer_field_id = env->GetFieldID(
-                    JavaClass::encoderClass,
+                    ClassRegistry::encoderClass,
                     "nativePointer",
                     "J"
             );
@@ -346,7 +346,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeCreate(
         jint jwidth,
         jint jheight
 ) {
-    JavaClass::initialize(env);
+    ClassRegistry::initialize(env);
     env->GetJavaVM(&jvm);
     setProgressHookData(env, thiz);
     auto *encoder = new WebPEncoder(jwidth, jheight);
@@ -457,7 +457,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeRelease(
     auto *encoder = WebPEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
 
-    jfieldID pointer_field_id = env->GetFieldID(JavaClass::encoderClass, "nativePointer", "J");
+    jfieldID pointer_field_id = env->GetFieldID(ClassRegistry::encoderClass, "nativePointer", "J");
     env->SetLongField(thiz, pointer_field_id, (jlong) 0);
 
     // Release resources
@@ -465,5 +465,5 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeRelease(
     encoder->release();
     delete encoder;
     jvm = nullptr;
-    JavaClass::release(env);
+    ClassRegistry::release(env);
 }

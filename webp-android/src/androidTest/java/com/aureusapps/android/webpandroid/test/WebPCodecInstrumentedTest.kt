@@ -104,7 +104,7 @@ class WebPCodecInstrumentedTest {
 
             // encode
             outputFile = File.createTempFile("img", null)
-            val encoder = WebPEncoder(dstWidth, dstHeight)
+            val encoder = WebPEncoder(context, dstWidth, dstHeight)
             encoder.configure(
                 config = WebPConfig(
                     lossless = lossless,
@@ -117,7 +117,7 @@ class WebPCodecInstrumentedTest {
                 listenerTriggered = true
                 true
             }
-            encoder.encode(context, inputFile.toUri(), outputFile.toUri())
+            encoder.encode(inputFile.toUri(), outputFile.toUri())
             encoder.release()
             assertTrue("Did not trigger the progress listener", listenerTriggered)
 
@@ -168,6 +168,7 @@ class WebPCodecInstrumentedTest {
             // encode
             outputFile = File.createTempFile("img", null)
             val encoder = WebPAnimEncoder(
+                context = context,
                 width = dstWidth,
                 height = dstHeight,
                 options = WebPAnimEncoderOptions(
@@ -194,10 +195,10 @@ class WebPCodecInstrumentedTest {
             }
             var frameTimestamp = 0L
             inputFiles.forEachIndexed { index, file ->
-                encoder.addFrame(context, frameTimestamp, file.toUri())
+                encoder.addFrame(frameTimestamp, file.toUri())
                 frameTimestamp += frameDurations[index]
             }
-            encoder.assemble(context, frameTimestamp, outputFile.toUri())
+            encoder.assemble(frameTimestamp, outputFile.toUri())
             encoder.release()
             assertTrue("Did not trigger the progress listener", listenerTriggered)
 
@@ -242,7 +243,7 @@ class WebPCodecInstrumentedTest {
 
             // decode
             outputDirectory = Files.createTempDirectory("media").toFile()
-            val decoder = WebPDecoder()
+            val decoder = WebPDecoder(context)
             var webPInfo: WebPInfo? = null
             var frameCount = 0
             var frameUri: Uri? = null
@@ -272,11 +273,10 @@ class WebPCodecInstrumentedTest {
                 )
             )
             decoder.decodeFrames(
-                context,
                 bitmapFile.toUri(),
                 outputDirectory.toUri()
             )
-            val decodedInfo = decoder.decodeInfo(context, bitmapFile.toUri())
+            val decodedInfo = decoder.decodeInfo(bitmapFile.toUri())
             decoder.removeDecodeListener(decodeListener)
             decoder.release()
 
@@ -346,7 +346,7 @@ class WebPCodecInstrumentedTest {
         var outputDirectory: File? = null
         try {
             // encode image
-            val encoder = WebPAnimEncoder(dstWidth, dstHeight)
+            val encoder = WebPAnimEncoder(context, dstWidth, dstHeight)
             encoder.configure(
                 preset = WebPPreset.WEBP_PRESET_DEFAULT
             )
@@ -357,14 +357,14 @@ class WebPCodecInstrumentedTest {
                 frameTimestamp += frameDurations[index]
             }
             imageFile = File.createTempFile("img", null)
-            encoder.assemble(context, frameTimestamp, imageFile.toUri())
+            encoder.assemble(frameTimestamp, imageFile.toUri())
             encoder.release()
 
             // decode images
             outputDirectory = Files.createTempDirectory("media").toFile()
             var webPInfo: WebPInfo? = null
             val imageFrames = mutableListOf<Pair<Long, Uri>>()
-            val decoder = WebPDecoder()
+            val decoder = WebPDecoder(context)
             decoder.addDecodeListener(
                 object : WebPDecodeListener {
                     override fun onInfoDecoded(info: WebPInfo) {
@@ -389,7 +389,6 @@ class WebPCodecInstrumentedTest {
                 }
             )
             decoder.decodeFrames(
-                context,
                 imageFile.toUri(),
                 outputDirectory.toUri()
             )

@@ -12,10 +12,10 @@ int type::getIntegerValue(
         JNIEnv *env,
         jobject object
 ) {
-    if (!env->IsInstanceOf(object, JavaClass::integerClass)) {
+    if (!env->IsInstanceOf(object, ClassRegistry::integerClass)) {
         throw std::runtime_error("The given object is not of type Integer.");
     }
-    jmethodID method_id = env->GetMethodID(JavaClass::integerClass, "intValue", "()I");
+    jmethodID method_id = env->GetMethodID(ClassRegistry::integerClass, "intValue", "()I");
     jint value = env->CallIntMethod(object, method_id);
     return static_cast<int>(value);
 }
@@ -24,10 +24,10 @@ bool type::getBooleanValue(
         JNIEnv *env,
         jobject object
 ) {
-    if (!env->IsInstanceOf(object, JavaClass::booleanClass)) {
+    if (!env->IsInstanceOf(object, ClassRegistry::booleanClass)) {
         throw std::runtime_error("The given object is not of type Boolean.");
     }
-    jmethodID method_id = env->GetMethodID(JavaClass::booleanClass, "booleanValue", "()Z");
+    jmethodID method_id = env->GetMethodID(ClassRegistry::booleanClass, "booleanValue", "()Z");
     jboolean value = env->CallBooleanMethod(object, method_id);
     return static_cast<bool>(value);
 }
@@ -36,10 +36,10 @@ long type::getLongValue(
         JNIEnv *env,
         jobject object
 ) {
-    if (!env->IsInstanceOf(object, JavaClass::longClass)) {
+    if (!env->IsInstanceOf(object, ClassRegistry::longClass)) {
         throw std::runtime_error("The given object is not of type Long.");
     }
-    jmethodID method_id = env->GetMethodID(JavaClass::longClass, "longValue", "()J");
+    jmethodID method_id = env->GetMethodID(ClassRegistry::longClass, "longValue", "()J");
     jlong value = env->CallLongMethod(object, method_id);
     return static_cast<long>(value);
 }
@@ -48,10 +48,10 @@ float type::getFloatValue(
         JNIEnv *env,
         jobject object
 ) {
-    if (!env->IsInstanceOf(object, JavaClass::floatClass)) {
+    if (!env->IsInstanceOf(object, ClassRegistry::floatClass)) {
         throw std::runtime_error("The given object is not of type Float.");
     }
-    jmethodID method_id = env->GetMethodID(JavaClass::floatClass, "floatValue", "()F");
+    jmethodID method_id = env->GetMethodID(ClassRegistry::floatClass, "floatValue", "()F");
     jfloat value = env->CallFloatMethod(object, method_id);
     return static_cast<float>(value);
 }

@@ -4,15 +4,16 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import com.getkeepsafe.relinker.ReLinker
 import java.util.concurrent.CancellationException
 
 /**
  * The [WebPDecoder] class provides functionality for decoding WebP images.
  */
-class WebPDecoder {
+class WebPDecoder(private val context: Context) {
 
     init {
-        System.loadLibrary("webpcodec_jni")
+        ReLinker.loadLibrary(context, "webpcodec_jni")
     }
 
     private val nativePointer: Long
@@ -42,14 +43,14 @@ class WebPDecoder {
     private external fun nativeRelease()
 
     private fun notifyInfoDecoded(info: WebPInfo) {
-        decodeListeners.forEach {
-            it.onInfoDecoded(info)
+        decodeListeners.forEach { listener ->
+            listener.onInfoDecoded(info)
         }
     }
 
     private fun notifyFrameDecoded(index: Int, timestamp: Long, frame: Bitmap, uri: Uri) {
-        decodeListeners.forEach {
-            it.onFrameDecoded(index, timestamp, frame, uri)
+        decodeListeners.forEach { listener ->
+            listener.onFrameDecoded(index, timestamp, frame, uri)
         }
     }
 
@@ -89,27 +90,25 @@ class WebPDecoder {
     /**
      * Decodes all frames of a WebP image and optionally saves them to a destination [Uri].
      *
-     * @param context The Android [Context] object.
      * @param srcUri The [Uri] of the source WebP image.
      * @param dstUri The [Uri] of the destination directory to save the decoded frames (optional). This could be a file [Uri] or a tree [Uri] returned from [Intent.ACTION_OPEN_DOCUMENT_TREE].
      *
      * @throws [RuntimeException] If decoding error occurred.
      * @throws [CancellationException] If user cancelled the decoding process.
      */
-    fun decodeFrames(context: Context, srcUri: Uri, dstUri: Uri? = null) {
+    fun decodeFrames(srcUri: Uri, dstUri: Uri? = null) {
         nativeDecodeFrames(context, srcUri, dstUri)
     }
 
     /**
      * Decodes the image information of a WebP image.
      *
-     * @param context The Android [Context] object.
      * @param srcUri The [Uri] of the source WebP image.
      *
      * @return The [WebPInfo] object containing the decoded image information.
      * @throws [RuntimeException] If error occurred.
      */
-    fun decodeInfo(context: Context, srcUri: Uri): WebPInfo {
+    fun decodeInfo(srcUri: Uri): WebPInfo {
         return nativeDecodeInfo(context, srcUri)
     }
 

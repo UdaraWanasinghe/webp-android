@@ -17,18 +17,18 @@ jobject bmp::createBitmap(
         int height
 ) {
     jmethodID create_bitmap_method_id = env->GetStaticMethodID(
-            JavaClass::bitmapClass,
+            ClassRegistry::bitmapClass,
             "createBitmap",
             "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;"
     );
     jfieldID argb_8888_field = env->GetStaticFieldID(
-            JavaClass::bitmapConfigClass,
+            ClassRegistry::bitmapConfigClass,
             "ARGB_8888",
             "Landroid/graphics/Bitmap$Config;"
     );
-    jobject jconfig = env->GetStaticObjectField(JavaClass::bitmapConfigClass, argb_8888_field);
+    jobject jconfig = env->GetStaticObjectField(ClassRegistry::bitmapConfigClass, argb_8888_field);
     jobject jbitmap = env->CallStaticObjectMethod(
-            JavaClass::bitmapClass,
+            ClassRegistry::bitmapClass,
             create_bitmap_method_id,
             width,
             height,
@@ -44,12 +44,12 @@ jobject bmp::decodeBitmapUri(
         jobject juri
 ) {
     jmethodID decode_uri_method_id = env->GetStaticMethodID(
-            JavaClass::bitmapUtilsClass,
+            ClassRegistry::bitmapUtilsClass,
             "decodeUri",
             "(Landroid/content/Context;Landroid/net/Uri;)Landroid/graphics/Bitmap;"
     );
     jobject jbitmap = env->CallStaticObjectMethod(
-            JavaClass::bitmapUtilsClass,
+            ClassRegistry::bitmapUtilsClass,
             decode_uri_method_id,
             jcontext,
             juri
@@ -64,12 +64,12 @@ jobject bmp::resizeBitmap(
         int height
 ) {
     jmethodID scale_method_id = env->GetStaticMethodID(
-            JavaClass::bitmapClass,
+            ClassRegistry::bitmapClass,
             "createScaledBitmap",
             "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;"
     );
     jobject jresized_bitmap = env->CallStaticObjectMethod(
-            JavaClass::bitmapClass,
+            ClassRegistry::bitmapClass,
             scale_method_id,
             jbitmap,
             width,
@@ -113,7 +113,7 @@ jobject bmp::saveToDirectory(
         const std::string &file_name
 ) {
     jmethodID save_method_id = env->GetStaticMethodID(
-            JavaClass::bitmapUtilsClass,
+            ClassRegistry::bitmapUtilsClass,
             "saveInDirectory",
             "(Landroid/content/Context;Landroid/graphics/Bitmap;Landroid/net/Uri;Ljava/lang/String;Landroid/graphics/Bitmap$CompressFormat;I)Landroid/net/Uri;"
     );
@@ -121,7 +121,7 @@ jobject bmp::saveToDirectory(
     jstring jdisplay_name = env->NewStringUTF(file_name.c_str());
     jobject jcompress_format = bmp::parseBitmapCompressFormat(env, compress_format);
     jobject jbitmap_uri = env->CallStaticObjectMethod(
-            JavaClass::bitmapUtilsClass,
+            ClassRegistry::bitmapUtilsClass,
             save_method_id,
             jcontext,
             jbitmap,
@@ -141,35 +141,35 @@ jobject bmp::parseBitmapCompressFormat(JNIEnv *env, int compress_format_ordinal)
     switch (compress_format_ordinal) {
         case 0:
             compress_format_field_id = env->GetStaticFieldID(
-                    JavaClass::bitmapCompressFormatClass,
+                    ClassRegistry::bitmapCompressFormatClass,
                     "JPEG",
                     "Landroid/graphics/Bitmap$CompressFormat;"
             );
             break;
         case 1:
             compress_format_field_id = env->GetStaticFieldID(
-                    JavaClass::bitmapCompressFormatClass,
+                    ClassRegistry::bitmapCompressFormatClass,
                     "PNG",
                     "Landroid/graphics/Bitmap$CompressFormat;"
             );
             break;
         case 2:
             compress_format_field_id = env->GetStaticFieldID(
-                    JavaClass::bitmapCompressFormatClass,
+                    ClassRegistry::bitmapCompressFormatClass,
                     "WEBP",
                     "Landroid/graphics/Bitmap$CompressFormat;"
             );
             break;
         case 3:
             compress_format_field_id = env->GetStaticFieldID(
-                    JavaClass::bitmapCompressFormatClass,
+                    ClassRegistry::bitmapCompressFormatClass,
                     "WEBP_LOSSY",
                     "Landroid/graphics/Bitmap$CompressFormat;"
             );
             break;
         case 4:
             compress_format_field_id = env->GetStaticFieldID(
-                    JavaClass::bitmapCompressFormatClass,
+                    ClassRegistry::bitmapCompressFormatClass,
                     "WEBP_LOSSLESS",
                     "Landroid/graphics/Bitmap$CompressFormat;"
             );
@@ -179,7 +179,7 @@ jobject bmp::parseBitmapCompressFormat(JNIEnv *env, int compress_format_ordinal)
     }
 
     jobject jcompress_format = env->GetStaticObjectField(
-            JavaClass::bitmapCompressFormatClass,
+            ClassRegistry::bitmapCompressFormatClass,
             compress_format_field_id
     );
     return jcompress_format;
@@ -189,6 +189,6 @@ void bmp::recycleBitmap(
         JNIEnv *env,
         jobject jbitmap
 ) {
-    jmethodID recycle_method_id = env->GetMethodID(JavaClass::bitmapClass, "recycle", "()V");
+    jmethodID recycle_method_id = env->GetMethodID(ClassRegistry::bitmapClass, "recycle", "()V");
     env->CallVoidMethod(jbitmap, recycle_method_id);
 }

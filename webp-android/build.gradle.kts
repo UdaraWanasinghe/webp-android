@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.documentfile)
     implementation(libs.aureusapps.extensions)
+    implementation(libs.relinker)
 
     testImplementation(libs.junit)
 

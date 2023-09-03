@@ -29,7 +29,7 @@ namespace {
     DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig) {
         // image name name_prefix
         jfieldID prefix_field_id = env->GetFieldID(
-                JavaClass::decoderConfigClass,
+                ClassRegistry::decoderConfigClass,
                 "namePrefix",
                 "Ljava/lang/String;"
         );
@@ -40,7 +40,7 @@ namespace {
 
         // image name repeat character
         jfieldID name_repeat_character_field_id = env->GetFieldID(
-                JavaClass::decoderConfigClass,
+                ClassRegistry::decoderConfigClass,
                 "repeatCharacter",
                 "C"
         );
@@ -51,7 +51,7 @@ namespace {
 
         // image name character count
         jfieldID name_character_count_field_id = env->GetFieldID(
-                JavaClass::decoderConfigClass,
+                ClassRegistry::decoderConfigClass,
                 "repeatCharacterCount",
                 "I"
         );
@@ -59,13 +59,13 @@ namespace {
 
         // image compress format
         jfieldID compress_format_field_id = env->GetFieldID(
-                JavaClass::decoderConfigClass,
+                ClassRegistry::decoderConfigClass,
                 "compressFormat",
                 "Landroid/graphics/Bitmap$CompressFormat;"
         );
         auto jcompress_format = env->GetObjectField(jconfig, compress_format_field_id);
         jmethodID ordinal_method_id = env->GetMethodID(
-                JavaClass::bitmapCompressFormatClass,
+                ClassRegistry::bitmapCompressFormatClass,
                 "ordinal",
                 "()I"
         );
@@ -74,7 +74,7 @@ namespace {
 
         // image compress quality
         jfieldID compress_quality_field_id = env->GetFieldID(
-                JavaClass::decoderConfigClass,
+                ClassRegistry::decoderConfigClass,
                 "compressQuality",
                 "I"
         );
@@ -113,9 +113,9 @@ namespace {
 
     WebPDecoder *WebPDecoder::getInstance(JNIEnv *env, jobject jdecoder) {
         jlong native_pointer;
-        if (env->IsInstanceOf(jdecoder, JavaClass::decoderClass)) {
+        if (env->IsInstanceOf(jdecoder, ClassRegistry::decoderClass)) {
             jfieldID native_pointer_field_id = env->GetFieldID(
-                    JavaClass::decoderClass,
+                    ClassRegistry::decoderClass,
                     "nativePointer",
                     "J"
             );
@@ -135,12 +135,12 @@ namespace {
             const WebPBitstreamFeatures &features
     ) {
         jmethodID info_constructor_id = env->GetMethodID(
-                JavaClass::webPInfoClass,
+                ClassRegistry::webPInfoClass,
                 "<init>",
                 "(IIZZIII)V"
         );
         jobject jinfo = env->NewObject(
-                JavaClass::webPInfoClass,
+                ClassRegistry::webPInfoClass,
                 info_constructor_id,
                 features.width,
                 features.height,
@@ -162,12 +162,12 @@ namespace {
             int width = static_cast<int>(info.canvas_width);
             int height = static_cast<int>(info.canvas_height);
             jmethodID info_constructor_id = env->GetMethodID(
-                    JavaClass::webPInfoClass,
+                    ClassRegistry::webPInfoClass,
                     "<init>",
                     "(IIZZIII)V"
             );
             jinfo = env->NewObject(
-                    JavaClass::webPInfoClass,
+                    ClassRegistry::webPInfoClass,
                     info_constructor_id,
                     width,
                     height,
@@ -192,7 +192,7 @@ namespace {
 
         } else {
             jmethodID notify_method_id = env->GetMethodID(
-                    JavaClass::decoderClass,
+                    ClassRegistry::decoderClass,
                     "notifyInfoDecoded",
                     "(Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;)V"
             );
@@ -218,18 +218,18 @@ namespace {
         ResultCode result = bmp::copyPixels(env, pixels, jbitmap);
         if (result == RESULT_SUCCESS) {
             jmethodID notify_method_id = env->GetMethodID(
-                    JavaClass::decoderClass,
+                    ClassRegistry::decoderClass,
                     "notifyFrameDecoded",
                     "(IJLandroid/graphics/Bitmap;Landroid/net/Uri;)V"
             );
             jobject jbitmap_uri;
             if (type::isObjectNull(env, jdst_uri)) {
                 jfieldID empty_field_id = env->GetStaticFieldID(
-                        JavaClass::uriClass,
+                        ClassRegistry::uriClass,
                         "EMPTY",
                         "Landroid/net/Uri;"
                 );
-                jbitmap_uri = env->GetStaticObjectField(JavaClass::uriClass, empty_field_id);
+                jbitmap_uri = env->GetStaticObjectField(ClassRegistry::uriClass, empty_field_id);
             } else {
                 auto decoder_config = decoder->decoderConfig;
                 std::string image_name_suffix = parseImageNameSuffix(
@@ -442,7 +442,7 @@ namespace {
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeCreate(JNIEnv *env, jobject) {
-    JavaClass::initialize(env);
+    ClassRegistry::initialize(env);
     auto *decoder = new WebPDecoder();
     return reinterpret_cast<jlong>(decoder);
 }
@@ -554,12 +554,12 @@ Java_com_aureusapps_android_webpandroid_decoder_WebPDecoder_nativeRelease(
     if (decoder == nullptr) return;
 
     jfieldID native_pointer_field_id = env->GetFieldID(
-            JavaClass::decoderClass,
+            ClassRegistry::decoderClass,
             "nativePointer",
             "J"
     );
     env->SetLongField(thiz, native_pointer_field_id, static_cast<jlong>(0));
 
     delete decoder;
-    JavaClass::release(env);
+    ClassRegistry::release(env);
 }

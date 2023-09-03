@@ -6,7 +6,7 @@
 
 #include <jni.h>
 
-class JavaClass {
+class ClassRegistry {
 public:
     inline static jclass booleanClass = nullptr;
     inline static jclass integerClass = nullptr;

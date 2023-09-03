@@ -24,13 +24,13 @@ std::pair<int, jobject> files::openFileDescriptor(
         const char *mode
 ) {
     jmethodID get_content_resolver_method_id = env->GetMethodID(
-            JavaClass::contextClass,
+            ClassRegistry::contextClass,
             "getContentResolver",
             "()Landroid/content/ContentResolver;"
     );
     jobject jcontent_resolver = env->CallObjectMethod(jcontext, get_content_resolver_method_id);
     jmethodID open_file_descriptor_method_id = env->GetMethodID(
-            JavaClass::contentResolverClass,
+            ClassRegistry::contentResolverClass,
             "openFileDescriptor",
             "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
     );
@@ -50,7 +50,7 @@ std::pair<int, jobject> files::openFileDescriptor(
     }
     if (fd == 0) {
         jmethodID get_fd_method_id = env->GetMethodID(
-                JavaClass::parcelFileDescriptorClass,
+                ClassRegistry::parcelFileDescriptorClass,
                 "getFd",
                 "()I"
         );
@@ -63,7 +63,7 @@ std::pair<int, jobject> files::openFileDescriptor(
 
 void files::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
     jmethodID close_method_id = env->GetMethodID(
-            JavaClass::parcelFileDescriptorClass,
+            ClassRegistry::parcelFileDescriptorClass,
             "close",
             "()V"
     );
@@ -76,7 +76,7 @@ void files::closeFileDescriptorWithError(
         const std::string &error
 ) {
     jmethodID close_with_error_method_id = env->GetMethodID(
-            JavaClass::parcelFileDescriptorClass,
+            ClassRegistry::parcelFileDescriptorClass,
             "closeWithError",
             "(Ljava/lang/String;)V"
     );
@@ -95,12 +95,12 @@ std::pair<ResultCode, jobject> files::readFromUri(
     std::pair<ResultCode, jobject> ret;
 
     jmethodID read_bytes_method_id = env->GetStaticMethodID(
-            JavaClass::uriExtensionsClass,
+            ClassRegistry::uriExtensionsClass,
             "readToBuffer",
             "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
     );
     jobject jbyte_buffer = env->CallStaticObjectMethod(
-            JavaClass::uriExtensionsClass,
+            ClassRegistry::uriExtensionsClass,
             read_bytes_method_id,
             juri,
             jcontext
@@ -164,13 +164,13 @@ ResultCode files::fileExists(
         const std::string &file_name
 ) {
     jmethodID file_exists_method_id = env->GetStaticMethodID(
-            JavaClass::uriExtensionsClass,
+            ClassRegistry::uriExtensionsClass,
             "fileExists",
             "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
     );
     jstring jfile_name = env->NewStringUTF(file_name.c_str());
     jboolean jexists = env->CallStaticBooleanMethod(
-            JavaClass::uriExtensionsClass,
+            ClassRegistry::uriExtensionsClass,
             file_exists_method_id,
             jdirectory_uri,
             jcontext,

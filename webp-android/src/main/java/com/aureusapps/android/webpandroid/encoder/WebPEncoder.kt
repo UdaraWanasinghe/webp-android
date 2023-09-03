@@ -4,20 +4,20 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import com.getkeepsafe.relinker.ReLinker
 import java.util.concurrent.CancellationException
 
 /**
  * The [WebPEncoder] class provides functionality for encoding images to the WebP format.
  *
+ * @param context The Android context.
  * @param width The width of the image to be encoded. If negative, original bitmap width will be used.
  * @param height The height of the image to be encoded. If negative, original bitmap height will be used.
  */
-class WebPEncoder(width: Int = -1, height: Int = -1) {
+class WebPEncoder(private val context: Context, width: Int = -1, height: Int = -1) {
 
-    companion object {
-        init {
-            System.loadLibrary("webpcodec_jni")
-        }
+    init {
+        ReLinker.loadLibrary(context, "webpcodec_jni")
     }
 
     private val progressListeners = mutableSetOf<WebPEncoderProgressListener>()
@@ -107,7 +107,6 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
     /**
      * Encodes an image file from the given source [Uri] and saves the result to the specified destination [Uri].
      *
-     * @param context The Android context.
      * @param srcUri The source [Uri] of the image file to encode. This could be a content provider [Uri], file [Uri], Android resource [Uri] or a http [Uri].
      * @param dstUri The destination [Uri] to save the encoded image. This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
      *
@@ -117,7 +116,7 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
      * @throws [CancellationException] If encoding process cancelled.
      *
      */
-    fun encode(context: Context, srcUri: Uri, dstUri: Uri): WebPEncoder {
+    fun encode(srcUri: Uri, dstUri: Uri): WebPEncoder {
         nativeEncode1(context, srcUri, dstUri)
         return this
     }
@@ -125,7 +124,6 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
     /**
      * Encodes a [Bitmap] image and saves the result to the specified destination [Uri].
      *
-     * @param context The Android context.
      * @param srcBitmap The source [Bitmap] image to encode.
      * @param dstUri The destination [Uri] to save the encoded image. This could be a content provider [Uri] returned by [Intent.ACTION_CREATE_DOCUMENT] or a file [Uri].
      *
@@ -134,7 +132,7 @@ class WebPEncoder(width: Int = -1, height: Int = -1) {
      * @throws [RuntimeException] If encoding error occurred.
      * @throws [CancellationException] If encoding process cancelled.
      */
-    fun encode(context: Context, srcBitmap: Bitmap, dstUri: Uri): WebPEncoder {
+    fun encode(srcBitmap: Bitmap, dstUri: Uri): WebPEncoder {
         nativeEncode2(context, srcBitmap, dstUri)
         return this
     }

@@ -9,12 +9,12 @@
 
 WebPPreset encoder::parseWebPPreset(JNIEnv *env, jobject jpreset) {
     // check instance
-    if (!env->IsInstanceOf(jpreset, JavaClass::webPPresetClass)) {
+    if (!env->IsInstanceOf(jpreset, ClassRegistry::webPPresetClass)) {
         throw std::runtime_error("Given preset object is not of type WebPPreset");
     }
 
     // get ordinal
-    jfieldID ordinal_field_id = env->GetFieldID(JavaClass::webPPresetClass, "value", "I");
+    jfieldID ordinal_field_id = env->GetFieldID(ClassRegistry::webPPresetClass, "value", "I");
     jint ordinal = env->GetIntField(jpreset, ordinal_field_id);
 
     return WebPPreset(ordinal);
@@ -277,7 +277,7 @@ void encoder::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) 
 
 float encoder::parseWebPQuality(JNIEnv *env, jobject jconfig) {
     jfieldID quality_field_id = env->GetFieldID(
-            JavaClass::webPConfigClass,
+            ClassRegistry::webPConfigClass,
             "quality",
             "Ljava/lang/Float;"
     );

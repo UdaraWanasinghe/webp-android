@@ -4,24 +4,25 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import com.getkeepsafe.relinker.ReLinker
 
 /**
  * Constructs a WebP animation encoder with the specified width, height, and options.
  *
+ * @param context The Android context.
  * @param width The width of the animation frames in pixels. If negative, width of the first bitmap will be used.
  * @param height The height of the animation frames in pixels. If negative, height of the first bitmap will be used.
  * @param options The optional encoding options for the WebP animation. Default value is null.
  */
 class WebPAnimEncoder(
+    private val context: Context,
     width: Int = -1,
     height: Int = -1,
     options: WebPAnimEncoderOptions? = null
 ) {
 
-    companion object {
-        init {
-            System.loadLibrary("webpcodec_jni")
-        }
+    init {
+        ReLinker.loadLibrary(context, "webpcodec_jni")
     }
 
     private val nativePointer: Long
@@ -117,12 +118,11 @@ class WebPAnimEncoder(
     /**
      * Adds a frame to the WebP animation with the specified timestamp and source Uri.
      *
-     * @param context The Android context.
      * @param timestamp The timestamp of the frame.
      * @param srcUri The source Uri pointing to the image file to be added as a frame. This could be an Android content provider Uri, file Uri, Android resource Uri or a http Uri.
      * @return this animation encoder instance.
      */
-    fun addFrame(context: Context, timestamp: Long, srcUri: Uri): WebPAnimEncoder {
+    fun addFrame(timestamp: Long, srcUri: Uri): WebPAnimEncoder {
         nativeAddFrame1(context, timestamp, srcUri)
         return this
     }
@@ -142,12 +142,11 @@ class WebPAnimEncoder(
     /**
      * Assembles the WebP animation and saves it to the specified destination Uri.
      *
-     * @param context The Android context.
      * @param timestamp The end timestamp of the animation.
      * @param dstUri The destination Uri where the WebP animation will be saved. This could be a content provider Uri returned by [Intent.ACTION_CREATE_DOCUMENT] or a file Uri.
      * @return this animation encoder instance.
      */
-    fun assemble(context: Context, timestamp: Long, dstUri: Uri): WebPAnimEncoder {
+    fun assemble(timestamp: Long, dstUri: Uri): WebPAnimEncoder {
         nativeAssemble(context, timestamp, dstUri)
         return this
     }
