@@ -346,6 +346,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeCreate(
         jint jwidth,
         jint jheight
 ) {
+    JavaClass::initialize(env);
     env->GetJavaVM(&jvm);
     setProgressHookData(env, thiz);
     auto *encoder = new WebPEncoder(jwidth, jheight);
@@ -464,4 +465,5 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPEncoder_nativeRelease(
     encoder->release();
     delete encoder;
     jvm = nullptr;
+    JavaClass::release(env);
 }

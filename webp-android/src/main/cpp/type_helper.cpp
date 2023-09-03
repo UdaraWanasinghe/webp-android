@@ -6,18 +6,17 @@
 #include <iostream>
 
 #include "include/type_helper.h"
+#include "include/native_helper.h"
 
 int type::getIntegerValue(
         JNIEnv *env,
         jobject object
 ) {
-    jclass clazz = env->FindClass("java/lang/Integer");
-    if (!env->IsInstanceOf(object, clazz)) {
+    if (!env->IsInstanceOf(object, JavaClass::integerClass)) {
         throw std::runtime_error("The given object is not of type Integer.");
     }
-    jmethodID method_id = env->GetMethodID(clazz, "intValue", "()I");
+    jmethodID method_id = env->GetMethodID(JavaClass::integerClass, "intValue", "()I");
     jint value = env->CallIntMethod(object, method_id);
-    env->DeleteLocalRef(clazz);
     return static_cast<int>(value);
 }
 
@@ -25,13 +24,11 @@ bool type::getBooleanValue(
         JNIEnv *env,
         jobject object
 ) {
-    jclass clazz = env->FindClass("java/lang/Boolean");
-    if (!env->IsInstanceOf(object, clazz)) {
+    if (!env->IsInstanceOf(object, JavaClass::booleanClass)) {
         throw std::runtime_error("The given object is not of type Boolean.");
     }
-    jmethodID method_id = env->GetMethodID(clazz, "booleanValue", "()Z");
+    jmethodID method_id = env->GetMethodID(JavaClass::booleanClass, "booleanValue", "()Z");
     jboolean value = env->CallBooleanMethod(object, method_id);
-    env->DeleteLocalRef(clazz);
     return static_cast<bool>(value);
 }
 
@@ -39,13 +36,11 @@ long type::getLongValue(
         JNIEnv *env,
         jobject object
 ) {
-    jclass clazz = env->FindClass("java/lang/Long");
-    if (!env->IsInstanceOf(object, clazz)) {
+    if (!env->IsInstanceOf(object, JavaClass::longClass)) {
         throw std::runtime_error("The given object is not of type Long.");
     }
-    jmethodID method_id = env->GetMethodID(clazz, "longValue", "()J");
+    jmethodID method_id = env->GetMethodID(JavaClass::longClass, "longValue", "()J");
     jlong value = env->CallLongMethod(object, method_id);
-    env->DeleteLocalRef(clazz);
     return static_cast<long>(value);
 }
 
@@ -53,13 +48,11 @@ float type::getFloatValue(
         JNIEnv *env,
         jobject object
 ) {
-    jclass clazz = env->FindClass("java/lang/Float");
-    if (!env->IsInstanceOf(object, clazz)) {
+    if (!env->IsInstanceOf(object, JavaClass::floatClass)) {
         throw std::runtime_error("The given object is not of type Float.");
     }
-    jmethodID method_id = env->GetMethodID(clazz, "floatValue", "()F");
+    jmethodID method_id = env->GetMethodID(JavaClass::floatClass, "floatValue", "()F");
     jfloat value = env->CallFloatMethod(object, method_id);
-    env->DeleteLocalRef(clazz);
     return static_cast<float>(value);
 }
 

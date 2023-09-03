@@ -5,22 +5,17 @@
 #include "include/encoder_helper.h"
 #include "include/exception_helper.h"
 #include "include/type_helper.h"
+#include "include/native_helper.h"
 
 WebPPreset encoder::parseWebPPreset(JNIEnv *env, jobject jpreset) {
-    // get preset class
-    jclass preset_class = env->FindClass("com/aureusapps/android/webpandroid/encoder/WebPPreset");
-
     // check instance
-    if (!env->IsInstanceOf(jpreset, preset_class)) {
+    if (!env->IsInstanceOf(jpreset, JavaClass::webPPresetClass)) {
         throw std::runtime_error("Given preset object is not of type WebPPreset");
     }
 
     // get ordinal
-    jfieldID ordinal_field_id = env->GetFieldID(preset_class, "value", "I");
+    jfieldID ordinal_field_id = env->GetFieldID(JavaClass::webPPresetClass, "value", "I");
     jint ordinal = env->GetIntField(jpreset, ordinal_field_id);
-
-    // Delete local ref
-    env->DeleteLocalRef(preset_class);
 
     return WebPPreset(ordinal);
 }
@@ -281,8 +276,11 @@ void encoder::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) 
 }
 
 float encoder::parseWebPQuality(JNIEnv *env, jobject jconfig) {
-    jclass config_class = env->GetObjectClass(jconfig);
-    jfieldID quality_field_id = env->GetFieldID(config_class, "quality", "Ljava/lang/Float;");
+    jfieldID quality_field_id = env->GetFieldID(
+            JavaClass::webPConfigClass,
+            "quality",
+            "Ljava/lang/Float;"
+    );
     jobject quality_field = env->GetObjectField(jconfig, quality_field_id);
     float quality;
     if (type::isObjectNull(env, quality_field)) {
@@ -291,7 +289,6 @@ float encoder::parseWebPQuality(JNIEnv *env, jobject jconfig) {
         quality = type::getFloatValue(env, quality_field);
         env->DeleteLocalRef(quality_field);
     }
-    env->DeleteLocalRef(config_class);
     return quality;
 }
 

@@ -13,6 +13,7 @@
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
 #include "include/result_codes.h"
+#include "include/native_helper.h"
 
 namespace {
 
@@ -149,12 +150,9 @@ namespace {
         delete progressHookData;
         bool result = RESULT_SUCCESS;
 
-        jclass encoder_class = env->FindClass(
-                "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder"
-        );
-        if (env->IsInstanceOf(jencoder, encoder_class)) {
+        if (env->IsInstanceOf(jencoder, JavaClass::animEncoderClass)) {
             jmethodID progress_method_id = env->GetMethodID(
-                    encoder_class,
+                    JavaClass::animEncoderClass,
                     "notifyProgressChanged",
                     "(II)Z"
             );
@@ -166,7 +164,6 @@ namespace {
         } else {
             result = ERROR_INVALID_ENCODER;
         }
-        env->DeleteLocalRef(encoder_class);
         return result;
     }
 
@@ -273,17 +270,18 @@ namespace {
     }
 
     WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
-        jclass encoder_class = env->FindClass(
-                "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder"
-        );
+
         jlong native_pointer;
-        if (env->IsInstanceOf(jencoder, encoder_class)) {
-            jfieldID pointer_field_id = env->GetFieldID(encoder_class, "nativePointer", "J");
+        if (env->IsInstanceOf(jencoder, JavaClass::animEncoderClass)) {
+            jfieldID pointer_field_id = env->GetFieldID(
+                    JavaClass::animEncoderClass,
+                    "nativePointer",
+                    "J"
+            );
             native_pointer = env->GetLongField(jencoder, pointer_field_id);
         } else {
             native_pointer = 0;
         }
-        env->DeleteLocalRef(encoder_class);
         return reinterpret_cast<WebPAnimationEncoder *>(native_pointer);
     }
 
@@ -365,6 +363,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeCreate(
         jint jheight,
         jobject joptions
 ) {
+    JavaClass::initialize(env);
     env->GetJavaVM(&jvm);
     setProgressHookData(env, thiz);
 
@@ -520,14 +519,13 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeRelease(
     auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
 
-    jclass encoder_class = env->GetObjectClass(thiz);
-    jfieldID pointer_field_id = env->GetFieldID(encoder_class, "nativePointer", "J");
+    jfieldID pointer_field_id = env->GetFieldID(JavaClass::animEncoderClass, "nativePointer", "J");
     env->SetLongField(thiz, pointer_field_id, (jlong) 0);
 
     // Release resources
-    env->DeleteLocalRef(encoder_class);
     clearProgressHookData(env);
     encoder->release();
     delete encoder;
     jvm = nullptr;
+    JavaClass::release(env);
 }

@@ -15,6 +15,7 @@
 #include "include/string_formatter.h"
 #include "include/result_codes.h"
 #include "include/type_helper.h"
+#include "include/native_helper.h"
 
 std::pair<int, jobject> files::openFileDescriptor(
         JNIEnv *env,
@@ -22,16 +23,14 @@ std::pair<int, jobject> files::openFileDescriptor(
         jobject juri,
         const char *mode
 ) {
-    jclass context_class = env->FindClass("android/content/Context");
-    jclass content_resolver_class = env->FindClass("android/content/ContentResolver");
     jmethodID get_content_resolver_method_id = env->GetMethodID(
-            context_class,
+            JavaClass::contextClass,
             "getContentResolver",
             "()Landroid/content/ContentResolver;"
     );
     jobject jcontent_resolver = env->CallObjectMethod(jcontext, get_content_resolver_method_id);
     jmethodID open_file_descriptor_method_id = env->GetMethodID(
-            content_resolver_class,
+            JavaClass::contentResolverClass,
             "openFileDescriptor",
             "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
     );
@@ -50,23 +49,25 @@ std::pair<int, jobject> files::openFileDescriptor(
         fd = -1;
     }
     if (fd == 0) {
-        jclass fd_class = env->FindClass("android/os/ParcelFileDescriptor");
-        jmethodID get_fd_method_id = env->GetMethodID(fd_class, "getFd", "()I");
+        jmethodID get_fd_method_id = env->GetMethodID(
+                JavaClass::parcelFileDescriptorClass,
+                "getFd",
+                "()I"
+        );
         fd = env->CallIntMethod(jparcel_fd, get_fd_method_id);
-        env->DeleteLocalRef(fd_class);
     }
-    env->DeleteLocalRef(context_class);
-    env->DeleteLocalRef(content_resolver_class);
     env->DeleteLocalRef(jcontent_resolver);
     env->DeleteLocalRef(jread_mode);
     return std::make_pair(fd, jparcel_fd);
 }
 
 void files::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
-    jclass parcel_file_descriptor_class = env->FindClass("android/os/ParcelFileDescriptor");
-    jmethodID close_method_id = env->GetMethodID(parcel_file_descriptor_class, "close", "()V");
+    jmethodID close_method_id = env->GetMethodID(
+            JavaClass::parcelFileDescriptorClass,
+            "close",
+            "()V"
+    );
     env->CallVoidMethod(jparcel_fd, close_method_id);
-    env->DeleteLocalRef(parcel_file_descriptor_class);
 }
 
 void files::closeFileDescriptorWithError(
@@ -74,15 +75,13 @@ void files::closeFileDescriptorWithError(
         jobject jparcel_fd,
         const std::string &error
 ) {
-    jclass parcel_file_descriptor_class = env->FindClass("android/os/ParcelFileDescriptor");
     jmethodID close_with_error_method_id = env->GetMethodID(
-            parcel_file_descriptor_class,
+            JavaClass::parcelFileDescriptorClass,
             "closeWithError",
             "(Ljava/lang/String;)V"
     );
     jstring jerror = env->NewStringUTF(error.c_str());
     env->CallVoidMethod(jparcel_fd, close_with_error_method_id, jerror);
-    env->DeleteLocalRef(parcel_file_descriptor_class);
     env->DeleteLocalRef(jerror);
 }
 
@@ -95,16 +94,13 @@ std::pair<ResultCode, jobject> files::readFromUri(
 ) {
     std::pair<ResultCode, jobject> ret;
 
-    jclass uri_extensions_class = env->FindClass(
-            "com/aureusapps/android/extensions/UriExtensionsKt"
-    );
     jmethodID read_bytes_method_id = env->GetStaticMethodID(
-            uri_extensions_class,
+            JavaClass::uriExtensionsClass,
             "readToBuffer",
             "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
     );
     jobject jbyte_buffer = env->CallStaticObjectMethod(
-            uri_extensions_class,
+            JavaClass::uriExtensionsClass,
             read_bytes_method_id,
             juri,
             jcontext
@@ -116,7 +112,6 @@ std::pair<ResultCode, jobject> files::readFromUri(
         *file_size = env->GetDirectBufferCapacity(jbyte_buffer);
         ret = std::pair(RESULT_SUCCESS, jbyte_buffer);
     }
-    env->DeleteLocalRef(uri_extensions_class);
 
     return ret;
 }
@@ -168,17 +163,14 @@ ResultCode files::fileExists(
         jobject jdirectory_uri,
         const std::string &file_name
 ) {
-    jclass uri_extensions_class = env->FindClass(
-            "com/aureusapps/android/extensions/UriExtensionsKt"
-    );
     jmethodID file_exists_method_id = env->GetStaticMethodID(
-            uri_extensions_class,
+            JavaClass::uriExtensionsClass,
             "fileExists",
             "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
     );
     jstring jfile_name = env->NewStringUTF(file_name.c_str());
     jboolean jexists = env->CallStaticBooleanMethod(
-            uri_extensions_class,
+            JavaClass::uriExtensionsClass,
             file_exists_method_id,
             jdirectory_uri,
             jcontext,
@@ -190,7 +182,6 @@ ResultCode files::fileExists(
     } else {
         result = RESULT_FILE_NOT_FOUND;
     }
-    env->DeleteLocalRef(uri_extensions_class);
     env->DeleteLocalRef(jfile_name);
     return result;
 }

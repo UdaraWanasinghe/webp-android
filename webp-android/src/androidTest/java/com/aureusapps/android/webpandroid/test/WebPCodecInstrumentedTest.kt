@@ -255,7 +255,7 @@ class WebPCodecInstrumentedTest {
                     index: Int,
                     timestamp: Long,
                     bitmap: Bitmap,
-                    uri: Uri?
+                    uri: Uri
                 ) {
                     frameCount++
                     frameUri = uri
@@ -375,9 +375,9 @@ class WebPCodecInstrumentedTest {
                         index: Int,
                         timestamp: Long,
                         bitmap: Bitmap,
-                        uri: Uri?
+                        uri: Uri
                     ) {
-                        if (uri != null) {
+                        if (uri != Uri.EMPTY) {
                             imageFrames.add(
                                 timestamp to uri
                             )
