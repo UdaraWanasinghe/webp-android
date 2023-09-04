@@ -9,125 +9,160 @@
 #include "include/webp_anim_encoder.h"
 #include "include/webp_decoder.h"
 
+namespace {
+    jclass getClass(JNIEnv *env, const char *name) {
+        jclass clazz = env->FindClass(name);
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+        return static_cast<jclass>(env->NewGlobalRef(clazz));
+    }
+
+    jfieldID getFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
+        jfieldID fieldID = env->GetFieldID(clazz, name, sig);
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+        return fieldID;
+    }
+
+    jfieldID getStaticFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
+        jfieldID fieldID = env->GetStaticFieldID(clazz, name, sig);
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+        return fieldID;
+    }
+
+    jmethodID getMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
+        jmethodID methodID = env->GetMethodID(clazz, name, sig);
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+        return methodID;
+    }
+
+    jmethodID getStaticMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
+        jmethodID methodID = env->GetStaticMethodID(clazz, name, sig);
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+        return methodID;
+    }
+}
+
 void ClassRegistry::initialize(JNIEnv *env) {
     // classes
-    booleanClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/Boolean")));
-    integerClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/Integer")));
-    floatClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/Float")));
-    encoderClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/webpandroid/encoder/WebPEncoder")));
-    animEncoderClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder")));
-    decoderClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/webpandroid/decoder/WebPDecoder")));
-    webPConfigClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/webpandroid/encoder/WebPConfig")));
-    decoderConfigClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/webpandroid/decoder/DecoderConfig")));
-    webPPresetClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/webpandroid/encoder/WebPPreset")));
-    webPInfoClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/webpandroid/decoder/WebPInfo")));
-    bitmapClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("android/graphics/Bitmap")));
-    bitmapConfigClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("android/graphics/Bitmap$Config")));
-    bitmapUtilsClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/extensions/BitmapUtils")));
-    bitmapCompressFormatClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("android/graphics/Bitmap$CompressFormat")));
-    runtimeExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/RuntimeException")));
-    cancellationExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/util/concurrent/CancellationException")));
-    parcelFileDescriptorClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("android/os/ParcelFileDescriptor")));
-    uriClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("android/net/Uri")));
-    uriExtensionsClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("com/aureusapps/android/extensions/UriExtensionsKt")));
-    contextClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("android/content/Context")));
-    contentResolverClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("android/content/ContentResolver")));
+    booleanClass = getClass(env, "java/lang/Boolean");
+    integerClass = getClass(env, "java/lang/Integer");
+    floatClass = getClass(env, "java/lang/Float");
+    encoderClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPEncoder");
+    animEncoderClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder");
+    decoderClass = getClass(env, "com/aureusapps/android/webpandroid/decoder/WebPDecoder");
+    webPConfigClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPConfig");
+    decoderConfigClass = getClass(env, "com/aureusapps/android/webpandroid/decoder/DecoderConfig");
+    webPPresetClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPPreset");
+    webPInfoClass = getClass(env, "com/aureusapps/android/webpandroid/decoder/WebPInfo");
+    bitmapClass = getClass(env, "android/graphics/Bitmap");
+    bitmapConfigClass = getClass(env, "android/graphics/Bitmap$Config");
+    bitmapUtilsClass = getClass(env, "com/aureusapps/android/extensions/BitmapUtils");
+    bitmapCompressFormatClass = getClass(env, "android/graphics/Bitmap$CompressFormat");
+    runtimeExceptionClass = getClass(env, "java/lang/RuntimeException");
+    cancellationExceptionClass = getClass(env, "java/util/concurrent/CancellationException");
+    parcelFileDescriptorClass = getClass(env, "android/os/ParcelFileDescriptor");
+    uriClass = getClass(env, "android/net/Uri");
+    uriExtensionsClass = getClass(env, "com/aureusapps/android/extensions/UriExtensionsKt");
+    contextClass = getClass(env, "android/content/Context");
+    contentResolverClass = getClass(env, "android/content/ContentResolver");
 
     // fields
-    encoderPointerFieldID = env->GetFieldID(encoderClass, "nativePointer", "J");
-    animEncoderPointerFieldID = env->GetFieldID(animEncoderClass, "nativePointer", "J");
-    decoderPointerFieldID = env->GetFieldID(decoderClass, "nativePointer", "J");
-    uriEmptyFieldID = env->GetStaticFieldID(uriClass, "EMPTY", "Landroid/net/Uri;");
-    bitmapConfigARGB8888FieldID = env->GetStaticFieldID(
+    encoderPointerFieldID = getFieldID(env, encoderClass, "nativePointer", "J");
+    animEncoderPointerFieldID = getFieldID(env, animEncoderClass, "nativePointer", "J");
+    decoderPointerFieldID = getFieldID(env, decoderClass, "nativePointer", "J");
+    uriEmptyFieldID = getStaticFieldID(env, uriClass, "EMPTY", "Landroid/net/Uri;");
+    bitmapConfigARGB8888FieldID = getStaticFieldID(
+            env,
             bitmapConfigClass,
             "ARGB_8888",
             "Landroid/graphics/Bitmap$Config;"
     );
-    compressFormatJPEGFieldID = env->GetStaticFieldID(
+    compressFormatJPEGFieldID = getStaticFieldID(
+            env,
             bitmapCompressFormatClass,
             "JPEG",
             "Landroid/graphics/Bitmap$CompressFormat;"
     );
-    compressFormatPNGFieldID = env->GetStaticFieldID(
+    compressFormatPNGFieldID = getStaticFieldID(
+            env,
             bitmapCompressFormatClass,
             "PNG",
             "Landroid/graphics/Bitmap$CompressFormat;"
     );
-    compressFormatWEBPFieldID = env->GetStaticFieldID(
+    compressFormatWEBPFieldID = getStaticFieldID(
+            env,
             bitmapCompressFormatClass,
             "WEBP",
             "Landroid/graphics/Bitmap$CompressFormat;"
     );
-    compressFormatWEBPLossyFieldID = env->GetStaticFieldID(
+    compressFormatWEBPLossyFieldID = getStaticFieldID(
+            env,
             bitmapCompressFormatClass,
             "WEBP_LOSSY",
             "Landroid/graphics/Bitmap$CompressFormat;"
     );
-    compressFormatWEBPLosslessFieldID = env->GetStaticFieldID(
+    compressFormatWEBPLosslessFieldID = getStaticFieldID(
+            env,
             bitmapCompressFormatClass,
             "WEBP_LOSSLESS",
             "Landroid/graphics/Bitmap$CompressFormat;"
     );
 
     // methods
-    encoderNotifyProgressMethodID = env->GetMethodID(
+    encoderNotifyProgressMethodID = getMethodID(
+            env,
             encoderClass,
             "notifyProgressChanged",
             "(I)Z"
     );
-    animEncoderNotifyProgressMethodID = env->GetMethodID(
+    animEncoderNotifyProgressMethodID = getMethodID(
+            env,
             animEncoderClass,
             "notifyProgressChanged",
             "(II)Z"
     );
-    webPInfoConstructorID = env->GetMethodID(webPInfoClass, "<init>", "(IIZZIII)V");
-    decoderNotifyInfoDecodedMethodID = env->GetMethodID(
+    webPInfoConstructorID = getMethodID(env, webPInfoClass, "<init>", "(IIZZIII)V");
+    decoderNotifyInfoDecodedMethodID = getMethodID(
+            env,
             decoderClass,
             "notifyInfoDecoded",
             "(Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;)V"
     );
-    decoderNotifyFrameDecodedMethodID = env->GetMethodID(
+    decoderNotifyFrameDecodedMethodID = getMethodID(
+            env,
             decoderClass,
             "notifyFrameDecoded",
             "(IJLandroid/graphics/Bitmap;Landroid/net/Uri;)V"
     );
-    bitmapCreateMethodID = env->GetStaticMethodID(
+    bitmapCreateMethodID = getStaticMethodID(
+            env,
             bitmapClass,
             "createBitmap",
             "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;"
     );
-    bitmapCreateScaledMethodID = env->GetStaticMethodID(
+    bitmapCreateScaledMethodID = getStaticMethodID(
+            env,
             bitmapClass,
             "createScaledBitmap",
             "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;"
     );
-    bitmapUtilsSaveInDirectoryMethodID = env->GetStaticMethodID(
+    bitmapUtilsSaveInDirectoryMethodID = getStaticMethodID(
+            env,
             bitmapUtilsClass,
             "saveInDirectory",
             "(Landroid/content/Context;Landroid/graphics/Bitmap;Landroid/net/Uri;Ljava/lang/String;Landroid/graphics/Bitmap$CompressFormat;I)Landroid/net/Uri;"
     );
-    bitmapRecycleMethodID = env->GetMethodID(
+    bitmapRecycleMethodID = getMethodID(
+            env,
             bitmapClass,
             "recycle",
             "()V"
