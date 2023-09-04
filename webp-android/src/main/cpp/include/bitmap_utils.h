@@ -1,13 +1,15 @@
 //
 // Created by udara on 6/8/23.
 //
+
 #pragma once
 
+#include <string>
 #include <jni.h>
+
 #include "result_codes.h"
 
 namespace bmp {
-
     /**
      * Creates a new bitmap object with the given width and height.
      *
@@ -94,5 +96,4 @@ namespace bmp {
             JNIEnv *env,
             jobject jbitmap
     );
-
 }

@@ -5,13 +5,10 @@
 #pragma once
 
 #include <jni.h>
-#include <stdlib.h>
-#include <string>
 #include <webp/encode.h>
 #include <webp/mux.h>
 
 namespace encoder {
-
     /**
      * Parses the WebPPreset enum value from a Java preset enum.
      *
@@ -74,5 +71,4 @@ namespace encoder {
             const uint8_t *src,
             WebPPicture *pic
     );
-
 }

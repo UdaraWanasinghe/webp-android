@@ -16,6 +16,12 @@
 #include "include/result_codes.h"
 #include "include/native_loader.h"
 
+namespace {
+    struct UserData {
+        int frameIndex = -1;
+    };
+}
+
 WebPAnimationEncoder::WebPAnimationEncoder(int width, int height, WebPAnimEncoderOptions options) {
     this->imageWidth = width;
     this->imageHeight = height;
@@ -41,7 +47,9 @@ ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height
         return ERROR_MEMORY_ERROR;
     }
     encoder::copyPixels(pixels, &pic);
-    pic.user_data = reinterpret_cast<void *>(frameCount++);
+    UserData user_data = UserData{};
+    user_data.frameIndex = frameCount++;
+    pic.user_data = reinterpret_cast<void *>(&user_data);
     pic.progress_hook = &notifyProgressChanged;
 
     ResultCode result;
@@ -125,7 +133,8 @@ int WebPAnimationEncoder::notifyProgressChanged(int percent, const WebPPicture *
         default:
             return 0;
     }
-    int frame_index = reinterpret_cast<int>(picture->user_data);
+    UserData *frame_data = reinterpret_cast<UserData *>(picture->user_data);
+    int frame_index = frame_data->frameIndex;
     jboolean continue_encoding = env->CallBooleanMethod(
             progressObserver,
             ClassRegistry::animEncoderNotifyProgressMethodID,

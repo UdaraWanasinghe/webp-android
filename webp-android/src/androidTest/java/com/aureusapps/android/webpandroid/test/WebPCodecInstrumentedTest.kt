@@ -189,7 +189,9 @@ class WebPCodecInstrumentedTest {
                 preset = WebPPreset.WEBP_PRESET_DEFAULT
             )
             var listenerTriggered = false
-            encoder.addProgressListener { _, _ ->
+            val frameIndexSet = mutableSetOf<Int>()
+            encoder.addProgressListener { currentFrame, _ ->
+                frameIndexSet.add(currentFrame)
                 listenerTriggered = true
                 true
             }
@@ -198,6 +200,7 @@ class WebPCodecInstrumentedTest {
                 encoder.addFrame(frameTimestamp, file.toUri())
                 frameTimestamp += frameDurations[index]
             }
+            assertEquals(inputFiles.indices.toSet(), frameIndexSet)
             encoder.assemble(frameTimestamp, outputFile.toUri())
             encoder.release()
             assertTrue("Did not trigger the progress listener", listenerTriggered)
