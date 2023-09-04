@@ -37,20 +37,6 @@ namespace type {
     bool getBooleanValue(JNIEnv *env, jobject object);
 
     /**
-     * @brief Retrieves the long value from a Java object.
-     *
-     * This function extracts the long value from a Java object of type Long and returns it as a long.
-     *
-     * @param env A pointer to the JNI environment.
-     * @param object The Java object from which to retrieve the long value.
-     *
-     * @return The long value extracted from the Java object.
-     *
-     * @throws std::runtime_error if the given object is not of type Long.
-     */
-    long getLongValue(JNIEnv *env, jobject object);
-
-    /**
      * @brief Retrieves the float value from a Java object.
      *
      * This function extracts the float value from a Java object of type Float and returns it as a float.
@@ -94,17 +80,4 @@ namespace type {
      * @return true if the Java object is null, false otherwise.
      */
     bool isObjectNull(JNIEnv *env, jobject obj);
-
-    /**
-     * @brief Converts a jstring to a C++ string.
-     *
-     * This function converts a jstring (Java string) to a C++ string.
-     *
-     * @param env A pointer to the JNI environment.
-     * @param jstr The jstring to convert.
-     *
-     * @return A C++ string representation of the input jstring.
-     */
-    std::string jstringToString(JNIEnv *env, jstring jstr);
-
 }

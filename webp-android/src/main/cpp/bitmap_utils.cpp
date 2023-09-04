@@ -31,20 +31,6 @@ jobject bmp::createBitmap(
     return jbitmap;
 }
 
-jobject bmp::decodeBitmapUri(
-        JNIEnv *env,
-        jobject jcontext,
-        jobject juri
-) {
-    jobject jbitmap = env->CallStaticObjectMethod(
-            ClassRegistry::bitmapUtilsClass,
-            ClassRegistry::bitmapUtilsDecodeUriMethodId,
-            jcontext,
-            juri
-    );
-    return jbitmap;
-}
-
 jobject bmp::resizeBitmap(
         JNIEnv *env,
         jobject jbitmap,

@@ -17,8 +17,6 @@ void ClassRegistry::initialize(JNIEnv *env) {
             env->FindClass("java/lang/Integer")));
     floatClass = static_cast<jclass>(env->NewGlobalRef(
             env->FindClass("java/lang/Float")));
-    longClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/Long")));
     encoderClass = static_cast<jclass>(env->NewGlobalRef(
             env->FindClass("com/aureusapps/android/webpandroid/encoder/WebPEncoder")));
     animEncoderClass = static_cast<jclass>(env->NewGlobalRef(
@@ -41,28 +39,6 @@ void ClassRegistry::initialize(JNIEnv *env) {
             env->FindClass("com/aureusapps/android/extensions/BitmapUtils")));
     bitmapCompressFormatClass = static_cast<jclass>(env->NewGlobalRef(
             env->FindClass("android/graphics/Bitmap$CompressFormat")));
-    throwableClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/Throwable")));
-    nullPointerExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/NullPointerException")));
-    illegalArgumentExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/IllegalArgumentException")));
-    arrayIndexOutOfBoundsExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/ArrayIndexOutOfBoundsException")));
-    ioExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/io/IOException")));
-    fileNotFoundExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/io/FileNotFoundException")));
-    arithmeticExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/ArithmeticException")));
-    unsupportedOperationExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/UnsupportedOperationException")));
-    illegalStateExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/IllegalStateException")));
-    noSuchElementExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/util/NoSuchElementException")));
-    numberFormatExceptionClass = static_cast<jclass>(env->NewGlobalRef(
-            env->FindClass("java/lang/NumberFormatException")));
     runtimeExceptionClass = static_cast<jclass>(env->NewGlobalRef(
             env->FindClass("java/lang/RuntimeException")));
     cancellationExceptionClass = static_cast<jclass>(env->NewGlobalRef(
@@ -141,11 +117,6 @@ void ClassRegistry::initialize(JNIEnv *env) {
             "createBitmap",
             "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;"
     );
-    bitmapUtilsDecodeUriMethodId = env->GetStaticMethodID(
-            bitmapUtilsClass,
-            "decodeUri",
-            "(Landroid/content/Context;Landroid/net/Uri;)Landroid/graphics/Bitmap;"
-    );
     bitmapCreateScaledMethodID = env->GetStaticMethodID(
             bitmapClass,
             "createScaledBitmap",
@@ -167,7 +138,6 @@ void ClassRegistry::release(JNIEnv *env) {
     env->DeleteGlobalRef(booleanClass);
     env->DeleteGlobalRef(integerClass);
     env->DeleteGlobalRef(floatClass);
-    env->DeleteGlobalRef(longClass);
     env->DeleteGlobalRef(encoderClass);
     env->DeleteGlobalRef(animEncoderClass);
     env->DeleteGlobalRef(webPConfigClass);
@@ -179,17 +149,6 @@ void ClassRegistry::release(JNIEnv *env) {
     env->DeleteGlobalRef(bitmapUtilsClass);
     env->DeleteGlobalRef(bitmapCompressFormatClass);
     env->DeleteGlobalRef(webPPresetClass);
-    env->DeleteGlobalRef(throwableClass);
-    env->DeleteGlobalRef(nullPointerExceptionClass);
-    env->DeleteGlobalRef(illegalArgumentExceptionClass);
-    env->DeleteGlobalRef(arrayIndexOutOfBoundsExceptionClass);
-    env->DeleteGlobalRef(ioExceptionClass);
-    env->DeleteGlobalRef(fileNotFoundExceptionClass);
-    env->DeleteGlobalRef(arithmeticExceptionClass);
-    env->DeleteGlobalRef(unsupportedOperationExceptionClass);
-    env->DeleteGlobalRef(illegalStateExceptionClass);
-    env->DeleteGlobalRef(noSuchElementExceptionClass);
-    env->DeleteGlobalRef(numberFormatExceptionClass);
     env->DeleteGlobalRef(runtimeExceptionClass);
     env->DeleteGlobalRef(cancellationExceptionClass);
     env->DeleteGlobalRef(parcelFileDescriptorClass);

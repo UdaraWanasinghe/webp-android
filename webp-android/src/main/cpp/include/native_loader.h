@@ -11,7 +11,6 @@ public:
     inline static jclass booleanClass = nullptr;
     inline static jclass integerClass = nullptr;
     inline static jclass floatClass = nullptr;
-    inline static jclass longClass = nullptr;
     inline static jclass encoderClass = nullptr;
     inline static jclass animEncoderClass = nullptr;
     inline static jclass webPConfigClass = nullptr;
@@ -23,17 +22,6 @@ public:
     inline static jclass bitmapUtilsClass = nullptr;
     inline static jclass bitmapCompressFormatClass = nullptr;
     inline static jclass webPPresetClass = nullptr;
-    inline static jclass throwableClass = nullptr;
-    inline static jclass nullPointerExceptionClass = nullptr;
-    inline static jclass illegalArgumentExceptionClass = nullptr;
-    inline static jclass arrayIndexOutOfBoundsExceptionClass = nullptr;
-    inline static jclass ioExceptionClass = nullptr;
-    inline static jclass fileNotFoundExceptionClass = nullptr;
-    inline static jclass arithmeticExceptionClass = nullptr;
-    inline static jclass unsupportedOperationExceptionClass = nullptr;
-    inline static jclass illegalStateExceptionClass = nullptr;
-    inline static jclass noSuchElementExceptionClass = nullptr;
-    inline static jclass numberFormatExceptionClass = nullptr;
     inline static jclass runtimeExceptionClass = nullptr;
     inline static jclass cancellationExceptionClass = nullptr;
     inline static jclass parcelFileDescriptorClass = nullptr;
@@ -59,7 +47,6 @@ public:
     inline static jmethodID decoderNotifyInfoDecodedMethodID = nullptr;
     inline static jmethodID decoderNotifyFrameDecodedMethodID = nullptr;
     inline static jmethodID bitmapCreateMethodID = nullptr;
-    inline static jmethodID bitmapUtilsDecodeUriMethodId = nullptr;
     inline static jmethodID bitmapCreateScaledMethodID = nullptr;
     inline static jmethodID bitmapUtilsSaveInDirectoryMethodID = nullptr;
     inline static jmethodID bitmapRecycleMethodID = nullptr;

@@ -32,18 +32,6 @@ bool type::getBooleanValue(
     return static_cast<bool>(value);
 }
 
-long type::getLongValue(
-        JNIEnv *env,
-        jobject object
-) {
-    if (!env->IsInstanceOf(object, ClassRegistry::longClass)) {
-        throw std::runtime_error("The given object is not of type Long.");
-    }
-    jmethodID method_id = env->GetMethodID(ClassRegistry::longClass, "longValue", "()J");
-    jlong value = env->CallLongMethod(object, method_id);
-    return static_cast<long>(value);
-}
-
 float type::getFloatValue(
         JNIEnv *env,
         jobject object
@@ -77,11 +65,4 @@ bool type::isObjectNull(JNIEnv *env, jobject obj) {
     // Check if the object is the null reference
     jboolean isNull = env->IsSameObject(obj, nullptr);
     return static_cast<bool>(isNull);
-}
-
-std::string type::jstringToString(JNIEnv *env, jstring jstr) {
-    const char *chars = env->GetStringUTFChars(jstr, nullptr);
-    std::string str(chars);
-    env->ReleaseStringUTFChars(jstr, chars);
-    return str;
 }

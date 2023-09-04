@@ -24,22 +24,6 @@ namespace bmp {
     );
 
     /**
-     * Decode bitmap from the given Android Uri.
-     * The Uri could be a content provider Uri, file Uri, android resource Uri or a http Uri.
-     *
-     * @param env Pointer to the JNI environment.
-     * @param jcontext The Android context.
-     * @param juri The Android bitmap Uri to decode.
-     *
-     * @return Android bitmap or null if failed to decode.
-     */
-    jobject decodeBitmapUri(
-            JNIEnv *env,
-            jobject jcontext,
-            jobject juri
-    );
-
-    /**
      * Resizes an existing bitmap object.
      *
      * @param env Pointer to the JNI environment.
