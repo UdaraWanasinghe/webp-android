@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import com.aureusapps.android.extensions.BitmapUtils
 import com.getkeepsafe.relinker.ReLinker
 import java.util.concurrent.CancellationException
 
@@ -26,7 +27,7 @@ class WebPEncoder(private val context: Context, width: Int = -1, height: Int = -
     init {
         nativePointer = nativeCreate(width, height)
         if (nativePointer == 0L) {
-            throw RuntimeException("Failed to create native encoder")
+            throw RuntimeException("Failed to create native encoder.")
         }
     }
 
@@ -40,13 +41,7 @@ class WebPEncoder(private val context: Context, width: Int = -1, height: Int = -
         preset: WebPPreset?
     )
 
-    private external fun nativeEncode1(
-        context: Context,
-        srcUri: Uri,
-        dstUri: Uri
-    )
-
-    private external fun nativeEncode2(
+    private external fun nativeEncode(
         context: Context,
         srcBitmap: Bitmap,
         dstUri: Uri
@@ -117,7 +112,10 @@ class WebPEncoder(private val context: Context, width: Int = -1, height: Int = -
      *
      */
     fun encode(srcUri: Uri, dstUri: Uri): WebPEncoder {
-        nativeEncode1(context, srcUri, dstUri)
+        val srcBitmap = BitmapUtils.decodeUri(context, srcUri)
+            ?: throw RuntimeException("Failed to decode bitmap from uri.")
+        nativeEncode(context, srcBitmap, dstUri)
+        srcBitmap.recycle()
         return this
     }
 
@@ -133,7 +131,7 @@ class WebPEncoder(private val context: Context, width: Int = -1, height: Int = -
      * @throws [CancellationException] If encoding process cancelled.
      */
     fun encode(srcBitmap: Bitmap, dstUri: Uri): WebPEncoder {
-        nativeEncode2(context, srcBitmap, dstUri)
+        nativeEncode(context, srcBitmap, dstUri)
         return this
     }
 

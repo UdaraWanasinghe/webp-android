@@ -3,6 +3,7 @@
 //
 
 #include <string>
+
 #include "include/result_codes.h"
 #include "include/exception_helper.h"
 

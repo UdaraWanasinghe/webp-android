@@ -7,366 +7,156 @@
 #include <webp/encode.h>
 #include <webp/mux.h>
 
+#include "include/webp_anim_encoder.h"
 #include "include/encoder_helper.h"
 #include "include/type_helper.h"
 #include "include/exception_helper.h"
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
 #include "include/result_codes.h"
-#include "include/native_helper.h"
+#include "include/native_loader.h"
 
-namespace {
-
-    struct ProgressHookData {
-        jweak progress_observable = nullptr;
-        jmethodID progress_method_id = nullptr;
-        bool cancel_flag = false;
-    };
-
-    struct FrameData {
-        int frame_index;
-    };
-
-    JavaVM *jvm = nullptr;
-    ProgressHookData *progressHookData = nullptr;
-
-    class WebPAnimationEncoder {
-
-    private:
-        int frameCount;
-        WebPAnimEncoder *webPAnimEncoder;
-        WebPConfig webPConfig{};
-
-    public:
-        int imageWidth;
-        int imageHeight;
-        WebPAnimEncoderOptions encoderOptions{};
-
-        /**
-         * Constructs a new instance of the WebPAnimationEncoder class with the specified width, height, and options.
-         *
-         * @param jvm The Java virtual machine pointer.
-         * @param width The width of the animation frames in pixels.
-         * @param height The height of the animation frames in pixels.
-         * @param options The options for configuring the WebP animation encoder.
-         */
-        WebPAnimationEncoder(int width, int height, WebPAnimEncoderOptions options);
-
-        /**
-         * Retrieves the instance of the WebPAnimationEncoder associated with the given Java object.
-         *
-         * @param env The JNI environment.
-         * @param jencoder The Java object representing the WebPAnimationEncoder.
-         * @return A pointer to the WebPAnimationEncoder instance.
-         */
-        static WebPAnimationEncoder *getInstance(JNIEnv *env, jobject jencoder);
-
-        /**
-         * Configures the WebP encoder with the specified configuration.
-         *
-         * @param config The WebPConfig object containing the configuration settings.
-         */
-        void configure(WebPConfig config);
-
-        /**
-         * Adds a frame to the animation sequence with the specified pixel data, bitmap dimensions, and timestamp.
-         *
-         * @param pixels Pointer to the pixel data of the frame.
-         * @param width The width of the frame bitmap in pixels.
-         * @param height The height of the frame bitmap in pixels.
-         * @param timestamp The timestamp of the frame in milliseconds.
-         *
-         * @return 0 if success or error code if failed.
-         */
-        ResultCode addFrame(uint8_t *pixels, int width, int height, long timestamp);
-
-        /**
-         * Assembles the animation with the provided timestamp and saves it to the specified output path.
-         *
-         * @param timestamp The timestamp to assign to the assembled animation in milliseconds.
-         * @param webp_data Pointer to the output buffer for the WebP data.
-         * @param webp_size Pointer to store the size of the WebP data.
-         */
-        ResultCode assemble(long timestamp, const uint8_t **webp_data, size_t *webp_size);
-
-        /**
-         * Release resources associated with this encoder.
-         */
-        void release();
-    };
-
-    int notifyProgressChanged(int percent, const WebPPicture *picture) {
-        auto progress_hook_data = progressHookData;
-        if (progress_hook_data == nullptr) return 1;
-
-        // Get current jvm environment
-        JNIEnv *env;
-        int env_stat = jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
-
-        // Attach to the current thread if not attached.
-        bool is_attached = false;
-        switch (env_stat) {
-            case JNI_EDETACHED:
-                if (jvm->AttachCurrentThread(&env, nullptr) != 0) {
-                    // failed to attach
-                    return 0;
-                } else {
-                    is_attached = true;
-                }
-                break;
-            case JNI_EVERSION:
-                // version not supported
-                return 0;
-            case JNI_OK:
-                break;
-            default:
-                return 0;
-        }
-
-        // Update the progress
-        jweak observable = progress_hook_data->progress_observable;
-        jmethodID progress_method_id = progress_hook_data->progress_method_id;
-        auto *frame_data = static_cast<FrameData *>(picture->user_data);
-        int frame_index = frame_data->frame_index;
-        jboolean continue_encoding = env->CallBooleanMethod(
-                observable,
-                progress_method_id,
-                frame_index,
-                percent
-        );
-
-        // Detach from current thread if attached.
-        if (is_attached) {
-            jvm->DetachCurrentThread();
-        }
-
-        // Check continue and cancel flags.
-        bool cancel_encode = progress_hook_data->cancel_flag;
-        return continue_encoding && !cancel_encode;
-    }
-
-    int setProgressHookData(JNIEnv *env, jobject jencoder) {
-        // Delete previous progress data
-        delete progressHookData;
-        bool result = RESULT_SUCCESS;
-
-        if (env->IsInstanceOf(jencoder, ClassRegistry::animEncoderClass)) {
-            jmethodID progress_method_id = env->GetMethodID(
-                    ClassRegistry::animEncoderClass,
-                    "notifyProgressChanged",
-                    "(II)Z"
-            );
-
-            auto *data = new ProgressHookData();
-            data->progress_observable = env->NewWeakGlobalRef(jencoder);
-            data->progress_method_id = progress_method_id;
-            progressHookData = data;
-        } else {
-            result = ERROR_INVALID_ENCODER;
-        }
-        return result;
-    }
-
-    void clearProgressHookData(JNIEnv *env) {
-        ProgressHookData *data = progressHookData;
-        progressHookData = nullptr;
-        if (data != nullptr) {
-            data->progress_method_id = nullptr;
-            env->DeleteWeakGlobalRef(data->progress_observable);
-            data->progress_observable = nullptr;
-            delete data;
-        }
-    }
-
-    ResultCode addBitmapFrame(
-            JNIEnv *env,
-            jobject thiz,
-            jlong jtimestamp,
-            jobject jbitmap
-    ) {
-        auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
-        if (encoder == nullptr) {
-            return ERROR_NULL_ENCODER;
-        }
-
-        AndroidBitmapInfo info;
-        if (AndroidBitmap_getInfo(env, jbitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
-            return ERROR_BITMAP_INFO_EXTRACT_FAILED;
-        }
-
-        if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-            return ERROR_INVALID_BITMAP_FORMAT;
-        }
-
-        ResultCode result = RESULT_SUCCESS;
-
-        bool bitmap_resized = false;
-        int imageWidth = encoder->imageWidth;
-        if (imageWidth <= 0) {
-            imageWidth = static_cast<int>(info.width);
-            encoder->imageWidth = imageWidth;
-        }
-        int imageHeight = encoder->imageHeight;
-        if (imageHeight <= 0) {
-            imageHeight = static_cast<int>(info.height);
-            encoder->imageHeight = imageHeight;
-        }
-        if (info.width != imageWidth || info.height != imageHeight) {
-            jbitmap = bmp::resizeBitmap(
-                    env,
-                    jbitmap,
-                    imageWidth,
-                    imageHeight
-            );
-            if (type::isObjectNull(env, jbitmap)) {
-                result = ERROR_BITMAP_RESIZE_FAILED;
-            } else {
-                bitmap_resized = true;
-                if (AndroidBitmap_getInfo(env, jbitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
-                    result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
-                }
-            }
-        }
-
-        bool pixels_locked = false;
-        if (result == RESULT_SUCCESS) {
-            void *pixels;
-            if (AndroidBitmap_lockPixels(env, jbitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
-                pixels_locked = true;
-                result = encoder->addFrame(
-                        static_cast<uint8_t *>(pixels),
-                        static_cast<int>(info.width),
-                        static_cast<int>(info.height),
-                        static_cast<long>(jtimestamp)
-                );
-            } else {
-                result = ERROR_LOCK_BITMAP_PIXELS_FAILED;
-            }
-        }
-
-        if (pixels_locked) {
-            if (AndroidBitmap_unlockPixels(env, jbitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
-                result = ERROR_UNLOCK_BITMAP_PIXELS_FAILED;
-            }
-        }
-        if (bitmap_resized) {
-            bmp::recycleBitmap(env, jbitmap);
-            env->DeleteLocalRef(jbitmap);
-        }
-        return result;
-    }
-
-    WebPAnimationEncoder::WebPAnimationEncoder(
-            int width,
-            int height,
-            WebPAnimEncoderOptions options
-    ) {
-        this->imageWidth = width;
-        this->imageHeight = height;
-        this->frameCount = 0;
-        this->encoderOptions = options;
-        this->webPAnimEncoder = nullptr;
-        WebPConfigInit(&webPConfig);
-    }
-
-    WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
-
-        jlong native_pointer;
-        if (env->IsInstanceOf(jencoder, ClassRegistry::animEncoderClass)) {
-            jfieldID pointer_field_id = env->GetFieldID(
-                    ClassRegistry::animEncoderClass,
-                    "nativePointer",
-                    "J"
-            );
-            native_pointer = env->GetLongField(jencoder, pointer_field_id);
-        } else {
-            native_pointer = 0;
-        }
-        return reinterpret_cast<WebPAnimationEncoder *>(native_pointer);
-    }
-
-    void WebPAnimationEncoder::configure(WebPConfig config) {
-        webPConfig = config;
-    }
-
-    ResultCode WebPAnimationEncoder::addFrame(
-            uint8_t *pixels,
-            int width,
-            int height,
-            long timestamp
-    ) {
-        WebPPicture pic;
-        if (!WebPPictureInit(&pic)) {
-            return ERROR_VERSION_MISMATCH;
-        }
-        pic.use_argb = true;
-        pic.width = width;
-        pic.height = height;
-        if (!WebPPictureAlloc(&pic)) {
-            return ERROR_MEMORY_ERROR;
-        }
-        encoder::copyPixels(pixels, &pic);
-        auto *frame_data = new FrameData();
-        frame_data->frame_index = frameCount++;
-        pic.user_data = frame_data;
-        pic.progress_hook = &notifyProgressChanged;
-
-        ResultCode result;
-        if (webPAnimEncoder == nullptr) {
-            webPAnimEncoder = WebPAnimEncoderNew(width, height, &encoderOptions);
-        }
-        if (WebPAnimEncoderAdd(webPAnimEncoder, &pic, timestamp, &webPConfig)) {
-            result = RESULT_SUCCESS;
-        } else {
-            result = result::encodingErrorToResultCode(pic.error_code);
-        }
-        WebPPictureFree(&pic);
-        return result;
-    }
-
-    ResultCode WebPAnimationEncoder::assemble(
-            long timestamp,
-            const uint8_t **webp_data,
-            size_t *const webp_size
-    ) {
-        if (!WebPAnimEncoderAdd(webPAnimEncoder, nullptr, timestamp, nullptr)) {
-            return ERROR_MARK_ANIMATION_END_FAILED;
-        }
-        WebPData data;
-        WebPDataInit(&data);
-        ResultCode result;
-        if (WebPAnimEncoderAssemble(webPAnimEncoder, &data) != 0) {
-            result = RESULT_SUCCESS;
-            *webp_data = data.bytes;
-            *webp_size = data.size;
-        } else {
-            result = ERROR_ANIMATION_ASSEMBLE_FAILED;
-            WebPDataClear(&data);
-        }
-        return result;
-    }
-
-    void WebPAnimationEncoder::release() {
-        if (webPAnimEncoder != nullptr) {
-            WebPAnimEncoderDelete(webPAnimEncoder);
-        }
-    }
-
+WebPAnimationEncoder::WebPAnimationEncoder(int width, int height, WebPAnimEncoderOptions options) {
+    this->imageWidth = width;
+    this->imageHeight = height;
+    this->frameCount = 0;
+    this->encoderOptions = options;
+    this->webPAnimEncoder = nullptr;
+    WebPConfigInit(&webPConfig);
 }
 
-extern "C"
-JNIEXPORT jlong JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeCreate(
+void WebPAnimationEncoder::configure(WebPConfig config) {
+    webPConfig = config;
+}
+
+ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height, long timestamp) {
+    WebPPicture pic;
+    if (!WebPPictureInit(&pic)) {
+        return ERROR_VERSION_MISMATCH;
+    }
+    pic.use_argb = true;
+    pic.width = width;
+    pic.height = height;
+    if (!WebPPictureAlloc(&pic)) {
+        return ERROR_MEMORY_ERROR;
+    }
+    encoder::copyPixels(pixels, &pic);
+    pic.user_data = reinterpret_cast<void *>(frameCount++);
+    pic.progress_hook = &notifyProgressChanged;
+
+    ResultCode result;
+    if (webPAnimEncoder == nullptr) {
+        webPAnimEncoder = WebPAnimEncoderNew(width, height, &encoderOptions);
+    }
+    if (WebPAnimEncoderAdd(webPAnimEncoder, &pic, timestamp, &webPConfig)) {
+        result = RESULT_SUCCESS;
+    } else {
+        result = result::encodingErrorToResultCode(pic.error_code);
+    }
+    WebPPictureFree(&pic);
+    return result;
+}
+
+ResultCode WebPAnimationEncoder::assemble(long timestamp, WebPData *data) {
+    if (!WebPAnimEncoderAdd(webPAnimEncoder, nullptr, timestamp, nullptr)) {
+        return ERROR_MARK_ANIMATION_END_FAILED;
+    }
+    WebPDataInit(data);
+    ResultCode result;
+    if (WebPAnimEncoderAssemble(webPAnimEncoder, data) != 0) {
+        result = RESULT_SUCCESS;
+    } else {
+        result = ERROR_ANIMATION_ASSEMBLE_FAILED;
+    }
+    return result;
+}
+
+void WebPAnimationEncoder::release() {
+    if (webPAnimEncoder != nullptr) {
+        WebPAnimEncoderDelete(webPAnimEncoder);
+        webPAnimEncoder = nullptr;
+    }
+}
+
+WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
+    jlong native_pointer;
+    if (env->IsInstanceOf(jencoder, ClassRegistry::animEncoderClass)) {
+        jfieldID pointer_field_id = env->GetFieldID(
+                ClassRegistry::animEncoderClass,
+                "nativePointer",
+                "J"
+        );
+        native_pointer = env->GetLongField(jencoder, pointer_field_id);
+    } else {
+        native_pointer = 0;
+    }
+    return reinterpret_cast<WebPAnimationEncoder *>(native_pointer);
+}
+
+void WebPAnimationEncoder::setProgressNotifier(JNIEnv *env, jobject jencoder) {
+    jweak observer = progressObserver;
+    if (observer != nullptr) {
+        env->DeleteWeakGlobalRef(observer);
+    }
+    progressObserver = env->NewWeakGlobalRef(jencoder);
+}
+
+int WebPAnimationEncoder::notifyProgressChanged(int percent, const WebPPicture *picture) {
+    if (progressObserver == nullptr) return 1;
+    // Get current jvm environment
+    JNIEnv *env;
+    int env_stat = jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
+    // Attach to the current thread if not attached.
+    bool is_attached = false;
+    switch (env_stat) {
+        case JNI_EDETACHED:
+            if (jvm->AttachCurrentThread(&env, nullptr) != 0) {
+                // failed to attach
+                return 0;
+            } else {
+                is_attached = true;
+            }
+            break;
+        case JNI_EVERSION:
+            // version not supported
+            return 0;
+        case JNI_OK:
+            break;
+        default:
+            return 0;
+    }
+    int frame_index = reinterpret_cast<int>(picture->user_data);
+    jboolean continue_encoding = env->CallBooleanMethod(
+            progressObserver,
+            ClassRegistry::animEncoderNotifyProgressMethodID,
+            frame_index,
+            percent
+    );
+    // Detach from current thread if attached.
+    if (is_attached) {
+        jvm->DetachCurrentThread();
+    }
+    // Check continue and cancel flags.
+    return continue_encoding && !cancelFlag;
+}
+
+void WebPAnimationEncoder::clearProgressNotifier(JNIEnv *env) {
+    jweak data = progressObserver;
+    if (data != nullptr) {
+        env->DeleteWeakGlobalRef(data);
+        progressObserver = nullptr;
+    }
+}
+
+jlong WebPAnimationEncoder::nativeCreate(
         JNIEnv *env,
         jobject thiz,
         jint jwidth,
         jint jheight,
         jobject joptions
 ) {
-    ClassRegistry::initialize(env);
     env->GetJavaVM(&jvm);
-    setProgressHookData(env, thiz);
-
+    setProgressNotifier(env, thiz);
     WebPAnimEncoderOptions options;
     if (!WebPAnimEncoderOptionsInit(&options)) {
         return 0;
@@ -378,9 +168,7 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeCreate(
     return reinterpret_cast<jlong>(encoder);
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeConfigure(
+void WebPAnimationEncoder::nativeConfigure(
         JNIEnv *env,
         jobject thiz,
         jobject jconfig,
@@ -424,53 +212,85 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeConfigure(
     result::handleResult(env, result);
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeAddFrame1(
-        JNIEnv *env,
-        jobject thiz,
-        jobject jcontext,
-        jlong jtimestamp,
-        jobject jsrc_uri
-) {
-    ResultCode result;
-    jobject jbitmap = bmp::decodeBitmapUri(env, jcontext, jsrc_uri);
-
-    if (type::isObjectNull(env, jbitmap)) {
-        result = ERROR_BITMAP_URI_DECODE_FAILED;
-    } else {
-        result = addBitmapFrame(
-                env,
-                thiz,
-                jtimestamp,
-                jbitmap
-        );
-    }
-
-    result::handleResult(env, result);
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeAddFrame2(
+void WebPAnimationEncoder::nativeAddFrame(
         JNIEnv *env,
         jobject thiz,
         jlong jtimestamp,
         jobject jsrc_bitmap
 ) {
-    ResultCode result = addBitmapFrame(
-            env,
-            thiz,
-            jtimestamp,
-            jsrc_bitmap
-    );
+    ResultCode result = RESULT_SUCCESS;
+
+    auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
+    if (encoder == nullptr) {
+        result = ERROR_NULL_ENCODER;
+    }
+
+    AndroidBitmapInfo info;
+    if (result == RESULT_SUCCESS) {
+        if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
+            result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
+        } else if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+            result = ERROR_INVALID_BITMAP_FORMAT;
+        }
+    }
+
+    bool bitmap_resized = false;
+    if (result == RESULT_SUCCESS) {
+        int width = encoder->imageWidth;
+        if (width <= 0) {
+            width = static_cast<int>(info.width);
+            encoder->imageWidth = width;
+        }
+        int height = encoder->imageHeight;
+        if (height <= 0) {
+            height = static_cast<int>(info.height);
+            encoder->imageHeight = height;
+        }
+        if (info.width != width || info.height != height) {
+            jsrc_bitmap = bmp::resizeBitmap(
+                    env,
+                    jsrc_bitmap,
+                    width,
+                    height
+            );
+            if (type::isObjectNull(env, jsrc_bitmap)) {
+                result = ERROR_BITMAP_RESIZE_FAILED;
+            } else {
+                bitmap_resized = true;
+                if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) !=
+                    ANDROID_BITMAP_RESULT_SUCCESS) {
+                    result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
+                }
+            }
+        }
+    }
+
+    if (result == RESULT_SUCCESS) {
+        void *pixels;
+        if (AndroidBitmap_lockPixels(env, jsrc_bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
+            result = encoder->addFrame(
+                    static_cast<uint8_t *>(pixels),
+                    static_cast<int>(info.width),
+                    static_cast<int>(info.height),
+                    static_cast<long>(jtimestamp)
+            );
+            if (AndroidBitmap_unlockPixels(env, jsrc_bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
+                result = ERROR_UNLOCK_BITMAP_PIXELS_FAILED;
+            }
+        } else {
+            result = ERROR_LOCK_BITMAP_PIXELS_FAILED;
+        }
+    }
+
+    if (bitmap_resized) {
+        bmp::recycleBitmap(env, jsrc_bitmap);
+        env->DeleteLocalRef(jsrc_bitmap);
+    }
 
     result::handleResult(env, result);
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeAssemble(
+void WebPAnimationEncoder::nativeAssemble(
         JNIEnv *env,
         jobject thiz,
         jobject jcontext,
@@ -479,54 +299,31 @@ Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeAssemble(
 ) {
     ResultCode result;
 
-    const uint8_t *webp_data = nullptr;
-    size_t webp_size = 0;
-
     auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
     if (encoder == nullptr) {
         result = ERROR_NULL_ENCODER;
     } else {
-        result = encoder->assemble(
-                static_cast<long>(jtimestamp),
-                &webp_data,
-                &webp_size
-        );
+        WebPData data;
+        result = encoder->assemble(static_cast<long>(jtimestamp), &data);
         if (result == RESULT_SUCCESS) {
-            result = files::writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
-            WebPFree((void *) webp_data);
-            webp_data = nullptr;
+            result = files::writeToUri(env, jcontext, jdst_uri, data.bytes, data.size);
+            WebPDataClear(&data);
         }
     }
 
     result::handleResult(env, result);
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeCancel(JNIEnv *, jobject) {
-    auto *data = progressHookData;
-    if (data != nullptr) {
-        data->cancel_flag = true;
-    }
+void WebPAnimationEncoder::nativeCancel(JNIEnv *, jobject) {
+    cancelFlag = true;
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_aureusapps_android_webpandroid_encoder_WebPAnimEncoder_nativeRelease(
-        JNIEnv *env,
-        jobject thiz
-) {
+void WebPAnimationEncoder::nativeRelease(JNIEnv *env, jobject thiz) {
     auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
-
-    jfieldID pointer_field_id = env->GetFieldID(ClassRegistry::animEncoderClass, "nativePointer",
-                                                "J");
-    env->SetLongField(thiz, pointer_field_id, (jlong) 0);
-
-    // Release resources
-    clearProgressHookData(env);
+    env->SetLongField(thiz, ClassRegistry::animEncoderPointerFieldID, static_cast<jlong>(0));
+    clearProgressNotifier(env);
     encoder->release();
     delete encoder;
     jvm = nullptr;
-    ClassRegistry::release(env);
 }

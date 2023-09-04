@@ -6,7 +6,7 @@
 
 #include "include/string_formatter.h"
 #include "include/exception_helper.h"
-#include "include/native_helper.h"
+#include "include/native_loader.h"
 
 namespace {
 

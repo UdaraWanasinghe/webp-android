@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import com.aureusapps.android.extensions.BitmapUtils
 import com.getkeepsafe.relinker.ReLinker
 
 /**
@@ -47,13 +48,7 @@ class WebPAnimEncoder(
         preset: WebPPreset?
     )
 
-    private external fun nativeAddFrame1(
-        context: Context,
-        timestamp: Long,
-        srcUri: Uri
-    )
-
-    private external fun nativeAddFrame2(
+    private external fun nativeAddFrame(
         timestamp: Long,
         srcBitmap: Bitmap
     )
@@ -123,7 +118,10 @@ class WebPAnimEncoder(
      * @return this animation encoder instance.
      */
     fun addFrame(timestamp: Long, srcUri: Uri): WebPAnimEncoder {
-        nativeAddFrame1(context, timestamp, srcUri)
+        val srcBitmap = BitmapUtils.decodeUri(context, srcUri)
+            ?: throw RuntimeException("Failed to decode bitmap uri.")
+        nativeAddFrame(timestamp, srcBitmap)
+        srcBitmap.recycle()
         return this
     }
 
@@ -135,7 +133,7 @@ class WebPAnimEncoder(
      * @return this animation encoder instance.
      */
     fun addFrame(timestamp: Long, srcBitmap: Bitmap): WebPAnimEncoder {
-        nativeAddFrame2(timestamp, srcBitmap)
+        nativeAddFrame(timestamp, srcBitmap)
         return this
     }
 

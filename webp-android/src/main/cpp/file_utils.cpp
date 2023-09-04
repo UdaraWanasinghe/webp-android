@@ -15,7 +15,7 @@
 #include "include/string_formatter.h"
 #include "include/result_codes.h"
 #include "include/type_helper.h"
-#include "include/native_helper.h"
+#include "include/native_loader.h"
 
 std::pair<int, jobject> files::openFileDescriptor(
         JNIEnv *env,

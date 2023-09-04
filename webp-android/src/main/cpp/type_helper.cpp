@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include "include/type_helper.h"
-#include "include/native_helper.h"
+#include "include/native_loader.h"
 
 int type::getIntegerValue(
         JNIEnv *env,

@@ -26,7 +26,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags("-std=c++17")
+                cppFlags("-std=c++17", "-fvisibility=hidden")
                 arguments("-DLIBWEBP_PATH=${props.libwebpPath}")
             }
         }
