@@ -34,7 +34,7 @@ private:
 
     static WebPDecoder *getInstance(JNIEnv *env, jobject jdecoder);
 
-    static jobject decodeInfo(JNIEnv *env, const WebPBitstreamFeatures &features);
+    static jobject getWebPInfo(JNIEnv *env, const WebPBitstreamFeatures &features);
 
     static jobject decodeAnimInfo(
             JNIEnv *env,
@@ -71,14 +71,6 @@ private:
             const WebPBitstreamFeatures &features,
             const uint8_t *file_data,
             size_t file_size
-    );
-
-    static ResultCode decode(
-            JNIEnv *env,
-            jobject jdecoder,
-            jobject jcontext,
-            jobject jsrc_uri,
-            jobject jdst_uri
     );
 
     static ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo);

@@ -114,6 +114,36 @@ void ClassRegistry::initialize(JNIEnv *env) {
             "WEBP_LOSSLESS",
             "Landroid/graphics/Bitmap$CompressFormat;"
     );
+    decoderConfigNamePrefixFieldID = getFieldID(
+            env,
+            decoderConfigClass,
+            "namePrefix",
+            "Ljava/lang/String;"
+    );
+    decoderConfigRepeatCharacterFieldID = getFieldID(
+            env,
+            decoderConfigClass,
+            "repeatCharacter",
+            "C"
+    );
+    decoderConfigRepeatCharacterCountFieldID = getFieldID(
+            env,
+            decoderConfigClass,
+            "repeatCharacterCount",
+            "I"
+    );
+    decoderConfigCompressFormatFieldID = getFieldID(
+            env,
+            decoderConfigClass,
+            "compressFormat",
+            "Landroid/graphics/Bitmap$CompressFormat;"
+    );
+    decoderConfigCompressQualityFieldID = getFieldID(
+            env,
+            decoderConfigClass,
+            "compressQuality",
+            "I"
+    );
 
     // methods
     booleanValueMethodID = getMethodID(env, booleanClass, "booleanValue", "()Z");
@@ -209,6 +239,12 @@ void ClassRegistry::initialize(JNIEnv *env) {
             uriExtensionsClass,
             "fileExists",
             "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
+    );
+    bitmapCompressFormatOrdinalMethodID = getMethodID(
+            env,
+            bitmapCompressFormatClass,
+            "ordinal",
+            "()I"
     );
 }
 

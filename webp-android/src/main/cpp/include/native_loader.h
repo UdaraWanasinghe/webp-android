@@ -40,6 +40,11 @@ public:
     inline static jfieldID compressFormatWEBPFieldID = nullptr;
     inline static jfieldID compressFormatWEBPLossyFieldID = nullptr;
     inline static jfieldID compressFormatWEBPLosslessFieldID = nullptr;
+    inline static jfieldID decoderConfigNamePrefixFieldID = nullptr;
+    inline static jfieldID decoderConfigRepeatCharacterFieldID = nullptr;
+    inline static jfieldID decoderConfigRepeatCharacterCountFieldID = nullptr;
+    inline static jfieldID decoderConfigCompressFormatFieldID = nullptr;
+    inline static jfieldID decoderConfigCompressQualityFieldID = nullptr;
 
     inline static jmethodID encoderNotifyProgressMethodID = nullptr;
     inline static jmethodID animEncoderNotifyProgressMethodID = nullptr;
@@ -60,7 +65,8 @@ public:
     inline static jmethodID booleanValueMethodID = nullptr;
     inline static jmethodID integerValueMethodID = nullptr;
     inline static jmethodID floatValueMethodID = nullptr;
-    
+    inline static jmethodID bitmapCompressFormatOrdinalMethodID = nullptr;
+
     static void initialize(JNIEnv *env);
 
     static void release(JNIEnv *env);

@@ -8,6 +8,67 @@
 #include "include/file_utils.h"
 #include "include/type_helper.h"
 
+namespace dec {
+    DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig) {
+        // image name name_prefix
+        auto jprefix = (jstring) env->GetObjectField(
+                jconfig,
+                ClassRegistry::decoderConfigNamePrefixFieldID
+        );
+        const char *prefix_cstr = env->GetStringUTFChars(jprefix, nullptr);
+        std::string name_prefix(prefix_cstr);
+        env->ReleaseStringUTFChars(jprefix, prefix_cstr);
+
+        // image name repeat character
+        char repeat_character = (char) env->GetCharField(
+                jconfig,
+                ClassRegistry::decoderConfigRepeatCharacterFieldID
+        );
+
+        // image name character count
+        int repeat_character_count = env->GetIntField(
+                jconfig,
+                ClassRegistry::decoderConfigRepeatCharacterCountFieldID
+        );
+
+        // image compress format
+        auto jcompress_format = env->GetObjectField(
+                jconfig,
+                ClassRegistry::decoderConfigCompressFormatFieldID
+        );
+        int compress_format_ordinal = env->CallIntMethod(
+                jcompress_format,
+                ClassRegistry::bitmapCompressFormatOrdinalMethodID
+        );
+        env->DeleteLocalRef(jcompress_format);
+
+        // image compress quality
+        int compress_quality = env->GetIntField(
+                jconfig,
+                ClassRegistry::decoderConfigCompressQualityFieldID
+        );
+
+        return DecoderConfig{
+                name_prefix,
+                repeat_character,
+                repeat_character_count,
+                compress_format_ordinal,
+                compress_quality
+        };
+    }
+
+    std::string getImageNameSuffix(int compress_format_ordinal) {
+        switch (compress_format_ordinal) {
+            case 0:
+                return ".jpeg";
+            case 1:
+                return ".png";
+            default:
+                return ".webp";
+        }
+    }
+}
+
 void WebPDecoder::configure(dec::DecoderConfig config) {
     decoderConfig = std::move(config);
 }
@@ -22,7 +83,7 @@ WebPDecoder *WebPDecoder::getInstance(JNIEnv *env, jobject jdecoder) {
     return reinterpret_cast<WebPDecoder *>(native_pointer);
 }
 
-jobject WebPDecoder::decodeInfo(JNIEnv *env, const WebPBitstreamFeatures &features) {
+jobject WebPDecoder::getWebPInfo(JNIEnv *env, const WebPBitstreamFeatures &features) {
     jobject jinfo = env->NewObject(
             ClassRegistry::webPInfoClass,
             ClassRegistry::webPInfoConstructorID,
@@ -93,9 +154,9 @@ ResultCode WebPDecoder::processFrame(
                     ClassRegistry::uriEmptyFieldID
             );
         } else {
-            auto decoder_config = decoder->decoderConfig;
+            auto config = decoder->decoderConfig;
             std::string image_name_suffix = dec::getImageNameSuffix(
-                    decoder_config.compressFormatOrdinal
+                    config.compressFormatOrdinal
             );
             // save bitmap to dst uri
             auto name_result = file::generateFileName(
@@ -103,10 +164,10 @@ ResultCode WebPDecoder::processFrame(
                     jcontext,
                     jdst_uri,
                     index,
-                    decoder_config.namePrefix,
+                    config.namePrefix,
                     image_name_suffix,
-                    decoder_config.repeatCharacterCount,
-                    decoder_config.repeatCharacter
+                    config.repeatCharacterCount,
+                    config.repeatCharacter
             );
             if (name_result.first) {
                 jbitmap_uri = bmp::saveToDirectory(
@@ -114,8 +175,8 @@ ResultCode WebPDecoder::processFrame(
                         jcontext,
                         jbitmap,
                         jdst_uri,
-                        decoder_config.compressFormatOrdinal,
-                        decoder_config.compressQuality,
+                        config.compressFormatOrdinal,
+                        config.compressQuality,
                         name_result.second
                 );
                 if (type::isObjectNull(env, jbitmap_uri)) {
@@ -160,10 +221,9 @@ ResultCode WebPDecoder::decodeAnimFrames(
         WebPDataInit(&webp_data);
         webp_data.size = file_size;
         webp_data.bytes = file_data;
-        auto *anim_decoder = WebPAnimDecoderNew(&webp_data, &options);
+        WebPAnimDecoder *anim_decoder = WebPAnimDecoderNew(&webp_data, &options);
 
         jobject jinfo = decodeAnimInfo(env, anim_decoder, features);
-
         if (type::isObjectNull(env, jinfo)) {
             result = ERROR_WEBP_INFO_EXTRACT_FAILED;
         } else {
@@ -176,19 +236,14 @@ ResultCode WebPDecoder::decodeAnimFrames(
             int timestamp = 0;
             int index = 0;
 
-            auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-            if (decoder == nullptr) {
-                result = ERROR_NULL_DECODER;
-            } else if (decoder->cancelFlag) {
+            if (cancelFlag) {
                 result = ERROR_USER_ABORT;
             }
-
             while (result == RESULT_SUCCESS &&
                    WebPAnimDecoderGetNext(anim_decoder, &pixels, &timestamp)) {
-                if (decoder->cancelFlag) {
+                if (cancelFlag) {
                     result = ERROR_USER_ABORT;
                     break;
-
                 } else {
                     result = processFrame(
                             env,
@@ -221,7 +276,7 @@ ResultCode WebPDecoder::decodeStaticFrame(
         const uint8_t *file_data,
         size_t file_size
 ) {
-    jobject jinfo = decodeInfo(env, features);
+    jobject jinfo = getWebPInfo(env, features);
     ResultCode result = notifyInfoDecoded(env, jdecoder, jinfo);
     env->DeleteLocalRef(jinfo);
 
@@ -237,14 +292,32 @@ ResultCode WebPDecoder::decodeStaticFrame(
             result = processFrame(env, jdecoder, jcontext, jbitmap, jdst_uri, pixels, 0, 0);
             bmp::recycleBitmap(env, jbitmap);
             env->DeleteLocalRef(jbitmap);
+            WebPFree(pixels);
         }
     }
     return result;
 }
 
-ResultCode WebPDecoder::decode(
+jlong WebPDecoder::nativeCreate(JNIEnv *, jobject) {
+    auto *decoder = new WebPDecoder();
+    return reinterpret_cast<jlong>(decoder);
+}
+
+void WebPDecoder::nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig) {
+    WebPDecoder *decoder = WebPDecoder::getInstance(env, thiz);
+    ResultCode result = RESULT_SUCCESS;
+    if (decoder == nullptr) {
+        result = ERROR_NULL_DECODER;
+    } else {
+        dec::DecoderConfig config = dec::parseDecoderConfig(env, jconfig);
+        decoder->configure(config);
+    }
+    res::handleResult(env, result);
+}
+
+void WebPDecoder::nativeDecodeFrames(
         JNIEnv *env,
-        jobject jdecoder,
+        jobject thiz,
         jobject jcontext,
         jobject jsrc_uri,
         jobject jdst_uri
@@ -271,7 +344,7 @@ ResultCode WebPDecoder::decode(
         if (features.has_animation) {
             result = decodeAnimFrames(
                     env,
-                    jdecoder,
+                    thiz,
                     jcontext,
                     jdst_uri,
                     features,
@@ -281,7 +354,7 @@ ResultCode WebPDecoder::decode(
         } else {
             result = decodeStaticFrame(
                     env,
-                    jdecoder,
+                    thiz,
                     jcontext,
                     jdst_uri,
                     features,
@@ -296,34 +369,6 @@ ResultCode WebPDecoder::decode(
         file_data = nullptr;
     }
 
-    return result;
-}
-
-jlong WebPDecoder::nativeCreate(JNIEnv *, jobject) {
-    auto *decoder = new WebPDecoder();
-    return reinterpret_cast<jlong>(decoder);
-}
-
-void WebPDecoder::nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig) {
-    auto decoder_config = dec::parseDecoderConfig(env, jconfig);
-    auto *decoder = WebPDecoder::getInstance(env, thiz);
-    ResultCode result = RESULT_SUCCESS;
-    if (decoder == nullptr) {
-        result = ERROR_NULL_DECODER;
-    } else {
-        decoder->configure(decoder_config);
-    }
-    res::handleResult(env, result);
-}
-
-void WebPDecoder::nativeDecodeFrames(
-        JNIEnv *env,
-        jobject thiz,
-        jobject jcontext,
-        jobject jsrc_uri,
-        jobject jdst_uri
-) {
-    ResultCode result = decode(env, thiz, jcontext, jsrc_uri, jdst_uri);
     res::handleResult(env, result);
 }
 
@@ -358,7 +403,7 @@ jobject WebPDecoder::nativeDecodeInfo(JNIEnv *env, jobject, jobject jcontext, jo
                     result = ERROR_VERSION_MISMATCH;
                 }
             } else {
-                jinfo = decodeInfo(env, features);
+                jinfo = getWebPInfo(env, features);
             }
         } else {
             result = ERROR_WEBP_INFO_EXTRACT_FAILED;
@@ -383,80 +428,4 @@ void WebPDecoder::nativeRelease(JNIEnv *env, jobject thiz) {
     if (decoder == nullptr) return;
     env->SetLongField(thiz, ClassRegistry::decoderPointerFieldID, static_cast<jlong>(0));
     delete decoder;
-}
-
-namespace dec {
-    DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig) {
-        // image name name_prefix
-        jfieldID prefix_field_id = env->GetFieldID(
-                ClassRegistry::decoderConfigClass,
-                "namePrefix",
-                "Ljava/lang/String;"
-        );
-        auto jprefix = (jstring) env->GetObjectField(jconfig, prefix_field_id);
-        const char *prefix_cstr = env->GetStringUTFChars(jprefix, nullptr);
-        std::string name_prefix(prefix_cstr);
-        env->ReleaseStringUTFChars(jprefix, prefix_cstr);
-
-        // image name repeat character
-        jfieldID name_repeat_character_field_id = env->GetFieldID(
-                ClassRegistry::decoderConfigClass,
-                "repeatCharacter",
-                "C"
-        );
-        char repeat_character = (char) env->GetCharField(
-                jconfig,
-                name_repeat_character_field_id
-        );
-
-        // image name character count
-        jfieldID name_character_count_field_id = env->GetFieldID(
-                ClassRegistry::decoderConfigClass,
-                "repeatCharacterCount",
-                "I"
-        );
-        int repeat_character_count = env->GetIntField(jconfig, name_character_count_field_id);
-
-        // image compress format
-        jfieldID compress_format_field_id = env->GetFieldID(
-                ClassRegistry::decoderConfigClass,
-                "compressFormat",
-                "Landroid/graphics/Bitmap$CompressFormat;"
-        );
-        auto jcompress_format = env->GetObjectField(jconfig, compress_format_field_id);
-        jmethodID ordinal_method_id = env->GetMethodID(
-                ClassRegistry::bitmapCompressFormatClass,
-                "ordinal",
-                "()I"
-        );
-        int compress_format_ordinal = env->CallIntMethod(jcompress_format, ordinal_method_id);
-        env->DeleteLocalRef(jcompress_format);
-
-        // image compress quality
-        jfieldID compress_quality_field_id = env->GetFieldID(
-                ClassRegistry::decoderConfigClass,
-                "compressQuality",
-                "I"
-        );
-        int compress_quality = env->GetIntField(jconfig, compress_quality_field_id);
-
-        return DecoderConfig{
-                name_prefix,
-                repeat_character,
-                repeat_character_count,
-                compress_format_ordinal,
-                compress_quality
-        };
-    }
-
-    std::string getImageNameSuffix(int compress_format_ordinal) {
-        switch (compress_format_ordinal) {
-            case 0:
-                return ".jpeg";
-            case 1:
-                return ".png";
-            default:
-                return ".webp";
-        }
-    }
 }
