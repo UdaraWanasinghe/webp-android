@@ -8,7 +8,7 @@
 #include <webp/encode.h>
 #include <webp/mux.h>
 
-namespace encoder {
+namespace enc {
     /**
      * Parses the WebPPreset enum value from a Java preset enum.
      *

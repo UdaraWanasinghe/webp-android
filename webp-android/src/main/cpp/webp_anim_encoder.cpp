@@ -2,19 +2,14 @@
 // Created by udara on 11/2/21.
 //
 
-#include <jni.h>
 #include <android/bitmap.h>
-#include <webp/encode.h>
-#include <webp/mux.h>
 
 #include "include/webp_anim_encoder.h"
+#include "include/native_loader.h"
 #include "include/encoder_helper.h"
 #include "include/type_helper.h"
-#include "include/exception_helper.h"
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
-#include "include/result_codes.h"
-#include "include/native_loader.h"
 
 namespace {
     struct UserData {
@@ -46,7 +41,7 @@ ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height
     if (!WebPPictureAlloc(&pic)) {
         return ERROR_MEMORY_ERROR;
     }
-    encoder::copyPixels(pixels, &pic);
+    enc::copyPixels(pixels, &pic);
     UserData user_data = UserData{};
     user_data.frameIndex = frameCount++;
     pic.user_data = reinterpret_cast<void *>(&user_data);
@@ -59,7 +54,7 @@ ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height
     if (WebPAnimEncoderAdd(webPAnimEncoder, &pic, timestamp, &webPConfig)) {
         result = RESULT_SUCCESS;
     } else {
-        result = result::encodingErrorToResultCode(pic.error_code);
+        result = res::encodingErrorToResultCode(pic.error_code);
     }
     WebPPictureFree(&pic);
     return result;
@@ -171,7 +166,7 @@ jlong WebPAnimationEncoder::nativeCreate(
         return 0;
     }
     if (!type::isObjectNull(env, joptions)) {
-        encoder::parseEncoderOptions(env, joptions, &options);
+        enc::parseEncoderOptions(env, joptions, &options);
     }
     auto *encoder = new WebPAnimationEncoder(jwidth, jheight, options);
     return reinterpret_cast<jlong>(encoder);
@@ -193,16 +188,16 @@ void WebPAnimationEncoder::nativeConfigure(
             if (is_config_null) {
                 quality = 70.0f;
             } else {
-                quality = encoder::parseWebPQuality(env, jconfig);
+                quality = enc::parseWebPQuality(env, jconfig);
             }
-            WebPPreset preset = encoder::parseWebPPreset(env, jpreset);
+            WebPPreset preset = enc::parseWebPPreset(env, jpreset);
             if (!WebPConfigPreset(&config, preset, quality)) {
                 result = ERROR_INVALID_WEBP_CONFIG;
             }
         }
         if (result == RESULT_SUCCESS) {
             if (!is_config_null) {
-                encoder::applyWebPConfig(env, jconfig, &config);
+                enc::applyWebPConfig(env, jconfig, &config);
             }
             if (WebPValidateConfig(&config)) {
                 auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
@@ -218,7 +213,7 @@ void WebPAnimationEncoder::nativeConfigure(
     } else {
         result = ERROR_VERSION_MISMATCH;
     }
-    result::handleResult(env, result);
+    res::handleResult(env, result);
 }
 
 void WebPAnimationEncoder::nativeAddFrame(
@@ -296,7 +291,7 @@ void WebPAnimationEncoder::nativeAddFrame(
         env->DeleteLocalRef(jsrc_bitmap);
     }
 
-    result::handleResult(env, result);
+    res::handleResult(env, result);
 }
 
 void WebPAnimationEncoder::nativeAssemble(
@@ -315,12 +310,12 @@ void WebPAnimationEncoder::nativeAssemble(
         WebPData data;
         result = encoder->assemble(static_cast<long>(jtimestamp), &data);
         if (result == RESULT_SUCCESS) {
-            result = files::writeToUri(env, jcontext, jdst_uri, data.bytes, data.size);
+            result = file::writeToUri(env, jcontext, jdst_uri, data.bytes, data.size);
             WebPDataClear(&data);
         }
     }
 
-    result::handleResult(env, result);
+    res::handleResult(env, result);
 }
 
 void WebPAnimationEncoder::nativeCancel(JNIEnv *, jobject) {

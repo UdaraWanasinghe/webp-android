@@ -4,9 +4,11 @@
 
 #pragma once
 
-#include <string>
-#include <cstdarg>
+#include <jni.h>
 
-void throwRuntimeException(JNIEnv *env, const char *format, ...);
+namespace exc {
+    void throwRuntimeException(JNIEnv *env, const char *format, ...);
 
-void throwCancellationException(JNIEnv *env, const char *format, ...);
+    void throwCancellationException(JNIEnv *env, const char *format, ...);
+}
+

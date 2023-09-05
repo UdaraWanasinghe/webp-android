@@ -2,8 +2,7 @@
 // Created by udara on 6/4/23.
 //
 
-#include <jni.h>
-#include <iostream>
+#include <stdexcept>
 
 #include "include/type_helper.h"
 #include "include/native_loader.h"
@@ -15,8 +14,7 @@ int type::getIntegerValue(
     if (!env->IsInstanceOf(object, ClassRegistry::integerClass)) {
         throw std::runtime_error("The given object is not of type Integer.");
     }
-    jmethodID method_id = env->GetMethodID(ClassRegistry::integerClass, "intValue", "()I");
-    jint value = env->CallIntMethod(object, method_id);
+    jint value = env->CallIntMethod(object, ClassRegistry::integerValueMethodID);
     return static_cast<int>(value);
 }
 
@@ -27,8 +25,7 @@ bool type::getBooleanValue(
     if (!env->IsInstanceOf(object, ClassRegistry::booleanClass)) {
         throw std::runtime_error("The given object is not of type Boolean.");
     }
-    jmethodID method_id = env->GetMethodID(ClassRegistry::booleanClass, "booleanValue", "()Z");
-    jboolean value = env->CallBooleanMethod(object, method_id);
+    jboolean value = env->CallBooleanMethod(object, ClassRegistry::booleanValueMethodID);
     return static_cast<bool>(value);
 }
 
@@ -39,8 +36,7 @@ float type::getFloatValue(
     if (!env->IsInstanceOf(object, ClassRegistry::floatClass)) {
         throw std::runtime_error("The given object is not of type Float.");
     }
-    jmethodID method_id = env->GetMethodID(ClassRegistry::floatClass, "floatValue", "()F");
-    jfloat value = env->CallFloatMethod(object, method_id);
+    jfloat value = env->CallFloatMethod(object, ClassRegistry::floatValueMethodID);
     return static_cast<float>(value);
 }
 

@@ -5,25 +5,25 @@
 #pragma once
 
 #include <jni.h>
+#include <webp/encode.h>
 #include <webp/mux.h>
 
 #include "result_codes.h"
 
 class WebPAnimationEncoder {
 private:
-    static inline JavaVM *jvm = nullptr;
+    inline static JavaVM *jvm = nullptr;
     inline static jweak progressObserver = nullptr;
     inline static bool cancelFlag = false;
 
     int imageWidth;
     int imageHeight;
-    WebPAnimEncoderOptions encoderOptions{};
     int frameCount;
+    WebPAnimEncoderOptions encoderOptions{};
     WebPAnimEncoder *webPAnimEncoder;
     WebPConfig webPConfig{};
 
 public:
-
     /**
      * Constructs a new instance of the WebPAnimationEncoder class with the specified width, height, and options.
      *
@@ -83,19 +83,9 @@ public:
             jobject joptions
     );
 
-    static void nativeConfigure(
-            JNIEnv *env,
-            jobject thiz,
-            jobject jconfig,
-            jobject jpreset
-    );
+    static void nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig, jobject jpreset);
 
-    static void nativeAddFrame(
-            JNIEnv *env,
-            jobject thiz,
-            jlong jtimestamp,
-            jobject jsrc_bitmap
-    );
+    static void nativeAddFrame(JNIEnv *env, jobject thiz, jlong jtimestamp, jobject jsrc_bitmap);
 
     static void nativeAssemble(
             JNIEnv *env,
@@ -105,13 +95,7 @@ public:
             jobject jdst_uri
     );
 
-    static void nativeCancel(
-            JNIEnv *env,
-            jobject thiz
-    );
+    static void nativeCancel(JNIEnv *env, jobject thiz);
 
-    static void nativeRelease(
-            JNIEnv *env,
-            jobject thiz
-    );
+    static void nativeRelease(JNIEnv *env, jobject thiz);
 };

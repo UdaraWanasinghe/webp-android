@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <string>
+#include <utility>
 #include <jni.h>
+
 #include "result_codes.h"
 
-namespace files {
-
+namespace file {
     /**
      * Retrieves the file descriptor associated with the Android Uri.
      * The Uri could be a content provider Uri, file Uri or an Android resource Uri.
@@ -117,5 +119,4 @@ namespace files {
             int name_character_count,
             char name_repeat_character
     );
-
 }

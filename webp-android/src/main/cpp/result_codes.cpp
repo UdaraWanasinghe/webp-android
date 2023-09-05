@@ -2,12 +2,10 @@
 // Created by udara on 6/17/23.
 //
 
-#include <string>
-
 #include "include/result_codes.h"
 #include "include/exception_helper.h"
 
-std::string result::parseMessage(ResultCode result_code) {
+std::string res::parseMessage(ResultCode result_code) {
     switch (result_code) {
         case RESULT_SUCCESS:
             return "Operation success";
@@ -82,18 +80,18 @@ std::string result::parseMessage(ResultCode result_code) {
     }
 }
 
-void result::handleResult(JNIEnv *env, ResultCode result) {
+void res::handleResult(JNIEnv *env, ResultCode result) {
     if (result != RESULT_SUCCESS) {
         std::string message = parseMessage(result);
         if (result == ERROR_USER_ABORT) {
-            throwCancellationException(env, message.c_str());
+            exc::throwCancellationException(env, message.c_str());
         } else {
-            throwRuntimeException(env, message.c_str());
+            exc::throwRuntimeException(env, message.c_str());
         }
     }
 }
 
-ResultCode result::encodingErrorToResultCode(WebPEncodingError error_code) {
+ResultCode res::encodingErrorToResultCode(WebPEncodingError error_code) {
     switch (error_code) {
         case VP8_ENC_OK:
             return RESULT_SUCCESS;

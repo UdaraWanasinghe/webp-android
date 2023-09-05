@@ -2,19 +2,13 @@
 // Created by udara on 11/5/21.
 //
 
-#include <fstream>
-#include <sstream>
-#include <utility>
-#include <webp/demux.h>
-#include <android/bitmap.h>
-
 #include "include/webp_decoder.h"
 #include "include/native_loader.h"
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
 #include "include/type_helper.h"
 
-void WebPDecoder::configure(DecoderConfig config) {
+void WebPDecoder::configure(dec::DecoderConfig config) {
     decoderConfig = std::move(config);
 }
 
@@ -100,11 +94,11 @@ ResultCode WebPDecoder::processFrame(
             );
         } else {
             auto decoder_config = decoder->decoderConfig;
-            std::string image_name_suffix = decoder::getImageNameSuffix(
+            std::string image_name_suffix = dec::getImageNameSuffix(
                     decoder_config.compressFormatOrdinal
             );
             // save bitmap to dst uri
-            auto name_result = files::generateFileName(
+            auto name_result = file::generateFileName(
                     env,
                     jcontext,
                     jdst_uri,
@@ -257,7 +251,7 @@ ResultCode WebPDecoder::decode(
 ) {
     uint8_t *file_data = nullptr;
     size_t file_size = 0;
-    auto read_result = files::readFromUri(
+    auto read_result = file::readFromUri(
             env,
             jcontext,
             jsrc_uri,
@@ -311,7 +305,7 @@ jlong WebPDecoder::nativeCreate(JNIEnv *, jobject) {
 }
 
 void WebPDecoder::nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig) {
-    auto decoder_config = decoder::parseDecoderConfig(env, jconfig);
+    auto decoder_config = dec::parseDecoderConfig(env, jconfig);
     auto *decoder = WebPDecoder::getInstance(env, thiz);
     ResultCode result = RESULT_SUCCESS;
     if (decoder == nullptr) {
@@ -319,7 +313,7 @@ void WebPDecoder::nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig) {
     } else {
         decoder->configure(decoder_config);
     }
-    result::handleResult(env, result);
+    res::handleResult(env, result);
 }
 
 void WebPDecoder::nativeDecodeFrames(
@@ -330,7 +324,7 @@ void WebPDecoder::nativeDecodeFrames(
         jobject jdst_uri
 ) {
     ResultCode result = decode(env, thiz, jcontext, jsrc_uri, jdst_uri);
-    result::handleResult(env, result);
+    res::handleResult(env, result);
 }
 
 jobject WebPDecoder::nativeDecodeInfo(JNIEnv *env, jobject, jobject jcontext, jobject jsrc_uri) {
@@ -339,7 +333,7 @@ jobject WebPDecoder::nativeDecodeInfo(JNIEnv *env, jobject, jobject jcontext, jo
     // read file data
     uint8_t *file_data = nullptr;
     size_t file_size = 0;
-    auto read_result = files::readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
+    auto read_result = file::readFromUri(env, jcontext, jsrc_uri, &file_data, &file_size);
 
     ResultCode result = read_result.first;
 
@@ -376,7 +370,7 @@ jobject WebPDecoder::nativeDecodeInfo(JNIEnv *env, jobject, jobject jcontext, jo
         file_data = nullptr;
     }
 
-    result::handleResult(env, result);
+    res::handleResult(env, result);
     return jinfo;
 }
 
@@ -391,7 +385,7 @@ void WebPDecoder::nativeRelease(JNIEnv *env, jobject thiz) {
     delete decoder;
 }
 
-namespace decoder {
+namespace dec {
     DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig) {
         // image name name_prefix
         jfieldID prefix_field_id = env->GetFieldID(

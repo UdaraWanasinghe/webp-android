@@ -7,7 +7,6 @@
 #include <string>
 
 namespace str {
-
     /**
      * Formats a string based on a format string and variable arguments.
      *
@@ -24,5 +23,4 @@ namespace str {
      *       It is important to ensure that the format string and the additional arguments are properly matched to avoid undefined behavior or runtime errors.
      */
     std::string formatString(const char *format, ...);
-
 }

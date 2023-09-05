@@ -2,12 +2,13 @@
 // Created by udara on 6/5/23.
 //
 
+#include <stdexcept>
+
 #include "include/encoder_helper.h"
-#include "include/exception_helper.h"
 #include "include/type_helper.h"
 #include "include/native_loader.h"
 
-WebPPreset encoder::parseWebPPreset(JNIEnv *env, jobject jpreset) {
+WebPPreset enc::parseWebPPreset(JNIEnv *env, jobject jpreset) {
     // check instance
     if (!env->IsInstanceOf(jpreset, ClassRegistry::webPPresetClass)) {
         throw std::runtime_error("Given preset object is not of type WebPPreset");
@@ -20,7 +21,7 @@ WebPPreset encoder::parseWebPPreset(JNIEnv *env, jobject jpreset) {
     return WebPPreset(ordinal);
 }
 
-void encoder::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
+void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     // lossless
     jobject lossless = type::getObjectField(env, jconfig, "lossless", "Ljava/lang/Integer;");
     if (!type::isObjectNull(env, lossless)) {
@@ -275,7 +276,7 @@ void encoder::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) 
 
 }
 
-float encoder::parseWebPQuality(JNIEnv *env, jobject jconfig) {
+float enc::parseWebPQuality(JNIEnv *env, jobject jconfig) {
     jfieldID quality_field_id = env->GetFieldID(
             ClassRegistry::webPConfigClass,
             "quality",
@@ -292,7 +293,7 @@ float encoder::parseWebPQuality(JNIEnv *env, jobject jconfig) {
     return quality;
 }
 
-void encoder::parseEncoderOptions(
+void enc::parseEncoderOptions(
         JNIEnv *env,
         jobject joptions,
         WebPAnimEncoderOptions *options
@@ -376,7 +377,7 @@ void encoder::parseEncoderOptions(
     options->anim_params = params;
 }
 
-void encoder::copyPixels(
+void enc::copyPixels(
         const uint8_t *src,
         WebPPicture *pic
 ) {

@@ -2,8 +2,6 @@
 // Created by udara on 9/3/23.
 //
 
-#include <jni.h>
-
 #include "include/native_loader.h"
 #include "include/webp_encoder.h"
 #include "include/webp_anim_encoder.h"
@@ -118,6 +116,9 @@ void ClassRegistry::initialize(JNIEnv *env) {
     );
 
     // methods
+    booleanValueMethodID = getMethodID(env, booleanClass, "booleanValue", "()Z");
+    integerValueMethodID = getMethodID(env, integerClass, "intValue", "()I");
+    floatValueMethodID = getMethodID(env, floatClass, "floatValue", "()F");
     encoderNotifyProgressMethodID = getMethodID(
             env,
             encoderClass,
@@ -166,6 +167,48 @@ void ClassRegistry::initialize(JNIEnv *env) {
             bitmapClass,
             "recycle",
             "()V"
+    );
+    contextGetContentResolverMethodID = getMethodID(
+            env,
+            contextClass,
+            "getContentResolver",
+            "()Landroid/content/ContentResolver;"
+    );
+    contentResolverOpenFileDescriptorMethodID = getMethodID(
+            env,
+            contentResolverClass,
+            "openFileDescriptor",
+            "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
+    );
+    parcelFileDescriptorGetFdMethodID = getMethodID(
+            env,
+            parcelFileDescriptorClass,
+            "getFd",
+            "()I"
+    );
+    parcelFileDescriptorCloseMethodID = getMethodID(
+            env,
+            parcelFileDescriptorClass,
+            "close",
+            "()V"
+    );
+    parcelFileDescriptorCloseWithErrorMethodID = getMethodID(
+            env,
+            parcelFileDescriptorClass,
+            "closeWithError",
+            "(Ljava/lang/String;)V"
+    );
+    uriExtensionsReadToBufferMethodID = getStaticMethodID(
+            env,
+            uriExtensionsClass,
+            "readToBuffer",
+            "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
+    );
+    uriExtensionsFileExistsMethodID = getStaticMethodID(
+            env,
+            uriExtensionsClass,
+            "fileExists",
+            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
     );
 }
 

@@ -50,7 +50,17 @@ public:
     inline static jmethodID bitmapCreateScaledMethodID = nullptr;
     inline static jmethodID bitmapUtilsSaveInDirectoryMethodID = nullptr;
     inline static jmethodID bitmapRecycleMethodID = nullptr;
-
+    inline static jmethodID contextGetContentResolverMethodID = nullptr;
+    inline static jmethodID contentResolverOpenFileDescriptorMethodID = nullptr;
+    inline static jmethodID parcelFileDescriptorGetFdMethodID = nullptr;
+    inline static jmethodID parcelFileDescriptorCloseMethodID = nullptr;
+    inline static jmethodID parcelFileDescriptorCloseWithErrorMethodID = nullptr;
+    inline static jmethodID uriExtensionsReadToBufferMethodID = nullptr;
+    inline static jmethodID uriExtensionsFileExistsMethodID = nullptr;
+    inline static jmethodID booleanValueMethodID = nullptr;
+    inline static jmethodID integerValueMethodID = nullptr;
+    inline static jmethodID floatValueMethodID = nullptr;
+    
     static void initialize(JNIEnv *env);
 
     static void release(JNIEnv *env);

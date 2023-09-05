@@ -7,7 +7,6 @@
 #include <jni.h>
 
 namespace type {
-
     /**
      * @brief Retrieves the integer value from a Java object.
      *

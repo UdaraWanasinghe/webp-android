@@ -3,12 +3,9 @@
 //
 
 #include <stdexcept>
-#include <android/log.h>
 #include <android/bitmap.h>
 
 #include "include/bitmap_utils.h"
-#include "include/exception_helper.h"
-#include "include/result_codes.h"
 #include "include/native_loader.h"
 
 jobject bmp::createBitmap(

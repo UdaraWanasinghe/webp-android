@@ -2,18 +2,14 @@
 // Created by udara on 6/4/23.
 //
 
-#include <jni.h>
 #include <android/bitmap.h>
-#include <webp/encode.h>
 
 #include "include/webp_encoder.h"
-#include "include/exception_helper.h"
+#include "include/native_loader.h"
 #include "include/type_helper.h"
 #include "include/encoder_helper.h"
 #include "include/bitmap_utils.h"
 #include "include/file_utils.h"
-#include "include/result_codes.h"
-#include "include/native_loader.h"
 
 WebPEncoder::WebPEncoder(int width, int height) {
     this->imageWidth = width;
@@ -48,7 +44,7 @@ ResultCode WebPEncoder::encode(
                 // WebPPictureImportRGB(), which will take care of memory allocation.
                 // In any case, past this point, one will have to call
                 // WebPPictureFree(&pic) to reclaim memory.
-                encoder::copyPixels(pixels, &pic);
+                enc::copyPixels(pixels, &pic);
 
                 // set progress hook
                 pic.progress_hook = &notifyProgressChanged;
@@ -69,7 +65,7 @@ ResultCode WebPEncoder::encode(
                     *webp_data = wtr.mem;
                     *webp_size = wtr.size;
                 } else {
-                    result = result::encodingErrorToResultCode(pic.error_code);
+                    result = res::encodingErrorToResultCode(pic.error_code);
                 }
 
                 // Release resources.
@@ -171,16 +167,16 @@ void WebPEncoder::nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig, jo
             if (is_config_null) {
                 quality = 70.0f;
             } else {
-                quality = encoder::parseWebPQuality(env, jconfig);
+                quality = enc::parseWebPQuality(env, jconfig);
             }
-            WebPPreset preset = encoder::parseWebPPreset(env, jpreset);
+            WebPPreset preset = enc::parseWebPPreset(env, jpreset);
             if (!WebPConfigPreset(&config, preset, quality)) {
                 result = ERROR_INVALID_WEBP_CONFIG;
             }
         }
         if (result == RESULT_SUCCESS) {
             if (!is_config_null) {
-                encoder::applyWebPConfig(env, jconfig, &config);
+                enc::applyWebPConfig(env, jconfig, &config);
             }
             if (WebPValidateConfig(&config)) {
                 auto *encoder = WebPEncoder::getInstance(env, thiz);
@@ -196,7 +192,7 @@ void WebPEncoder::nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig, jo
     } else {
         result = ERROR_VERSION_MISMATCH;
     }
-    result::handleResult(env, result);
+    res::handleResult(env, result);
 }
 
 void WebPEncoder::nativeEncode(
@@ -264,7 +260,7 @@ void WebPEncoder::nativeEncode(
                     &webp_size
             );
             if (result == RESULT_SUCCESS) {
-                result = files::writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
+                result = file::writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
                 WebPFree((void *) webp_data);
                 webp_data = nullptr;
             }
@@ -281,7 +277,7 @@ void WebPEncoder::nativeEncode(
         env->DeleteLocalRef(jsrc_bitmap);
     }
 
-    result::handleResult(env, result);
+    res::handleResult(env, result);
 }
 
 void WebPEncoder::nativeCancel(JNIEnv *, jobject) {

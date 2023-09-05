@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <jni.h>
 #include <string>
+#include <jni.h>
 #include <webp/encode.h>
 
 enum ResultCode {
@@ -46,12 +46,10 @@ enum ResultCode {
     ERROR_LAST
 };
 
-namespace result {
-
+namespace res {
     std::string parseMessage(ResultCode result_code);
 
     void handleResult(JNIEnv *env, ResultCode result);
 
     ResultCode encodingErrorToResultCode(WebPEncodingError error_code);
-
 }

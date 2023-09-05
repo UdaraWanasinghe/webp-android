@@ -4,21 +4,21 @@
 
 #pragma once
 
+#include <string>
 #include <jni.h>
-#include <webp/decode.h>
 #include <webp/demux.h>
 
 #include "result_codes.h"
 
-struct DecoderConfig {
-    std::string namePrefix = "IMG_";
-    char repeatCharacter = '0';
-    int repeatCharacterCount = 4;
-    int compressFormatOrdinal = 1;
-    int compressQuality = 100;
-};
+namespace dec {
+    struct DecoderConfig {
+        std::string namePrefix = "IMG_";
+        char repeatCharacter = '0';
+        int repeatCharacterCount = 4;
+        int compressFormatOrdinal = 1;
+        int compressQuality = 100;
+    };
 
-namespace decoder {
     DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig);
 
     std::string getImageNameSuffix(int compress_format_ordinal);
@@ -28,19 +28,13 @@ class WebPDecoder {
 private:
     inline static bool cancelFlag = false;
 
-    DecoderConfig decoderConfig{};
+    dec::DecoderConfig decoderConfig{};
 
-    void configure(DecoderConfig config);
+    void configure(dec::DecoderConfig config);
 
-    static WebPDecoder *getInstance(
-            JNIEnv *env,
-            jobject jdecoder
-    );
+    static WebPDecoder *getInstance(JNIEnv *env, jobject jdecoder);
 
-    static jobject decodeInfo(
-            JNIEnv *env,
-            const WebPBitstreamFeatures &features
-    );
+    static jobject decodeInfo(JNIEnv *env, const WebPBitstreamFeatures &features);
 
     static jobject decodeAnimInfo(
             JNIEnv *env,
@@ -87,23 +81,12 @@ private:
             jobject jdst_uri
     );
 
-    static ResultCode notifyInfoDecoded(
-            JNIEnv *env,
-            jobject jdecoder,
-            jobject jinfo
-    );
+    static ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo);
 
 public:
-    static jlong nativeCreate(
-            JNIEnv *env,
-            jobject thiz
-    );
+    static jlong nativeCreate(JNIEnv *env, jobject thiz);
 
-    static void nativeConfigure(
-            JNIEnv *env,
-            jobject thiz,
-            jobject jconfig
-    );
+    static void nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig);
 
     static void nativeDecodeFrames(
             JNIEnv *env,
@@ -113,20 +96,9 @@ public:
             jobject jdst_uri
     );
 
-    static jobject nativeDecodeInfo(
-            JNIEnv *env,
-            jobject thiz,
-            jobject jcontext,
-            jobject jsrc_uri
-    );
+    static jobject nativeDecodeInfo(JNIEnv *env, jobject thiz, jobject jcontext, jobject jsrc_uri);
 
-    static void nativeCancel(
-            JNIEnv *env,
-            jobject thiz
-    );
+    static void nativeCancel(JNIEnv *env, jobject thiz);
 
-    static void nativeRelease(
-            JNIEnv *env,
-            jobject thiz
-    );
+    static void nativeRelease(JNIEnv *env, jobject thiz);
 };

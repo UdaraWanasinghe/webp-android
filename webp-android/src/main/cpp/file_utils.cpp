@@ -2,42 +2,29 @@
 // Created by udara on 6/8/23.
 //
 
-#include <jni.h>
-#include <stdexcept>
-#include <string>
+#include <tuple>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <sstream>
-#include <fstream>
+#include <iomanip>
 
 #include "include/file_utils.h"
-#include "include/exception_helper.h"
-#include "include/string_formatter.h"
-#include "include/result_codes.h"
-#include "include/type_helper.h"
 #include "include/native_loader.h"
+#include "include/type_helper.h"
 
-std::pair<int, jobject> files::openFileDescriptor(
+std::pair<int, jobject> file::openFileDescriptor(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         const char *mode
 ) {
-    jmethodID get_content_resolver_method_id = env->GetMethodID(
-            ClassRegistry::contextClass,
-            "getContentResolver",
-            "()Landroid/content/ContentResolver;"
-    );
-    jobject jcontent_resolver = env->CallObjectMethod(jcontext, get_content_resolver_method_id);
-    jmethodID open_file_descriptor_method_id = env->GetMethodID(
-            ClassRegistry::contentResolverClass,
-            "openFileDescriptor",
-            "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
+    jobject jcontent_resolver = env->CallObjectMethod(
+            jcontext,
+            ClassRegistry::contextGetContentResolverMethodID
     );
     jstring jread_mode = env->NewStringUTF(mode);
     jobject jparcel_fd = env->CallObjectMethod(
             jcontent_resolver,
-            open_file_descriptor_method_id,
+            ClassRegistry::contentResolverOpenFileDescriptorMethodID,
             juri,
             jread_mode
     );
@@ -49,43 +36,32 @@ std::pair<int, jobject> files::openFileDescriptor(
         fd = -1;
     }
     if (fd == 0) {
-        jmethodID get_fd_method_id = env->GetMethodID(
-                ClassRegistry::parcelFileDescriptorClass,
-                "getFd",
-                "()I"
-        );
-        fd = env->CallIntMethod(jparcel_fd, get_fd_method_id);
+        fd = env->CallIntMethod(jparcel_fd, ClassRegistry::parcelFileDescriptorGetFdMethodID);
     }
     env->DeleteLocalRef(jcontent_resolver);
     env->DeleteLocalRef(jread_mode);
     return std::make_pair(fd, jparcel_fd);
 }
 
-void files::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
-    jmethodID close_method_id = env->GetMethodID(
-            ClassRegistry::parcelFileDescriptorClass,
-            "close",
-            "()V"
-    );
-    env->CallVoidMethod(jparcel_fd, close_method_id);
+void file::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
+    env->CallVoidMethod(jparcel_fd, ClassRegistry::parcelFileDescriptorCloseMethodID);
 }
 
-void files::closeFileDescriptorWithError(
+void file::closeFileDescriptorWithError(
         JNIEnv *env,
         jobject jparcel_fd,
         const std::string &error
 ) {
-    jmethodID close_with_error_method_id = env->GetMethodID(
-            ClassRegistry::parcelFileDescriptorClass,
-            "closeWithError",
-            "(Ljava/lang/String;)V"
-    );
     jstring jerror = env->NewStringUTF(error.c_str());
-    env->CallVoidMethod(jparcel_fd, close_with_error_method_id, jerror);
+    env->CallVoidMethod(
+            jparcel_fd,
+            ClassRegistry::parcelFileDescriptorCloseWithErrorMethodID,
+            jerror
+    );
     env->DeleteLocalRef(jerror);
 }
 
-std::pair<ResultCode, jobject> files::readFromUri(
+std::pair<ResultCode, jobject> file::readFromUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
@@ -93,15 +69,9 @@ std::pair<ResultCode, jobject> files::readFromUri(
         size_t *const file_size
 ) {
     std::pair<ResultCode, jobject> ret;
-
-    jmethodID read_bytes_method_id = env->GetStaticMethodID(
-            ClassRegistry::uriExtensionsClass,
-            "readToBuffer",
-            "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
-    );
     jobject jbyte_buffer = env->CallStaticObjectMethod(
             ClassRegistry::uriExtensionsClass,
-            read_bytes_method_id,
+            ClassRegistry::uriExtensionsReadToBufferMethodID,
             juri,
             jcontext
     );
@@ -116,7 +86,7 @@ std::pair<ResultCode, jobject> files::readFromUri(
     return ret;
 }
 
-ResultCode files::writeToUri(
+ResultCode file::writeToUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
@@ -143,7 +113,7 @@ ResultCode files::writeToUri(
 
     if (fd != -1) {
         if (result == RESULT_SUCCESS) {
-            files::closeFileDescriptor(env, jparcel_fd);
+            file::closeFileDescriptor(env, jparcel_fd);
         } else {
             closeFileDescriptorWithError(
                     env,
@@ -157,21 +127,16 @@ ResultCode files::writeToUri(
     return result;
 }
 
-ResultCode files::fileExists(
+ResultCode file::fileExists(
         JNIEnv *env,
         jobject jcontext,
         jobject jdirectory_uri,
         const std::string &file_name
 ) {
-    jmethodID file_exists_method_id = env->GetStaticMethodID(
-            ClassRegistry::uriExtensionsClass,
-            "fileExists",
-            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
-    );
     jstring jfile_name = env->NewStringUTF(file_name.c_str());
     jboolean jexists = env->CallStaticBooleanMethod(
             ClassRegistry::uriExtensionsClass,
-            file_exists_method_id,
+            ClassRegistry::uriExtensionsFileExistsMethodID,
             jdirectory_uri,
             jcontext,
             jfile_name
@@ -186,7 +151,7 @@ ResultCode files::fileExists(
     return result;
 }
 
-std::pair<bool, std::string> files::generateFileName(
+std::pair<bool, std::string> file::generateFileName(
         JNIEnv *env,
         jobject jcontext,
         jobject jdirectory_uri,
@@ -205,7 +170,7 @@ std::pair<bool, std::string> files::generateFileName(
            << std::setw(name_character_count)
            << counter++
            << name_suffix;
-        int exists = files::fileExists(env, jcontext, jdirectory_uri, ss.str());
+        int exists = file::fileExists(env, jcontext, jdirectory_uri, ss.str());
         if (exists == RESULT_FILE_NOT_FOUND) {
             result = std::pair(true, ss.str());
             break;
