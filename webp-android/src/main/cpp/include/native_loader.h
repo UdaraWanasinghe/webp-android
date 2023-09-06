@@ -6,68 +6,129 @@
 
 #include <jni.h>
 
+#include <functional>
+
+template<typename T>
+class Lazy {
+protected:
+    std::function<T(JNIEnv *)> initializer;
+    T value;
+
+public:
+    Lazy(std::function<T(JNIEnv *)> init) : initializer(init), value(nullptr) {}
+
+    T get(JNIEnv *env) {
+        if (value == nullptr) {
+            value = initializer(env);
+        }
+        return value;
+    }
+
+    virtual void reset(JNIEnv *env) {
+        value = nullptr;
+    }
+};
+
 class ClassRegistry {
 public:
-    inline static jclass booleanClass = nullptr;
-    inline static jclass integerClass = nullptr;
-    inline static jclass floatClass = nullptr;
-    inline static jclass encoderClass = nullptr;
-    inline static jclass animEncoderClass = nullptr;
-    inline static jclass webPConfigClass = nullptr;
-    inline static jclass decoderClass = nullptr;
-    inline static jclass decoderConfigClass = nullptr;
-    inline static jclass webPInfoClass = nullptr;
-    inline static jclass bitmapClass = nullptr;
-    inline static jclass bitmapConfigClass = nullptr;
-    inline static jclass bitmapUtilsClass = nullptr;
-    inline static jclass bitmapCompressFormatClass = nullptr;
-    inline static jclass webPPresetClass = nullptr;
-    inline static jclass runtimeExceptionClass = nullptr;
-    inline static jclass cancellationExceptionClass = nullptr;
-    inline static jclass parcelFileDescriptorClass = nullptr;
-    inline static jclass uriClass = nullptr;
-    inline static jclass uriExtensionsClass = nullptr;
-    inline static jclass contextClass = nullptr;
-    inline static jclass contentResolverClass = nullptr;
 
-    inline static jfieldID encoderPointerFieldID = nullptr;
-    inline static jfieldID animEncoderPointerFieldID = nullptr;
-    inline static jfieldID decoderPointerFieldID = nullptr;
-    inline static jfieldID uriEmptyFieldID = nullptr;
-    inline static jfieldID bitmapConfigARGB8888FieldID = nullptr;
-    inline static jfieldID compressFormatJPEGFieldID = nullptr;
-    inline static jfieldID compressFormatPNGFieldID = nullptr;
-    inline static jfieldID compressFormatWEBPFieldID = nullptr;
-    inline static jfieldID compressFormatWEBPLossyFieldID = nullptr;
-    inline static jfieldID compressFormatWEBPLosslessFieldID = nullptr;
-    inline static jfieldID decoderConfigNamePrefixFieldID = nullptr;
-    inline static jfieldID decoderConfigRepeatCharacterFieldID = nullptr;
-    inline static jfieldID decoderConfigRepeatCharacterCountFieldID = nullptr;
-    inline static jfieldID decoderConfigCompressFormatFieldID = nullptr;
-    inline static jfieldID decoderConfigCompressQualityFieldID = nullptr;
+    static Lazy<jclass> booleanClass;
+    static Lazy<jclass> integerClass;
+    static Lazy<jclass> floatClass;
+    static Lazy<jclass> webPEncoderClass;
+    static Lazy<jclass> webPAnimEncoderClass;
+    static Lazy<jclass> webPConfigClass;
+    static Lazy<jclass> webPDecoderClass;
+    static Lazy<jclass> webPDecoderConfigClass;
+    static Lazy<jclass> webPInfoClass;
+    static Lazy<jclass> bitmapClass;
+    static Lazy<jclass> bitmapConfigClass;
+    static Lazy<jclass> bitmapUtilsClass;
+    static Lazy<jclass> bitmapCompressFormatClass;
+    static Lazy<jclass> webPPresetClass;
+    static Lazy<jclass> runtimeExceptionClass;
+    static Lazy<jclass> cancellationExceptionClass;
+    static Lazy<jclass> parcelFileDescriptorClass;
+    static Lazy<jclass> uriClass;
+    static Lazy<jclass> uriExtensionsClass;
+    static Lazy<jclass> contextClass;
+    static Lazy<jclass> contentResolverClass;
+    static Lazy<jclass> webPAnimEncoderOptionsClass;
+    static Lazy<jclass> webPMuxAnimParamsClass;
 
-    inline static jmethodID encoderNotifyProgressMethodID = nullptr;
-    inline static jmethodID animEncoderNotifyProgressMethodID = nullptr;
-    inline static jmethodID webPInfoConstructorID = nullptr;
-    inline static jmethodID decoderNotifyInfoDecodedMethodID = nullptr;
-    inline static jmethodID decoderNotifyFrameDecodedMethodID = nullptr;
-    inline static jmethodID bitmapCreateMethodID = nullptr;
-    inline static jmethodID bitmapCreateScaledMethodID = nullptr;
-    inline static jmethodID bitmapUtilsSaveInDirectoryMethodID = nullptr;
-    inline static jmethodID bitmapRecycleMethodID = nullptr;
-    inline static jmethodID contextGetContentResolverMethodID = nullptr;
-    inline static jmethodID contentResolverOpenFileDescriptorMethodID = nullptr;
-    inline static jmethodID parcelFileDescriptorGetFdMethodID = nullptr;
-    inline static jmethodID parcelFileDescriptorCloseMethodID = nullptr;
-    inline static jmethodID parcelFileDescriptorCloseWithErrorMethodID = nullptr;
-    inline static jmethodID uriExtensionsReadToBufferMethodID = nullptr;
-    inline static jmethodID uriExtensionsFileExistsMethodID = nullptr;
-    inline static jmethodID booleanValueMethodID = nullptr;
-    inline static jmethodID integerValueMethodID = nullptr;
-    inline static jmethodID floatValueMethodID = nullptr;
-    inline static jmethodID bitmapCompressFormatOrdinalMethodID = nullptr;
+    static Lazy<jfieldID> encoderPointerFieldID;
+    static Lazy<jfieldID> webPAnimEncoderPointerFieldID;
+    static Lazy<jfieldID> webPDecoderPointerFieldID;
+    static Lazy<jfieldID> uriEmptyFieldID;
+    static Lazy<jfieldID> bitmapConfigARGB8888FieldID;
+    static Lazy<jfieldID> compressFormatJPEGFieldID;
+    static Lazy<jfieldID> compressFormatPNGFieldID;
+    static Lazy<jfieldID> compressFormatWEBPFieldID;
+    static Lazy<jfieldID> compressFormatWEBPLossyFieldID;
+    static Lazy<jfieldID> compressFormatWEBPLosslessFieldID;
+    static Lazy<jfieldID> decoderConfigNamePrefixFieldID;
+    static Lazy<jfieldID> decoderConfigRepeatCharacterFieldID;
+    static Lazy<jfieldID> decoderConfigRepeatCharacterCountFieldID;
+    static Lazy<jfieldID> decoderConfigCompressFormatFieldID;
+    static Lazy<jfieldID> decoderConfigCompressQualityFieldID;
+    static Lazy<jfieldID> webPConfigLosslessFieldID;
+    static Lazy<jfieldID> webPConfigQualityFieldID;
+    static Lazy<jfieldID> webPConfigMethodFieldID;
+    static Lazy<jfieldID> webPConfigTargetSizeFieldID;
+    static Lazy<jfieldID> webPConfigTargetPSNRFieldID;
+    static Lazy<jfieldID> webPConfigSegmentsFieldID;
+    static Lazy<jfieldID> webPConfigSnsStrengthFieldID;
+    static Lazy<jfieldID> webPConfigFilterStrengthFieldID;
+    static Lazy<jfieldID> webPConfigFilterSharpnessFieldID;
+    static Lazy<jfieldID> webPConfigFilterTypeFieldID;
+    static Lazy<jfieldID> webPConfigAutoFilterFieldID;
+    static Lazy<jfieldID> webPConfigAlphaCompressionFieldID;
+    static Lazy<jfieldID> webPConfigAlphaFilteringFieldID;
+    static Lazy<jfieldID> webPConfigAlphaQualityFieldID;
+    static Lazy<jfieldID> webPConfigPassFieldID;
+    static Lazy<jfieldID> webPConfigShowCompressedFieldID;
+    static Lazy<jfieldID> webPConfigPreprocessingFieldID;
+    static Lazy<jfieldID> webPConfigPartitionsFieldID;
+    static Lazy<jfieldID> webPConfigPartitionLimitFieldID;
+    static Lazy<jfieldID> webPConfigEmulateJPEGSizeFieldID;
+    static Lazy<jfieldID> webPConfigThreadLevelFieldID;
+    static Lazy<jfieldID> webPConfigLowMemoryFieldID;
+    static Lazy<jfieldID> webPConfigNearLosslessFieldID;
+    static Lazy<jfieldID> webPConfigExactFieldID;
+    static Lazy<jfieldID> webPConfigUseDeltaPaletteFieldID;
+    static Lazy<jfieldID> webPConfigUseSharpYUVFieldID;
+    static Lazy<jfieldID> webPConfigQMinFieldID;
+    static Lazy<jfieldID> webPConfigQMaxFieldID;
+    static Lazy<jfieldID> webPAnimEncoderOptionsMinimizeSizeFieldID;
+    static Lazy<jfieldID> webPAnimEncoderOptionsKMinFieldID;
+    static Lazy<jfieldID> webPAnimEncoderOptionsKMaxFieldID;
+    static Lazy<jfieldID> webPAnimEncoderOptionsAllowMixedFieldID;
+    static Lazy<jfieldID> webPAnimEncoderOptionsVerboseFieldID;
+    static Lazy<jfieldID> webPAnimEncoderOptionsAnimParamsFieldID;
+    static Lazy<jfieldID> webPMuxAnimParamsBgColorFieldID;
+    static Lazy<jfieldID> webPMuxAnimParamsLoopCountFieldID;
+    static Lazy<jfieldID> webPPresetOrdinalFieldID;
 
-    static void initialize(JNIEnv *env);
+    static Lazy<jmethodID> encoderNotifyProgressMethodID;
+    static Lazy<jmethodID> animEncoderNotifyProgressMethodID;
+    static Lazy<jmethodID> webPInfoConstructorID;
+    static Lazy<jmethodID> decoderNotifyInfoDecodedMethodID;
+    static Lazy<jmethodID> decoderNotifyFrameDecodedMethodID;
+    static Lazy<jmethodID> bitmapCreateMethodID;
+    static Lazy<jmethodID> bitmapCreateScaledMethodID;
+    static Lazy<jmethodID> bitmapUtilsSaveInDirectoryMethodID;
+    static Lazy<jmethodID> bitmapRecycleMethodID;
+    static Lazy<jmethodID> contextGetContentResolverMethodID;
+    static Lazy<jmethodID> contentResolverOpenFileDescriptorMethodID;
+    static Lazy<jmethodID> parcelFileDescriptorGetFdMethodID;
+    static Lazy<jmethodID> parcelFileDescriptorCloseMethodID;
+    static Lazy<jmethodID> parcelFileDescriptorCloseWithErrorMethodID;
+    static Lazy<jmethodID> uriExtensionsReadToBufferMethodID;
+    static Lazy<jmethodID> uriExtensionsFileExistsMethodID;
+    static Lazy<jmethodID> booleanValueMethodID;
+    static Lazy<jmethodID> integerValueMethodID;
+    static Lazy<jmethodID> floatValueMethodID;
+    static Lazy<jmethodID> bitmapCompressFormatOrdinalMethodID;
 
     static void release(JNIEnv *env);
 };

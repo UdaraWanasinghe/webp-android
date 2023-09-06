@@ -89,8 +89,8 @@ void WebPEncoder::release() {
 
 WebPEncoder *WebPEncoder::getInstance(JNIEnv *env, jobject jencoder) {
     jlong native_pointer;
-    if (env->IsInstanceOf(jencoder, ClassRegistry::encoderClass) != 0) {
-        native_pointer = env->GetLongField(jencoder, ClassRegistry::encoderPointerFieldID);
+    if (env->IsInstanceOf(jencoder, ClassRegistry::webPEncoderClass.get(env)) != 0) {
+        native_pointer = env->GetLongField(jencoder, ClassRegistry::encoderPointerFieldID.get(env));
     } else {
         native_pointer = 0;
     }
@@ -131,7 +131,7 @@ int WebPEncoder::notifyProgressChanged(int percent, const WebPPicture *) {
     }
     jboolean continue_encoding = env->CallBooleanMethod(
             progressObserver,
-            ClassRegistry::encoderNotifyProgressMethodID,
+            ClassRegistry::encoderNotifyProgressMethodID.get(env),
             percent
     );
     // Detach current thread if attached
@@ -287,7 +287,7 @@ void WebPEncoder::nativeCancel(JNIEnv *, jobject) {
 void WebPEncoder::nativeRelease(JNIEnv *env, jobject thiz) {
     auto *encoder = WebPEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
-    env->SetLongField(thiz, ClassRegistry::encoderPointerFieldID, static_cast<jlong>(0));
+    env->SetLongField(thiz, ClassRegistry::encoderPointerFieldID.get(env), static_cast<jlong>(0));
     clearProgressNotifier(env);
     encoder->release();
     delete encoder;

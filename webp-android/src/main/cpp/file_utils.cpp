@@ -19,12 +19,12 @@ std::pair<int, jobject> file::openFileDescriptor(
 ) {
     jobject jcontent_resolver = env->CallObjectMethod(
             jcontext,
-            ClassRegistry::contextGetContentResolverMethodID
+            ClassRegistry::contextGetContentResolverMethodID.get(env)
     );
     jstring jread_mode = env->NewStringUTF(mode);
     jobject jparcel_fd = env->CallObjectMethod(
             jcontent_resolver,
-            ClassRegistry::contentResolverOpenFileDescriptorMethodID,
+            ClassRegistry::contentResolverOpenFileDescriptorMethodID.get(env),
             juri,
             jread_mode
     );
@@ -36,7 +36,8 @@ std::pair<int, jobject> file::openFileDescriptor(
         fd = -1;
     }
     if (fd == 0) {
-        fd = env->CallIntMethod(jparcel_fd, ClassRegistry::parcelFileDescriptorGetFdMethodID);
+        fd = env->CallIntMethod(jparcel_fd,
+                                ClassRegistry::parcelFileDescriptorGetFdMethodID.get(env));
     }
     env->DeleteLocalRef(jcontent_resolver);
     env->DeleteLocalRef(jread_mode);
@@ -44,7 +45,7 @@ std::pair<int, jobject> file::openFileDescriptor(
 }
 
 void file::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
-    env->CallVoidMethod(jparcel_fd, ClassRegistry::parcelFileDescriptorCloseMethodID);
+    env->CallVoidMethod(jparcel_fd, ClassRegistry::parcelFileDescriptorCloseMethodID.get(env));
 }
 
 void file::closeFileDescriptorWithError(
@@ -55,7 +56,7 @@ void file::closeFileDescriptorWithError(
     jstring jerror = env->NewStringUTF(error.c_str());
     env->CallVoidMethod(
             jparcel_fd,
-            ClassRegistry::parcelFileDescriptorCloseWithErrorMethodID,
+            ClassRegistry::parcelFileDescriptorCloseWithErrorMethodID.get(env),
             jerror
     );
     env->DeleteLocalRef(jerror);
@@ -70,8 +71,8 @@ std::pair<ResultCode, jobject> file::readFromUri(
 ) {
     std::pair<ResultCode, jobject> ret;
     jobject jbyte_buffer = env->CallStaticObjectMethod(
-            ClassRegistry::uriExtensionsClass,
-            ClassRegistry::uriExtensionsReadToBufferMethodID,
+            ClassRegistry::uriExtensionsClass.get(env),
+            ClassRegistry::uriExtensionsReadToBufferMethodID.get(env),
             juri,
             jcontext
     );
@@ -135,8 +136,8 @@ ResultCode file::fileExists(
 ) {
     jstring jfile_name = env->NewStringUTF(file_name.c_str());
     jboolean jexists = env->CallStaticBooleanMethod(
-            ClassRegistry::uriExtensionsClass,
-            ClassRegistry::uriExtensionsFileExistsMethodID,
+            ClassRegistry::uriExtensionsClass.get(env),
+            ClassRegistry::uriExtensionsFileExistsMethodID.get(env),
             jdirectory_uri,
             jcontext,
             jfile_name

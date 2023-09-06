@@ -7,269 +7,486 @@
 #include "include/webp_anim_encoder.h"
 #include "include/webp_decoder.h"
 
-namespace {
-    jclass getClass(JNIEnv *env, const char *name) {
+class LazyClass : public Lazy<jclass> {
+public:
+    LazyClass(const char *name) : Lazy([name](JNIEnv *env) {
         jclass clazz = env->FindClass(name);
         if (env->ExceptionCheck()) {
             env->ExceptionClear();
         }
         return static_cast<jclass>(env->NewGlobalRef(clazz));
+    }) {}
+
+    void reset(JNIEnv *env) override {
+        env->DeleteGlobalRef(value);
+        value = nullptr;
     }
+};
 
-    jfieldID getFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-        jfieldID fieldID = env->GetFieldID(clazz, name, sig);
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-        }
-        return fieldID;
-    }
+class LazyField : public Lazy<jfieldID> {
+public:
+    LazyField(Lazy<jclass> &clazz, const char *name, const char *sig) : Lazy(
+            [&clazz, name, sig](JNIEnv *env) {
+                jclass c = clazz.get(env);
+                jfieldID fieldID = env->GetFieldID(c, name, sig);
+                if (env->ExceptionCheck()) {
+                    env->ExceptionClear();
+                }
+                return fieldID;
+            }) {}
+};
 
-    jfieldID getStaticFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-        jfieldID fieldID = env->GetStaticFieldID(clazz, name, sig);
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-        }
-        return fieldID;
-    }
+class LazyStaticField : public Lazy<jfieldID> {
+public:
+    LazyStaticField(Lazy<jclass> &clazz, const char *name, const char *sig) : Lazy(
+            [&clazz, name, sig](JNIEnv *env) {
+                jclass c = clazz.get(env);
+                jfieldID fieldID = env->GetStaticFieldID(c, name, sig);
+                if (env->ExceptionCheck()) {
+                    env->ExceptionClear();
+                }
+                return fieldID;
+            }) {}
+};
 
-    jmethodID getMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-        jmethodID methodID = env->GetMethodID(clazz, name, sig);
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-        }
-        return methodID;
-    }
+class LazyMethod : public Lazy<jmethodID> {
+public:
+    LazyMethod(Lazy<jclass> &clazz, const char *name, const char *sig) : Lazy(
+            [&clazz, name, sig](JNIEnv *env) {
+                jclass c = clazz.get(env);
+                jmethodID methodID = env->GetMethodID(c, name, sig);
+                if (env->ExceptionCheck()) {
+                    env->ExceptionClear();
+                }
+                return methodID;
+            }) {}
+};
 
-    jmethodID getStaticMethodID(JNIEnv *env, jclass clazz, const char *name, const char *sig) {
-        jmethodID methodID = env->GetStaticMethodID(clazz, name, sig);
-        if (env->ExceptionCheck()) {
-            env->ExceptionClear();
-        }
-        return methodID;
-    }
-}
+class LazyStaticMethod : public Lazy<jmethodID> {
+public:
+    LazyStaticMethod(Lazy<jclass> &clazz, const char *name, const char *sig) : Lazy(
+            [&clazz, name, sig](JNIEnv *env) {
+                jclass c = clazz.get(env);
+                jmethodID methodID = env->GetStaticMethodID(c, name, sig);
+                if (env->ExceptionCheck()) {
+                    env->ExceptionClear();
+                }
+                return methodID;
+            }) {}
+};
 
-void ClassRegistry::initialize(JNIEnv *env) {
-    // classes
-    booleanClass = getClass(env, "java/lang/Boolean");
-    integerClass = getClass(env, "java/lang/Integer");
-    floatClass = getClass(env, "java/lang/Float");
-    encoderClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPEncoder");
-    animEncoderClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder");
-    decoderClass = getClass(env, "com/aureusapps/android/webpandroid/decoder/WebPDecoder");
-    webPConfigClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPConfig");
-    decoderConfigClass = getClass(env, "com/aureusapps/android/webpandroid/decoder/DecoderConfig");
-    webPPresetClass = getClass(env, "com/aureusapps/android/webpandroid/encoder/WebPPreset");
-    webPInfoClass = getClass(env, "com/aureusapps/android/webpandroid/decoder/WebPInfo");
-    bitmapClass = getClass(env, "android/graphics/Bitmap");
-    bitmapConfigClass = getClass(env, "android/graphics/Bitmap$Config");
-    bitmapUtilsClass = getClass(env, "com/aureusapps/android/extensions/BitmapUtils");
-    bitmapCompressFormatClass = getClass(env, "android/graphics/Bitmap$CompressFormat");
-    runtimeExceptionClass = getClass(env, "java/lang/RuntimeException");
-    cancellationExceptionClass = getClass(env, "java/util/concurrent/CancellationException");
-    parcelFileDescriptorClass = getClass(env, "android/os/ParcelFileDescriptor");
-    uriClass = getClass(env, "android/net/Uri");
-    uriExtensionsClass = getClass(env, "com/aureusapps/android/extensions/UriExtensionsKt");
-    contextClass = getClass(env, "android/content/Context");
-    contentResolverClass = getClass(env, "android/content/ContentResolver");
+Lazy<jclass> ClassRegistry::booleanClass = LazyClass("java/lang/Boolean");
+Lazy<jclass> ClassRegistry::integerClass = LazyClass("java/lang/Integer");
+Lazy<jclass> ClassRegistry::floatClass = LazyClass("java/lang/Float");
+Lazy<jclass> ClassRegistry::webPEncoderClass = LazyClass(
+        "com/aureusapps/android/webpandroid/encoder/WebPEncoder");
+Lazy<jclass> ClassRegistry::webPAnimEncoderClass = LazyClass(
+        "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder");
+Lazy<jclass> ClassRegistry::webPDecoderClass = LazyClass(
+        "com/aureusapps/android/webpandroid/decoder/WebPDecoder");
+Lazy<jclass> ClassRegistry::webPConfigClass = LazyClass(
+        "com/aureusapps/android/webpandroid/encoder/WebPConfig");
+Lazy<jclass> ClassRegistry::webPDecoderConfigClass = LazyClass(
+        "com/aureusapps/android/webpandroid/decoder/DecoderConfig");
+Lazy<jclass> ClassRegistry::webPPresetClass = LazyClass(
+        "com/aureusapps/android/webpandroid/encoder/WebPPreset");
+Lazy<jclass> ClassRegistry::webPInfoClass = LazyClass(
+        "com/aureusapps/android/webpandroid/decoder/WebPInfo");
+Lazy<jclass> ClassRegistry::bitmapClass = LazyClass("android/graphics/Bitmap");
+Lazy<jclass> ClassRegistry::bitmapConfigClass = LazyClass("android/graphics/Bitmap$Config");
+Lazy<jclass> ClassRegistry::bitmapUtilsClass = LazyClass(
+        "com/aureusapps/android/extensions/BitmapUtils");
+Lazy<jclass> ClassRegistry::bitmapCompressFormatClass = LazyClass(
+        "android/graphics/Bitmap$CompressFormat");
+Lazy<jclass> ClassRegistry::runtimeExceptionClass = LazyClass("java/lang/RuntimeException");
+Lazy<jclass> ClassRegistry::cancellationExceptionClass = LazyClass(
+        "java/util/concurrent/CancellationException");
+Lazy<jclass> ClassRegistry::parcelFileDescriptorClass = LazyClass(
+        "android/os/ParcelFileDescriptor");
+Lazy<jclass> ClassRegistry::uriClass = LazyClass("android/net/Uri");
+Lazy<jclass> ClassRegistry::uriExtensionsClass = LazyClass(
+        "com/aureusapps/android/extensions/UriExtensionsKt");
+Lazy<jclass> ClassRegistry::contextClass = LazyClass("android/content/Context");
+Lazy<jclass> ClassRegistry::contentResolverClass = LazyClass("android/content/ContentResolver");
+Lazy<jclass> ClassRegistry::webPAnimEncoderOptionsClass = LazyClass(
+        "com/aureusapps/android/webpandroid/encoder/WebPAnimEncoderOptions");
+Lazy<jclass> ClassRegistry::webPMuxAnimParamsClass = LazyClass(
+        "com/aureusapps/android/webpandroid/encoder/WebPMuxAnimParams");
 
-    // fields
-    encoderPointerFieldID = getFieldID(env, encoderClass, "nativePointer", "J");
-    animEncoderPointerFieldID = getFieldID(env, animEncoderClass, "nativePointer", "J");
-    decoderPointerFieldID = getFieldID(env, decoderClass, "nativePointer", "J");
-    uriEmptyFieldID = getStaticFieldID(env, uriClass, "EMPTY", "Landroid/net/Uri;");
-    bitmapConfigARGB8888FieldID = getStaticFieldID(
-            env,
-            bitmapConfigClass,
-            "ARGB_8888",
-            "Landroid/graphics/Bitmap$Config;"
-    );
-    compressFormatJPEGFieldID = getStaticFieldID(
-            env,
-            bitmapCompressFormatClass,
-            "JPEG",
-            "Landroid/graphics/Bitmap$CompressFormat;"
-    );
-    compressFormatPNGFieldID = getStaticFieldID(
-            env,
-            bitmapCompressFormatClass,
-            "PNG",
-            "Landroid/graphics/Bitmap$CompressFormat;"
-    );
-    compressFormatWEBPFieldID = getStaticFieldID(
-            env,
-            bitmapCompressFormatClass,
-            "WEBP",
-            "Landroid/graphics/Bitmap$CompressFormat;"
-    );
-    compressFormatWEBPLossyFieldID = getStaticFieldID(
-            env,
-            bitmapCompressFormatClass,
-            "WEBP_LOSSY",
-            "Landroid/graphics/Bitmap$CompressFormat;"
-    );
-    compressFormatWEBPLosslessFieldID = getStaticFieldID(
-            env,
-            bitmapCompressFormatClass,
-            "WEBP_LOSSLESS",
-            "Landroid/graphics/Bitmap$CompressFormat;"
-    );
-    decoderConfigNamePrefixFieldID = getFieldID(
-            env,
-            decoderConfigClass,
-            "namePrefix",
-            "Ljava/lang/String;"
-    );
-    decoderConfigRepeatCharacterFieldID = getFieldID(
-            env,
-            decoderConfigClass,
-            "repeatCharacter",
-            "C"
-    );
-    decoderConfigRepeatCharacterCountFieldID = getFieldID(
-            env,
-            decoderConfigClass,
-            "repeatCharacterCount",
-            "I"
-    );
-    decoderConfigCompressFormatFieldID = getFieldID(
-            env,
-            decoderConfigClass,
-            "compressFormat",
-            "Landroid/graphics/Bitmap$CompressFormat;"
-    );
-    decoderConfigCompressQualityFieldID = getFieldID(
-            env,
-            decoderConfigClass,
-            "compressQuality",
-            "I"
-    );
+Lazy<jfieldID> ClassRegistry::encoderPointerFieldID = LazyField(
+        webPEncoderClass,
+        "nativePointer",
+        "J"
+);
+Lazy<jfieldID> ClassRegistry::webPAnimEncoderPointerFieldID = LazyField(
+        webPAnimEncoderClass,
+        "nativePointer",
+        "J"
+);
+Lazy<jfieldID> ClassRegistry::webPDecoderPointerFieldID = LazyField(
+        webPDecoderClass,
+        "nativePointer",
+        "J"
+);
+Lazy<jfieldID> ClassRegistry::uriEmptyFieldID = LazyStaticField(
+        uriClass,
+        "EMPTY",
+        "Landroid/net/Uri;"
+);
+Lazy<jfieldID> ClassRegistry::bitmapConfigARGB8888FieldID = LazyStaticField(
+        bitmapConfigClass,
+        "ARGB_8888",
+        "Landroid/graphics/Bitmap$Config;"
+);
+Lazy<jfieldID> ClassRegistry::compressFormatJPEGFieldID = LazyStaticField(
+        bitmapCompressFormatClass,
+        "JPEG",
+        "Landroid/graphics/Bitmap$CompressFormat;"
+);
+Lazy<jfieldID> ClassRegistry::compressFormatPNGFieldID = LazyStaticField(
+        bitmapCompressFormatClass,
+        "PNG",
+        "Landroid/graphics/Bitmap$CompressFormat;"
+);
+Lazy<jfieldID> ClassRegistry::compressFormatWEBPFieldID = LazyStaticField(
+        bitmapCompressFormatClass,
+        "WEBP",
+        "Landroid/graphics/Bitmap$CompressFormat;"
+);
+Lazy<jfieldID> ClassRegistry::compressFormatWEBPLossyFieldID = LazyStaticField(
+        bitmapCompressFormatClass,
+        "WEBP_LOSSY",
+        "Landroid/graphics/Bitmap$CompressFormat;"
+);
+Lazy<jfieldID> ClassRegistry::compressFormatWEBPLosslessFieldID = LazyStaticField(
+        bitmapCompressFormatClass,
+        "WEBP_LOSSLESS",
+        "Landroid/graphics/Bitmap$CompressFormat;"
+);
+Lazy<jfieldID> ClassRegistry::decoderConfigNamePrefixFieldID = LazyField(
+        webPDecoderConfigClass,
+        "namePrefix",
+        "Ljava/lang/String;"
+);
+Lazy<jfieldID> ClassRegistry::decoderConfigRepeatCharacterFieldID = LazyField(
+        webPDecoderConfigClass,
+        "repeatCharacter",
+        "C"
+);
+Lazy<jfieldID> ClassRegistry::decoderConfigRepeatCharacterCountFieldID = LazyField(
+        webPDecoderConfigClass,
+        "repeatCharacterCount",
+        "I"
+);
+Lazy<jfieldID> ClassRegistry::decoderConfigCompressFormatFieldID = LazyField(
+        webPDecoderConfigClass,
+        "compressFormat",
+        "Landroid/graphics/Bitmap$CompressFormat;"
+);
+Lazy<jfieldID> ClassRegistry::decoderConfigCompressQualityFieldID = LazyField(
+        webPDecoderConfigClass,
+        "compressQuality",
+        "I"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigLosslessFieldID = LazyField(
+        webPConfigClass,
+        "lossless",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigQualityFieldID = LazyField(
+        webPConfigClass,
+        "quality",
+        "Ljava/lang/Float;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigMethodFieldID = LazyField(
+        webPConfigClass,
+        "method",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigTargetPSNRFieldID = LazyField(
+        webPConfigClass,
+        "targetPSNR",
+        "Ljava/lang/Float;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigTargetSizeFieldID = LazyField(
+        webPConfigClass,
+        "targetSize",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigSegmentsFieldID = LazyField(
+        webPConfigClass,
+        "segments",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigSnsStrengthFieldID = LazyField(
+        webPConfigClass,
+        "snsStrength",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigFilterStrengthFieldID = LazyField(
+        webPConfigClass,
+        "filterStrength",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigFilterSharpnessFieldID = LazyField(
+        webPConfigClass,
+        "filterSharpness",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigFilterTypeFieldID = LazyField(
+        webPConfigClass,
+        "filterType",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigAutoFilterFieldID = LazyField(
+        webPConfigClass,
+        "autoFilter",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigAlphaCompressionFieldID = LazyField(
+        webPConfigClass,
+        "alphaCompression",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigAlphaFilteringFieldID = LazyField(
+        webPConfigClass,
+        "alphaFiltering",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigAlphaQualityFieldID = LazyField(
+        webPConfigClass,
+        "alphaQuality",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigPassFieldID = LazyField(
+        webPConfigClass,
+        "pass",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigShowCompressedFieldID = LazyField(
+        webPConfigClass,
+        "showCompressed",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigPreprocessingFieldID = LazyField(
+        webPConfigClass,
+        "preprocessing",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigPartitionsFieldID = LazyField(
+        webPConfigClass,
+        "partitions",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigPartitionLimitFieldID = LazyField(
+        webPConfigClass,
+        "partitionLimit",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigEmulateJPEGSizeFieldID = LazyField(
+        webPConfigClass,
+        "emulateJPEGSize",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigThreadLevelFieldID = LazyField(
+        webPConfigClass,
+        "threadLevel",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigLowMemoryFieldID = LazyField(
+        webPConfigClass,
+        "lowMemory",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigNearLosslessFieldID = LazyField(
+        webPConfigClass,
+        "nearLossless",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigExactFieldID = LazyField(
+        webPConfigClass,
+        "exact",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigUseDeltaPaletteFieldID = LazyField(
+        webPConfigClass,
+        "useDeltaPalette",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigUseSharpYUVFieldID = LazyField(
+        webPConfigClass,
+        "useSharpYUV",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigQMinFieldID = LazyField(
+        webPConfigClass,
+        "qmin",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPConfigQMaxFieldID = LazyField(
+        webPConfigClass,
+        "qmax",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPAnimEncoderOptionsMinimizeSizeFieldID = LazyField(
+        webPAnimEncoderOptionsClass,
+        "minimizeSize",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPAnimEncoderOptionsKMinFieldID = LazyField(
+        webPAnimEncoderOptionsClass,
+        "kmin",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPAnimEncoderOptionsKMaxFieldID = LazyField(
+        webPAnimEncoderOptionsClass,
+        "kmax",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPAnimEncoderOptionsAllowMixedFieldID = LazyField(
+        webPAnimEncoderOptionsClass,
+        "allowMixed",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPAnimEncoderOptionsVerboseFieldID = LazyField(
+        webPAnimEncoderOptionsClass,
+        "verbose",
+        "Ljava/lang/Boolean;"
+);
+Lazy<jfieldID> ClassRegistry::webPAnimEncoderOptionsAnimParamsFieldID = LazyField(
+        webPAnimEncoderOptionsClass,
+        "animParams",
+        "Lcom/aureusapps/android/webpandroid/encoder/WebPMuxAnimParams;"
+);
+Lazy<jfieldID> ClassRegistry::webPMuxAnimParamsBgColorFieldID = LazyField(
+        webPMuxAnimParamsClass,
+        "backgroundColor",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPMuxAnimParamsLoopCountFieldID = LazyField(
+        webPMuxAnimParamsClass,
+        "loopCount",
+        "Ljava/lang/Integer;"
+);
+Lazy<jfieldID> ClassRegistry::webPPresetOrdinalFieldID = LazyField(webPPresetClass, "value", "I");
 
-    // methods
-    booleanValueMethodID = getMethodID(env, booleanClass, "booleanValue", "()Z");
-    integerValueMethodID = getMethodID(env, integerClass, "intValue", "()I");
-    floatValueMethodID = getMethodID(env, floatClass, "floatValue", "()F");
-    encoderNotifyProgressMethodID = getMethodID(
-            env,
-            encoderClass,
-            "notifyProgressChanged",
-            "(I)Z"
-    );
-    animEncoderNotifyProgressMethodID = getMethodID(
-            env,
-            animEncoderClass,
-            "notifyProgressChanged",
-            "(II)Z"
-    );
-    webPInfoConstructorID = getMethodID(env, webPInfoClass, "<init>", "(IIZZIII)V");
-    decoderNotifyInfoDecodedMethodID = getMethodID(
-            env,
-            decoderClass,
-            "notifyInfoDecoded",
-            "(Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;)V"
-    );
-    decoderNotifyFrameDecodedMethodID = getMethodID(
-            env,
-            decoderClass,
-            "notifyFrameDecoded",
-            "(IJLandroid/graphics/Bitmap;Landroid/net/Uri;)V"
-    );
-    bitmapCreateMethodID = getStaticMethodID(
-            env,
-            bitmapClass,
-            "createBitmap",
-            "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;"
-    );
-    bitmapCreateScaledMethodID = getStaticMethodID(
-            env,
-            bitmapClass,
-            "createScaledBitmap",
-            "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;"
-    );
-    bitmapUtilsSaveInDirectoryMethodID = getStaticMethodID(
-            env,
-            bitmapUtilsClass,
-            "saveInDirectory",
-            "(Landroid/content/Context;Landroid/graphics/Bitmap;Landroid/net/Uri;Ljava/lang/String;Landroid/graphics/Bitmap$CompressFormat;I)Landroid/net/Uri;"
-    );
-    bitmapRecycleMethodID = getMethodID(
-            env,
-            bitmapClass,
-            "recycle",
-            "()V"
-    );
-    contextGetContentResolverMethodID = getMethodID(
-            env,
-            contextClass,
-            "getContentResolver",
-            "()Landroid/content/ContentResolver;"
-    );
-    contentResolverOpenFileDescriptorMethodID = getMethodID(
-            env,
-            contentResolverClass,
-            "openFileDescriptor",
-            "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
-    );
-    parcelFileDescriptorGetFdMethodID = getMethodID(
-            env,
-            parcelFileDescriptorClass,
-            "getFd",
-            "()I"
-    );
-    parcelFileDescriptorCloseMethodID = getMethodID(
-            env,
-            parcelFileDescriptorClass,
-            "close",
-            "()V"
-    );
-    parcelFileDescriptorCloseWithErrorMethodID = getMethodID(
-            env,
-            parcelFileDescriptorClass,
-            "closeWithError",
-            "(Ljava/lang/String;)V"
-    );
-    uriExtensionsReadToBufferMethodID = getStaticMethodID(
-            env,
-            uriExtensionsClass,
-            "readToBuffer",
-            "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
-    );
-    uriExtensionsFileExistsMethodID = getStaticMethodID(
-            env,
-            uriExtensionsClass,
-            "fileExists",
-            "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
-    );
-    bitmapCompressFormatOrdinalMethodID = getMethodID(
-            env,
-            bitmapCompressFormatClass,
-            "ordinal",
-            "()I"
-    );
-}
+Lazy<jmethodID> ClassRegistry::booleanValueMethodID = LazyMethod(
+        booleanClass,
+        "booleanValue",
+        "()Z"
+);
+Lazy<jmethodID> ClassRegistry::integerValueMethodID = LazyMethod(integerClass, "intValue", "()I");
+Lazy<jmethodID> ClassRegistry::floatValueMethodID = LazyMethod(floatClass, "floatValue", "()F");
+Lazy<jmethodID> ClassRegistry::encoderNotifyProgressMethodID = LazyMethod(
+        webPEncoderClass,
+        "notifyProgressChanged",
+        "(I)Z"
+);
+Lazy<jmethodID> ClassRegistry::animEncoderNotifyProgressMethodID = LazyMethod(
+        webPAnimEncoderClass,
+        "notifyProgressChanged",
+        "(II)Z"
+);
+Lazy<jmethodID> ClassRegistry::webPInfoConstructorID = LazyMethod(
+        webPInfoClass,
+        "<init>",
+        "(IIZZIII)V"
+);
+Lazy<jmethodID> ClassRegistry::decoderNotifyInfoDecodedMethodID = LazyMethod(
+        webPDecoderClass,
+        "notifyInfoDecoded",
+        "(Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;)V"
+);
+Lazy<jmethodID> ClassRegistry::decoderNotifyFrameDecodedMethodID = LazyMethod(
+        webPDecoderClass,
+        "notifyFrameDecoded",
+        "(IJLandroid/graphics/Bitmap;Landroid/net/Uri;)V"
+);
+Lazy<jmethodID> ClassRegistry::bitmapCreateMethodID = LazyStaticMethod(
+        bitmapClass,
+        "createBitmap",
+        "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;"
+);
+Lazy<jmethodID> ClassRegistry::bitmapCreateScaledMethodID = LazyStaticMethod(
+        bitmapClass,
+        "createScaledBitmap",
+        "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;"
+);
+Lazy<jmethodID> ClassRegistry::bitmapUtilsSaveInDirectoryMethodID = LazyStaticMethod(
+        bitmapUtilsClass,
+        "saveInDirectory",
+        "(Landroid/content/Context;Landroid/graphics/Bitmap;Landroid/net/Uri;Ljava/lang/String;Landroid/graphics/Bitmap$CompressFormat;I)Landroid/net/Uri;"
+);
+Lazy<jmethodID> ClassRegistry::bitmapRecycleMethodID = LazyMethod(
+        bitmapClass,
+        "recycle",
+        "()V"
+);
+Lazy<jmethodID> ClassRegistry::contextGetContentResolverMethodID = LazyMethod(
+        contextClass,
+        "getContentResolver",
+        "()Landroid/content/ContentResolver;"
+);
+Lazy<jmethodID> ClassRegistry::contentResolverOpenFileDescriptorMethodID = LazyMethod(
+        contentResolverClass,
+        "openFileDescriptor",
+        "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;"
+);
+Lazy<jmethodID> ClassRegistry::parcelFileDescriptorGetFdMethodID = LazyMethod(
+        parcelFileDescriptorClass,
+        "getFd",
+        "()I"
+);
+Lazy<jmethodID> ClassRegistry::parcelFileDescriptorCloseMethodID = LazyMethod(
+        parcelFileDescriptorClass,
+        "close",
+        "()V"
+);
+Lazy<jmethodID> ClassRegistry::parcelFileDescriptorCloseWithErrorMethodID = LazyMethod(
+        parcelFileDescriptorClass,
+        "closeWithError",
+        "(Ljava/lang/String;)V"
+);
+Lazy<jmethodID> ClassRegistry::uriExtensionsReadToBufferMethodID = LazyStaticMethod(
+        uriExtensionsClass,
+        "readToBuffer",
+        "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
+);
+Lazy<jmethodID> ClassRegistry::uriExtensionsFileExistsMethodID = LazyStaticMethod(
+        uriExtensionsClass,
+        "fileExists",
+        "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
+);
+Lazy<jmethodID> ClassRegistry::bitmapCompressFormatOrdinalMethodID = LazyMethod(
+        bitmapCompressFormatClass,
+        "ordinal",
+        "()I"
+);
 
 void ClassRegistry::release(JNIEnv *env) {
-    env->DeleteGlobalRef(booleanClass);
-    env->DeleteGlobalRef(integerClass);
-    env->DeleteGlobalRef(floatClass);
-    env->DeleteGlobalRef(encoderClass);
-    env->DeleteGlobalRef(animEncoderClass);
-    env->DeleteGlobalRef(webPConfigClass);
-    env->DeleteGlobalRef(decoderClass);
-    env->DeleteGlobalRef(decoderConfigClass);
-    env->DeleteGlobalRef(webPInfoClass);
-    env->DeleteGlobalRef(bitmapClass);
-    env->DeleteGlobalRef(bitmapConfigClass);
-    env->DeleteGlobalRef(bitmapUtilsClass);
-    env->DeleteGlobalRef(bitmapCompressFormatClass);
-    env->DeleteGlobalRef(webPPresetClass);
-    env->DeleteGlobalRef(runtimeExceptionClass);
-    env->DeleteGlobalRef(cancellationExceptionClass);
-    env->DeleteGlobalRef(parcelFileDescriptorClass);
-    env->DeleteGlobalRef(uriClass);
-    env->DeleteGlobalRef(uriExtensionsClass);
-    env->DeleteGlobalRef(contextClass);
-    env->DeleteGlobalRef(contentResolverClass);
+    booleanClass.reset(env);
+    integerClass.reset(env);
+    floatClass.reset(env);
+    webPEncoderClass.reset(env);
+    webPAnimEncoderClass.reset(env);
+    webPConfigClass.reset(env);
+    webPDecoderClass.reset(env);
+    webPDecoderConfigClass.reset(env);
+    webPInfoClass.reset(env);
+    bitmapClass.reset(env);
+    bitmapConfigClass.reset(env);
+    bitmapUtilsClass.reset(env);
+    bitmapCompressFormatClass.reset(env);
+    webPPresetClass.reset(env);
+    runtimeExceptionClass.reset(env);
+    cancellationExceptionClass.reset(env);
+    parcelFileDescriptorClass.reset(env);
+    uriClass.reset(env);
+    uriExtensionsClass.reset(env);
+    contextClass.reset(env);
+    contentResolverClass.reset(env);
+    webPAnimEncoderOptionsClass.reset(env);
+    webPMuxAnimParamsClass.reset(env);
 }
 
 static const JNINativeMethod encoderMethods[] = {
@@ -354,12 +571,11 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
     if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;
     }
-    ClassRegistry::initialize(env);
 
     // register native methods
     // encoder methods
     int result = env->RegisterNatives(
-            ClassRegistry::encoderClass,
+            ClassRegistry::webPEncoderClass.get(env),
             encoderMethods,
             sizeof(encoderMethods) / sizeof(JNINativeMethod)
     );
@@ -367,7 +583,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
 
     // anim encoder methods
     result = env->RegisterNatives(
-            ClassRegistry::animEncoderClass,
+            ClassRegistry::webPAnimEncoderClass.get(env),
             animEncoderMethods,
             sizeof(animEncoderMethods) / sizeof(JNINativeMethod)
     );
@@ -375,7 +591,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
 
     // decoder methods
     result = env->RegisterNatives(
-            ClassRegistry::decoderClass,
+            ClassRegistry::webPDecoderClass.get(env),
             decoderMethods,
             sizeof(decoderMethods) / sizeof(JNINativeMethod)
     );

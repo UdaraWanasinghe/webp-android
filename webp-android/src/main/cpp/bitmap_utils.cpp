@@ -14,12 +14,12 @@ jobject bmp::createBitmap(
         int height
 ) {
     jobject jconfig = env->GetStaticObjectField(
-            ClassRegistry::bitmapConfigClass,
-            ClassRegistry::bitmapConfigARGB8888FieldID
+            ClassRegistry::bitmapConfigClass.get(env),
+            ClassRegistry::bitmapConfigARGB8888FieldID.get(env)
     );
     jobject jbitmap = env->CallStaticObjectMethod(
-            ClassRegistry::bitmapClass,
-            ClassRegistry::bitmapCreateMethodID,
+            ClassRegistry::bitmapClass.get(env),
+            ClassRegistry::bitmapCreateMethodID.get(env),
             width,
             height,
             jconfig
@@ -35,8 +35,8 @@ jobject bmp::resizeBitmap(
         int height
 ) {
     jobject jresized_bitmap = env->CallStaticObjectMethod(
-            ClassRegistry::bitmapClass,
-            ClassRegistry::bitmapCreateScaledMethodID,
+            ClassRegistry::bitmapClass.get(env),
+            ClassRegistry::bitmapCreateScaledMethodID.get(env),
             jbitmap,
             width,
             height,
@@ -81,8 +81,8 @@ jobject bmp::saveToDirectory(
     jstring jdisplay_name = env->NewStringUTF(file_name.c_str());
     jobject jcompress_format = bmp::parseBitmapCompressFormat(env, compress_format);
     jobject jbitmap_uri = env->CallStaticObjectMethod(
-            ClassRegistry::bitmapUtilsClass,
-            ClassRegistry::bitmapUtilsSaveInDirectoryMethodID,
+            ClassRegistry::bitmapUtilsClass.get(env),
+            ClassRegistry::bitmapUtilsSaveInDirectoryMethodID.get(env),
             jcontext,
             jbitmap,
             jdirectory_uri,
@@ -99,25 +99,25 @@ jobject bmp::parseBitmapCompressFormat(JNIEnv *env, int compress_format_ordinal)
     jfieldID compress_format_field_id;
     switch (compress_format_ordinal) {
         case 0:
-            compress_format_field_id = ClassRegistry::compressFormatJPEGFieldID;
+            compress_format_field_id = ClassRegistry::compressFormatJPEGFieldID.get(env);
             break;
         case 1:
-            compress_format_field_id = ClassRegistry::compressFormatPNGFieldID;
+            compress_format_field_id = ClassRegistry::compressFormatPNGFieldID.get(env);
             break;
         case 2:
-            compress_format_field_id = ClassRegistry::compressFormatWEBPFieldID;
+            compress_format_field_id = ClassRegistry::compressFormatWEBPFieldID.get(env);
             break;
         case 3:
-            compress_format_field_id = ClassRegistry::compressFormatWEBPLossyFieldID;
+            compress_format_field_id = ClassRegistry::compressFormatWEBPLossyFieldID.get(env);
             break;
         case 4:
-            compress_format_field_id = ClassRegistry::compressFormatWEBPLosslessFieldID;
+            compress_format_field_id = ClassRegistry::compressFormatWEBPLosslessFieldID.get(env);
             break;
         default:
             throw std::runtime_error("Unknown compress format");
     }
     jobject jcompress_format = env->GetStaticObjectField(
-            ClassRegistry::bitmapCompressFormatClass,
+            ClassRegistry::bitmapCompressFormatClass.get(env),
             compress_format_field_id
     );
     return jcompress_format;
@@ -127,5 +127,5 @@ void bmp::recycleBitmap(
         JNIEnv *env,
         jobject jbitmap
 ) {
-    env->CallVoidMethod(jbitmap, ClassRegistry::bitmapRecycleMethodID);
+    env->CallVoidMethod(jbitmap, ClassRegistry::bitmapRecycleMethodID.get(env));
 }

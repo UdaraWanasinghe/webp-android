@@ -13,7 +13,7 @@ namespace dec {
         // image name name_prefix
         auto jprefix = (jstring) env->GetObjectField(
                 jconfig,
-                ClassRegistry::decoderConfigNamePrefixFieldID
+                ClassRegistry::decoderConfigNamePrefixFieldID.get(env)
         );
         const char *prefix_cstr = env->GetStringUTFChars(jprefix, nullptr);
         std::string name_prefix(prefix_cstr);
@@ -22,30 +22,30 @@ namespace dec {
         // image name repeat character
         char repeat_character = (char) env->GetCharField(
                 jconfig,
-                ClassRegistry::decoderConfigRepeatCharacterFieldID
+                ClassRegistry::decoderConfigRepeatCharacterFieldID.get(env)
         );
 
         // image name character count
         int repeat_character_count = env->GetIntField(
                 jconfig,
-                ClassRegistry::decoderConfigRepeatCharacterCountFieldID
+                ClassRegistry::decoderConfigRepeatCharacterCountFieldID.get(env)
         );
 
         // image compress format
         auto jcompress_format = env->GetObjectField(
                 jconfig,
-                ClassRegistry::decoderConfigCompressFormatFieldID
+                ClassRegistry::decoderConfigCompressFormatFieldID.get(env)
         );
         int compress_format_ordinal = env->CallIntMethod(
                 jcompress_format,
-                ClassRegistry::bitmapCompressFormatOrdinalMethodID
+                ClassRegistry::bitmapCompressFormatOrdinalMethodID.get(env)
         );
         env->DeleteLocalRef(jcompress_format);
 
         // image compress quality
         int compress_quality = env->GetIntField(
                 jconfig,
-                ClassRegistry::decoderConfigCompressQualityFieldID
+                ClassRegistry::decoderConfigCompressQualityFieldID.get(env)
         );
 
         return DecoderConfig{
@@ -75,8 +75,11 @@ void WebPDecoder::configure(dec::DecoderConfig config) {
 
 WebPDecoder *WebPDecoder::getInstance(JNIEnv *env, jobject jdecoder) {
     jlong native_pointer;
-    if (env->IsInstanceOf(jdecoder, ClassRegistry::decoderClass)) {
-        native_pointer = env->GetLongField(jdecoder, ClassRegistry::decoderPointerFieldID);
+    if (env->IsInstanceOf(jdecoder, ClassRegistry::webPDecoderClass.get(env))) {
+        native_pointer = env->GetLongField(
+                jdecoder,
+                ClassRegistry::webPDecoderPointerFieldID.get(env)
+        );
     } else {
         native_pointer = 0;
     }
@@ -85,8 +88,8 @@ WebPDecoder *WebPDecoder::getInstance(JNIEnv *env, jobject jdecoder) {
 
 jobject WebPDecoder::getWebPInfo(JNIEnv *env, const WebPBitstreamFeatures &features) {
     jobject jinfo = env->NewObject(
-            ClassRegistry::webPInfoClass,
-            ClassRegistry::webPInfoConstructorID,
+            ClassRegistry::webPInfoClass.get(env),
+            ClassRegistry::webPInfoConstructorID.get(env),
             features.width,
             features.height,
             features.has_alpha,
@@ -107,8 +110,8 @@ jobject WebPDecoder::decodeAnimInfo(
         int width = static_cast<int>(info.canvas_width);
         int height = static_cast<int>(info.canvas_height);
         jinfo = env->NewObject(
-                ClassRegistry::webPInfoClass,
-                ClassRegistry::webPInfoConstructorID,
+                ClassRegistry::webPInfoClass.get(env),
+                ClassRegistry::webPInfoConstructorID.get(env),
                 width,
                 height,
                 features.has_alpha,
@@ -126,7 +129,11 @@ ResultCode WebPDecoder::notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject
     if (type::isObjectNull(env, jinfo)) {
         result = ERROR_WEBP_INFO_EXTRACT_FAILED;
     } else {
-        env->CallVoidMethod(jdecoder, ClassRegistry::decoderNotifyInfoDecodedMethodID, jinfo);
+        env->CallVoidMethod(
+                jdecoder,
+                ClassRegistry::decoderNotifyInfoDecodedMethodID.get(env),
+                jinfo
+        );
     }
     return result;
 }
@@ -150,8 +157,8 @@ ResultCode WebPDecoder::processFrame(
         jobject jbitmap_uri;
         if (type::isObjectNull(env, jdst_uri)) {
             jbitmap_uri = env->GetStaticObjectField(
-                    ClassRegistry::uriClass,
-                    ClassRegistry::uriEmptyFieldID
+                    ClassRegistry::uriClass.get(env),
+                    ClassRegistry::uriEmptyFieldID.get(env)
             );
         } else {
             auto config = decoder->decoderConfig;
@@ -189,7 +196,7 @@ ResultCode WebPDecoder::processFrame(
         if (result == RESULT_SUCCESS) {
             env->CallVoidMethod(
                     jdecoder,
-                    ClassRegistry::decoderNotifyFrameDecodedMethodID,
+                    ClassRegistry::decoderNotifyFrameDecodedMethodID.get(env),
                     index,
                     static_cast<jlong>(timestamp),
                     jbitmap,
@@ -426,6 +433,10 @@ void WebPDecoder::nativeCancel(JNIEnv *, jobject) {
 void WebPDecoder::nativeRelease(JNIEnv *env, jobject thiz) {
     auto *decoder = WebPDecoder::getInstance(env, thiz);
     if (decoder == nullptr) return;
-    env->SetLongField(thiz, ClassRegistry::decoderPointerFieldID, static_cast<jlong>(0));
+    env->SetLongField(
+            thiz,
+            ClassRegistry::webPDecoderPointerFieldID.get(env),
+            static_cast<jlong>(0)
+    );
     delete decoder;
 }

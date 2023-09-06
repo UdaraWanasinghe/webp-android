@@ -22,13 +22,13 @@ namespace {
 void exc::throwRuntimeException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, ClassRegistry::runtimeExceptionClass, format, args);
+    throwException(env, ClassRegistry::runtimeExceptionClass.get(env), format, args);
     va_end(args);
 }
 
 void exc::throwCancellationException(JNIEnv *env, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    throwException(env, ClassRegistry::cancellationExceptionClass, format, args);
+    throwException(env, ClassRegistry::cancellationExceptionClass.get(env), format, args);
     va_end(args);
 }

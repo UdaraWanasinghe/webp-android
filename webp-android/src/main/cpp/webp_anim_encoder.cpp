@@ -83,13 +83,11 @@ void WebPAnimationEncoder::release() {
 
 WebPAnimationEncoder *WebPAnimationEncoder::getInstance(JNIEnv *env, jobject jencoder) {
     jlong native_pointer;
-    if (env->IsInstanceOf(jencoder, ClassRegistry::animEncoderClass)) {
-        jfieldID pointer_field_id = env->GetFieldID(
-                ClassRegistry::animEncoderClass,
-                "nativePointer",
-                "J"
+    if (env->IsInstanceOf(jencoder, ClassRegistry::webPAnimEncoderClass.get(env))) {
+        native_pointer = env->GetLongField(
+                jencoder,
+                ClassRegistry::webPAnimEncoderPointerFieldID.get(env)
         );
-        native_pointer = env->GetLongField(jencoder, pointer_field_id);
     } else {
         native_pointer = 0;
     }
@@ -132,7 +130,7 @@ int WebPAnimationEncoder::notifyProgressChanged(int percent, const WebPPicture *
     int frame_index = frame_data->frameIndex;
     jboolean continue_encoding = env->CallBooleanMethod(
             progressObserver,
-            ClassRegistry::animEncoderNotifyProgressMethodID,
+            ClassRegistry::animEncoderNotifyProgressMethodID.get(env),
             frame_index,
             percent
     );
@@ -325,7 +323,11 @@ void WebPAnimationEncoder::nativeCancel(JNIEnv *, jobject) {
 void WebPAnimationEncoder::nativeRelease(JNIEnv *env, jobject thiz) {
     auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
     if (encoder == nullptr) return;
-    env->SetLongField(thiz, ClassRegistry::animEncoderPointerFieldID, static_cast<jlong>(0));
+    env->SetLongField(
+            thiz,
+            ClassRegistry::webPAnimEncoderPointerFieldID.get(env),
+            static_cast<jlong>(0)
+    );
     clearProgressNotifier(env);
     encoder->release();
     delete encoder;
