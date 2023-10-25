@@ -1,6 +1,8 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.aureusapps.gradle.PublishLibraryConstants.GROUP_ID
+import com.aureusapps.gradle.PublishLibraryConstants.VERSION_CODE
+import com.aureusapps.gradle.PublishLibraryConstants.VERSION_NAME
 
 plugins {
     id("com.android.library")
@@ -10,8 +12,8 @@ plugins {
 
 class Props(project: Project) {
     val groupId = project.findProperty(GROUP_ID).toString()
-    val versionCode = 7
-    val versionName = "1.0.6"
+    val versionCode = project.findProperty(VERSION_CODE).toString().toInt()
+    val versionName = project.findProperty(VERSION_NAME).toString()
 }
 
 val props = Props(project)
