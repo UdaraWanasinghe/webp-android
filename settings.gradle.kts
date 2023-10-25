@@ -2,16 +2,16 @@
 
 pluginManagement {
     repositories {
+        mavenLocal()
         gradlePluginPortal()
         google()
         mavenCentral()
-        mavenLocal()
     }
 }
 buildscript {
     repositories {
-        gradlePluginPortal()
         mavenLocal()
+        gradlePluginPortal()
     }
     dependencies {
         classpath("com.aureusapps.gradle:plugin-utils:1.0.0")
@@ -25,9 +25,9 @@ dependencyResolutionManagement {
         }
     }
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
-        mavenLocal()
     }
 }
 rootProject.name = "webp-android"
