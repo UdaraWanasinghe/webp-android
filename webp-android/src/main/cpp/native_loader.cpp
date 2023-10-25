@@ -452,10 +452,10 @@ Lazy<jmethodID> ClassRegistry::uriExtensionsReadToBufferMethodID = LazyStaticMet
         "readToBuffer",
         "(Landroid/net/Uri;Landroid/content/Context;)Ljava/nio/ByteBuffer;"
 );
-Lazy<jmethodID> ClassRegistry::uriExtensionsFileExistsMethodID = LazyStaticMethod(
+Lazy<jmethodID> ClassRegistry::uriExtensionsFindFileMethodID = LazyStaticMethod(
         uriExtensionsClass,
-        "fileExists",
-        "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Z"
+        "findFile",
+        "(Landroid/net/Uri;Landroid/content/Context;Ljava/lang/String;)Landroid/net/Uri;"
 );
 Lazy<jmethodID> ClassRegistry::bitmapCompressFormatOrdinalMethodID = LazyMethod(
         bitmapCompressFormatClass,

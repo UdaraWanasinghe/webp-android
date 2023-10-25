@@ -135,18 +135,19 @@ ResultCode file::fileExists(
         const std::string &file_name
 ) {
     jstring jfile_name = env->NewStringUTF(file_name.c_str());
-    jboolean jexists = env->CallStaticBooleanMethod(
+    jobject jfile_uri = env->CallStaticObjectMethod(
             ClassRegistry::uriExtensionsClass.get(env),
-            ClassRegistry::uriExtensionsFileExistsMethodID.get(env),
+            ClassRegistry::uriExtensionsFindFileMethodID.get(env),
             jdirectory_uri,
             jcontext,
             jfile_name
     );
     ResultCode result;
-    if (jexists == JNI_TRUE) {
-        result = RESULT_FILE_EXISTS;
-    } else {
+    if (type::isObjectNull(env, jfile_uri)) {
         result = RESULT_FILE_NOT_FOUND;
+    } else {
+        env->DeleteLocalRef(jfile_uri);
+        result = RESULT_FILE_EXISTS;
     }
     env->DeleteLocalRef(jfile_name);
     return result;

@@ -124,7 +124,7 @@ public:
     static Lazy<jmethodID> parcelFileDescriptorCloseMethodID;
     static Lazy<jmethodID> parcelFileDescriptorCloseWithErrorMethodID;
     static Lazy<jmethodID> uriExtensionsReadToBufferMethodID;
-    static Lazy<jmethodID> uriExtensionsFileExistsMethodID;
+    static Lazy<jmethodID> uriExtensionsFindFileMethodID;
     static Lazy<jmethodID> booleanValueMethodID;
     static Lazy<jmethodID> integerValueMethodID;
     static Lazy<jmethodID> floatValueMethodID;
