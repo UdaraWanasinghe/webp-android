@@ -57,6 +57,12 @@ class WebPCodecInstrumentedTest {
             srcHeight = 24
         )
         testEncodeImage(
+            srcWidth = 24,
+            srcHeight = 24,
+            dstWidth = 12,
+            dstHeight = 12
+        )
+        testEncodeImage(
             srcWidth = 16,
             srcHeight = 16,
             lossless = WebPConfig.COMPRESSION_LOSSY
@@ -69,6 +75,12 @@ class WebPCodecInstrumentedTest {
         testEncodeAnimatedImage(
             srcWidth = 24,
             srcHeight = 24
+        )
+        testEncodeAnimatedImage(
+            srcWidth = 24,
+            srcHeight = 24,
+            dstWidth = 12,
+            dstHeight = 12
         )
         testEncodeAnimatedImage(
             srcWidth = 16,
