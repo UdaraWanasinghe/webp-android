@@ -42,7 +42,7 @@ ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height
         return ERROR_MEMORY_ERROR;
     }
     enc::copyPixels(pixels, &pic);
-    UserData user_data = UserData{};
+    auto user_data = UserData{};
     user_data.frameIndex = frameCount++;
     pic.user_data = reinterpret_cast<void *>(&user_data);
     pic.progress_hook = &notifyProgressChanged;
@@ -126,7 +126,7 @@ int WebPAnimationEncoder::notifyProgressChanged(int percent, const WebPPicture *
         default:
             return 0;
     }
-    UserData *frame_data = reinterpret_cast<UserData *>(picture->user_data);
+    auto *frame_data = reinterpret_cast<UserData *>(picture->user_data);
     int frame_index = frame_data->frameIndex;
     jboolean continue_encoding = env->CallBooleanMethod(
             progressObserver,
