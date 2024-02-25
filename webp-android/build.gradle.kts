@@ -31,6 +31,7 @@ android {
                 arguments("-DLIBWEBP_PATH=${props.libwebpPath}")
             }
         }
+        consumerProguardFiles("consumer-rules.pro")
     }
     buildTypes {
         release {

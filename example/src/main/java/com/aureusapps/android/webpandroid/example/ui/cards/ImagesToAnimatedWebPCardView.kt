@@ -11,11 +11,7 @@ import androidx.core.view.setMargins
 import androidx.core.view.setPadding
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolvePixelDimensionAttribute
-import com.aureusapps.android.extensions.resolveStyleAttribute
-import com.aureusapps.android.extensions.setTextStyle
 import com.aureusapps.android.extensions.viewModels
-import com.aureusapps.android.styles.extensions.withButtonStyle_IconOutlined
-import com.aureusapps.android.styles.extensions.withCardViewStyle_Elevated
 import com.aureusapps.android.webpandroid.example.R
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.models.CodecViewModel
@@ -28,11 +24,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 @Suppress("NestedLambdaShadowedImplicitParameter")
 internal class ImagesToAnimatedWebPCardView(
     context: Context
-) : MaterialCardView(
-    context.withCardViewStyle_Elevated,
-    null,
-    R.attr.cardViewStyle_elevated
-) {
+) : MaterialCardView(context) {
 
     private val codecViewModel by viewModels<CodecViewModel>()
     private lateinit var startButton: MaterialButton
@@ -83,12 +75,13 @@ internal class ImagesToAnimatedWebPCardView(
 
             }.addView {
                 // title
-                AppCompatTextView(it.context).apply {
+                AppCompatTextView(
+                    it.context,
+                    null,
+                    com.google.android.material.R.attr.textAppearanceHeadline6
+                ).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         MATCH_PARENT, WRAP_CONTENT
-                    )
-                    setTextStyle(
-                        resolveStyleAttribute(R.attr.textAppearanceHeadline6)
                     )
                     text = context.getString(R.string.card2_title)
                     setPadding(paddingRegular)
@@ -96,12 +89,13 @@ internal class ImagesToAnimatedWebPCardView(
 
             }.addView {
                 // description
-                AppCompatTextView(it.context).apply {
+                AppCompatTextView(
+                    it.context,
+                    null,
+                    com.google.android.material.R.attr.textAppearanceBody1
+                ).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         MATCH_PARENT, WRAP_CONTENT
-                    )
-                    setTextStyle(
-                        resolveStyleAttribute(R.attr.textAppearanceBody1)
                     )
                     text = context.getString(R.string.card2_description)
                     setPadding(paddingRegular)
@@ -110,7 +104,7 @@ internal class ImagesToAnimatedWebPCardView(
             }.addView {
                 // start button
                 MaterialButton(
-                    it.context.withButtonStyle_IconOutlined,
+                    it.context,
                     null,
                     R.attr.buttonStyle_iconOutlined
                 ).apply {

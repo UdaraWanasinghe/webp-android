@@ -17,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolvePixelDimensionAttribute
 import com.aureusapps.android.extensions.viewModels
-import com.aureusapps.android.styles.extensions.withBaseStyle
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.events.UiEvent
@@ -393,7 +392,7 @@ class CodecActivity : AppCompatActivity() {
     private fun createContent() {
         setContentView(
             // scroll parent
-            ScrollView(withBaseStyle).apply {
+            ScrollView(this).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     MATCH_PARENT, MATCH_PARENT
                 )

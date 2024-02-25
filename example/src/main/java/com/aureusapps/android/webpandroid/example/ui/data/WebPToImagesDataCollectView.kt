@@ -18,9 +18,6 @@ import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.extensions.resolvePixelDimensionAttribute
 import com.aureusapps.android.extensions.viewModels
-import com.aureusapps.android.styles.extensions.withBaseStyle
-import com.aureusapps.android.styles.extensions.withButtonStyle_Elevated
-import com.aureusapps.android.styles.extensions.withTextInputStyle_OutlinedSmall
 import com.aureusapps.android.webpandroid.example.R
 import com.aureusapps.android.webpandroid.example.actions.UiAction
 import com.aureusapps.android.webpandroid.example.events.UiEvent
@@ -44,7 +41,7 @@ internal class WebPToImagesDataCollectView(
     context: Context,
     viewModelStoreOwner: ViewModelStoreOwner,
     private val dismissCallback: () -> Unit
-) : CoordinatorLayout(context.withBaseStyle) {
+) : CoordinatorLayout(context) {
 
     companion object {
         private val ACTION_TAG = Object()
@@ -161,7 +158,7 @@ internal class WebPToImagesDataCollectView(
                 }.addView {
                     // src uri text input
                     TextInputLayout(
-                        it.context.withTextInputStyle_OutlinedSmall,
+                        it.context,
                         null,
                         R.attr.textInputStyle_outlinedSmall
                     ).apply {
@@ -208,7 +205,7 @@ internal class WebPToImagesDataCollectView(
                 }.addView {
                     // dst uri text view
                     TextInputLayout(
-                        it.context.withTextInputStyle_OutlinedSmall,
+                        it.context,
                         null,
                         R.attr.textInputStyle_outlinedSmall
                     ).apply {
@@ -257,7 +254,7 @@ internal class WebPToImagesDataCollectView(
                 }.addView {
                     // Start convert button
                     MaterialButton(
-                        it.context.withButtonStyle_Elevated,
+                        it.context,
                         null,
                         R.attr.buttonStyle_elevated
                     ).apply {

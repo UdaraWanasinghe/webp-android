@@ -19,11 +19,6 @@ import com.aureusapps.android.extensions.addView
 import com.aureusapps.android.extensions.resolveColorAttribute
 import com.aureusapps.android.extensions.resolvePixelDimensionAttribute
 import com.aureusapps.android.extensions.viewModels
-import com.aureusapps.android.styles.extensions.withAutoCompleteEditTextStyle_Regular
-import com.aureusapps.android.styles.extensions.withAutoCompleteTextInputStyle_OutlinedSmall
-import com.aureusapps.android.styles.extensions.withBaseStyle
-import com.aureusapps.android.styles.extensions.withButtonStyle_Elevated
-import com.aureusapps.android.styles.extensions.withTextInputStyle_OutlinedSmall
 import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import com.aureusapps.android.webpandroid.example.R
 import com.aureusapps.android.webpandroid.example.actions.UiAction
@@ -50,7 +45,7 @@ internal class ImageToWebPDataCollectView(
     context: Context,
     viewModelStoreOwner: ViewModelStoreOwner,
     private val dismissCallback: () -> Unit
-) : CoordinatorLayout(context.withBaseStyle) {
+) : CoordinatorLayout(context) {
 
     companion object {
         private val ACTION_TAG = Object()
@@ -202,7 +197,7 @@ internal class ImageToWebPDataCollectView(
                 }.addView {
                     // src uri text input
                     TextInputLayout(
-                        it.context.withTextInputStyle_OutlinedSmall,
+                        it.context,
                         null,
                         R.attr.textInputStyle_outlinedSmall
                     ).apply {
@@ -249,7 +244,7 @@ internal class ImageToWebPDataCollectView(
                 }.addView {
                     // dst uri text view
                     TextInputLayout(
-                        it.context.withTextInputStyle_OutlinedSmall,
+                        it.context,
                         null,
                         R.attr.textInputStyle_outlinedSmall
                     ).apply {
@@ -296,7 +291,7 @@ internal class ImageToWebPDataCollectView(
                 }.addView {
                     // convert quality text view
                     TextInputLayout(
-                        it.context.withTextInputStyle_OutlinedSmall,
+                        it.context,
                         null,
                         R.attr.textInputStyle_outlinedSmall
                     ).apply {
@@ -345,7 +340,7 @@ internal class ImageToWebPDataCollectView(
                     }.addView {
                         // image width input
                         TextInputLayout(
-                            it.context.withTextInputStyle_OutlinedSmall,
+                            it.context,
                             null,
                             R.attr.textInputStyle_outlinedSmall
                         ).apply {
@@ -383,7 +378,7 @@ internal class ImageToWebPDataCollectView(
                     }.addView {
                         // image height input
                         TextInputLayout(
-                            it.context.withTextInputStyle_OutlinedSmall,
+                            it.context,
                             null,
                             R.attr.textInputStyle_outlinedSmall
                         ).apply {
@@ -422,7 +417,7 @@ internal class ImageToWebPDataCollectView(
                 }.addView {
                     // preset select drop down
                     TextInputLayout(
-                        it.context.withAutoCompleteTextInputStyle_OutlinedSmall,
+                        it.context,
                         null,
                         R.attr.autoCompleteTextInputStyle_outlinedSmall
                     ).apply {
@@ -436,7 +431,7 @@ internal class ImageToWebPDataCollectView(
                     }.addView {
                         // text view
                         MaterialAutoCompleteTextView(
-                            it.context.withAutoCompleteEditTextStyle_Regular,
+                            it.context,
                             null,
                             R.attr.autoCompleteEditTextStyle_regular
                         ).apply {
@@ -465,7 +460,7 @@ internal class ImageToWebPDataCollectView(
                 }.addView {
                     // Start convert button
                     MaterialButton(
-                        it.context.withButtonStyle_Elevated,
+                        it.context,
                         null,
                         R.attr.buttonStyle_elevated
                     ).apply {
