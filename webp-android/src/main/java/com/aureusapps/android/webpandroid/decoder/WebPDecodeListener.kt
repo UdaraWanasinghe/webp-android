@@ -10,6 +10,7 @@ interface WebPDecodeListener {
 
     /**
      * Called when the decoder has decoded information about the image.
+     * Image information is decoded at the start of the decoding process.
      *
      * @param info The information about the image.
      */
