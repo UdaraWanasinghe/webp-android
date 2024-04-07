@@ -33,6 +33,13 @@ enum class CodecResult(val message: String) {
     ERROR_FILE_TOO_BIG("File is bigger than 4G"),
     ERROR_USER_ABORT("Abort request by user"),
     ERROR_LAST("List terminator. always last."),
+    ERROR_INVALID_PARAM("Invalid param"),
+    ERROR_BITSTREAM_ERROR("Bitstream error"),
+    ERROR_UNSUPPORTED_FEATURE("Unsupported feature"),
+    ERROR_SUSPENDED("Suspended"),
+    ERROR_NOT_ENOUGH_DATA("Not enough data"),
+    ERROR_ANIM_DECODER_CREATE_FAILED("Failed to create animation decoder"),
+    ERROR_ANIM_INFO_GET_FAILED("Failed to animation info"),
     ERROR_SET_DECODER_DATA("Failed to set decoder data"),
     ERROR_DECODER_DATA_SOURCE_NOT_SET("Decoder data source not set")
 }

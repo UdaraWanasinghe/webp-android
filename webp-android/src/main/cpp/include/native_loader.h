@@ -111,6 +111,7 @@ public:
     static LazyClass contextClass;
     static LazyClass floatClass;
     static LazyClass frameDecodeResultClass;
+    static LazyClass infoDecodeResultClass;
     static LazyClass integerClass;
     static LazyClass parcelFileDescriptorClass;
     static LazyClass runtimeExceptionClass;
@@ -191,6 +192,7 @@ public:
     static LazyMethod encoderNotifyProgressMethodID;
     static LazyMethod floatValueMethodID;
     static LazyMethod frameDecodeResultConstructorID;
+    static LazyMethod infoDecodeResultConstructorID;
     static LazyMethod integerValueMethodID;
     static LazyMethod parcelFileDescriptorCloseMethodID;
     static LazyMethod parcelFileDescriptorCloseWithErrorMethodID;

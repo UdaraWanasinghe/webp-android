@@ -117,3 +117,24 @@ ResultCode res::encodingErrorToResultCode(WebPEncodingError error_code) {
             return ERROR_LAST;
     }
 }
+
+ResultCode res::vp8StatusCodeToResultCode(VP8StatusCode status_code) {
+    switch (status_code) {
+        case VP8_STATUS_OK:
+            return RESULT_SUCCESS;
+        case VP8_STATUS_OUT_OF_MEMORY:
+            return ERROR_OUT_OF_MEMORY;
+        case VP8_STATUS_INVALID_PARAM:
+            return ERROR_INVALID_PARAM;
+        case VP8_STATUS_BITSTREAM_ERROR:
+            return ERROR_BITSTREAM_ERROR;
+        case VP8_STATUS_UNSUPPORTED_FEATURE:
+            return ERROR_UNSUPPORTED_FEATURE;
+        case VP8_STATUS_SUSPENDED:
+            return ERROR_SUSPENDED;
+        case VP8_STATUS_USER_ABORT:
+            return ERROR_USER_ABORT;
+        case VP8_STATUS_NOT_ENOUGH_DATA:
+            return ERROR_NOT_ENOUGH_DATA;
+    }
+}

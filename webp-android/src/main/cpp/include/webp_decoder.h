@@ -11,13 +11,13 @@
 #include "result_codes.h"
 
 namespace dec {
-    struct DecoderConfig {
+    typedef struct DecoderConfig {
         std::string namePrefix = "IMG_";
         char repeatCharacter = '0';
         int repeatCharacterCount = 4;
         int compressFormatOrdinal = 1;
         int compressQuality = 100;
-    };
+    } DecoderConfig;
 
     DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig);
 
@@ -31,6 +31,7 @@ typedef struct {
 
 typedef struct {
     ResultCode result_code;
+    jobject bitmap_frame;
     int timestamp;
 } FrameDecodeResult;
 
@@ -38,12 +39,15 @@ class WebPDecoder {
 
 private:
     dec::DecoderConfig decoder_config_{};
-    WebPAnimDecoder *decoder_ = nullptr;
     bool cancel_flag_ = false;
-    int frame_count_ = 0;
+    jobject webp_data_ = nullptr;
+    jobject bitmap_frame_ = nullptr;
+    WebPAnimDecoder *decoder_ = nullptr;
+    WebPBitstreamFeatures webp_features_ = {0};
+    WebPAnimInfo anim_info_ = {0};
     int current_frame_index_ = 0;
 
-    void configure(dec::DecoderConfig config);
+    void configure(dec::DecoderConfig *config);
 
     static jobject getWebPInfo(JNIEnv *env, const WebPBitstreamFeatures &features);
 
@@ -87,14 +91,11 @@ private:
     static ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo);
 
 public:
-    jobject webPData = nullptr;
-    jobject bitmapFrame = nullptr;
-
     static WebPDecoder *getInstance(JNIEnv *env, jobject jdecoder);
 
     static jlong nativeCreate(JNIEnv *env, jobject thiz);
 
-    static void nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig);
+    static void nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig);
 
     static jint nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri);
 
@@ -117,13 +118,16 @@ public:
 
     static void nativeCancel(JNIEnv *env, jobject jdecoder);
 
-    static void nativeRelease(JNIEnv *env, jobject jdecoder);
-
-    ResultCode setDecoderData(const uint8_t *file_data, size_t file_size);
+    ResultCode setDecoderData(JNIEnv *env, jobject jbyte_buffer);
 
     InfoDecodeResult decodeWebPInfo(JNIEnv *env);
 
-    FrameDecodeResult decodeNextFrame(JNIEnv *env, jobject jbitmap);
+    FrameDecodeResult decodeNextFrame(JNIEnv *env);
 
     void resetDecoder();
+
+    void fullResetDecoder(JNIEnv *env);
+
+    static void nativeRelease(JNIEnv *env, jobject jdecoder);
+
 };

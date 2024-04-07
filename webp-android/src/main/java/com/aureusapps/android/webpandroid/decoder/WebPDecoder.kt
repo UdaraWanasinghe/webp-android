@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import com.aureusapps.android.webpandroid.CodecException
 import com.aureusapps.android.webpandroid.CodecResult
 import com.aureusapps.android.webpandroid.utils.CodecHelper
 import com.aureusapps.android.webpandroid.utils.Logger
@@ -36,7 +37,7 @@ class WebPDecoder(private val context: Context) {
 
     private external fun nativeSetDataSource(context: Context, srcUri: Uri): Int
 
-    private external fun nativeDecodeInfo(): WebPInfo
+    private external fun nativeDecodeInfo(): InfoDecodeResult
 
     private external fun nativeDecodeInfo2(
         context: Context,
@@ -111,7 +112,12 @@ class WebPDecoder(private val context: Context) {
     }
 
     fun decodeInfo(): WebPInfo {
-        return nativeDecodeInfo()
+        val decodeResult = nativeDecodeInfo()
+        if (decodeResult.webPInfo != null) {
+            return decodeResult.webPInfo
+        }
+        val codecResult = CodecHelper.resultCodeToCodecResult(decodeResult.resultCode)
+        throw CodecException(codecResult)
     }
 
     /**

@@ -17,6 +17,7 @@ LazyClass ClassRegistry::contentResolverClass = LazyClass("android/content/Conte
 LazyClass ClassRegistry::contextClass = LazyClass("android/content/Context");
 LazyClass ClassRegistry::floatClass = LazyClass("java/lang/Float");
 LazyClass ClassRegistry::frameDecodeResultClass = LazyClass("com/aureusapps/android/webpandroid/decoder/FrameDecodeResult");
+LazyClass ClassRegistry::infoDecodeResultClass = LazyClass("com/aureusapps/android/webpandroid/decoder/InfoDecodeResult");
 LazyClass ClassRegistry::integerClass = LazyClass("java/lang/Integer");
 LazyClass ClassRegistry::parcelFileDescriptorClass = LazyClass("android/os/ParcelFileDescriptor");
 LazyClass ClassRegistry::runtimeExceptionClass = LazyClass("java/lang/RuntimeException");
@@ -350,6 +351,11 @@ LazyMethod ClassRegistry::frameDecodeResultConstructorID = LazyMethod(
         "<init>",
         "(Landroid/graphics/Bitmap;II)V"
 );
+LazyMethod ClassRegistry::infoDecodeResultConstructorID = LazyMethod(
+        infoDecodeResultClass,
+        "<init>",
+        "(Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;I)V"
+);
 LazyMethod ClassRegistry::integerValueMethodID = LazyMethod(
         integerClass,
         "intValue",
@@ -413,6 +419,7 @@ void ClassRegistry::release(JNIEnv *env) {
     contextClass.reset(env);
     floatClass.reset(env);
     frameDecodeResultClass.reset(env);
+    infoDecodeResultClass.reset(env);
     integerClass.reset(env);
     parcelFileDescriptorClass.reset(env);
     runtimeExceptionClass.reset(env);

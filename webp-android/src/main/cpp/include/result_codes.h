@@ -7,6 +7,7 @@
 #include <string>
 #include <jni.h>
 #include <webp/encode.h>
+#include <webp/decode.h>
 
 enum ResultCode {
     RESULT_SUCCESS = 0,
@@ -41,8 +42,15 @@ enum ResultCode {
     ERROR_FILE_TOO_BIG,
     ERROR_USER_ABORT,
     ERROR_LAST,
+    ERROR_INVALID_PARAM,
+    ERROR_BITSTREAM_ERROR,
+    ERROR_UNSUPPORTED_FEATURE,
+    ERROR_SUSPENDED,
+    ERROR_NOT_ENOUGH_DATA,
+    ERROR_ANIM_DECODER_CREATE_FAILED,
+    ERROR_ANIM_INFO_GET_FAILED,
     ERROR_SET_DECODER_DATA,
-    ERROR_DECODER_DATA_SOURCE_NOT_SET
+    ERROR_DECODER_DATA_SOURCE_NOT_SET,
 };
 
 namespace res {
@@ -51,4 +59,6 @@ namespace res {
     void handleResult(JNIEnv *env, ResultCode result);
 
     ResultCode encodingErrorToResultCode(WebPEncodingError error_code);
+
+    ResultCode vp8StatusCodeToResultCode(VP8StatusCode status_code);
 }

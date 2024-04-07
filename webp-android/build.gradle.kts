@@ -29,6 +29,7 @@ android {
             cmake {
                 cppFlags("-std=c++17", "-fvisibility=hidden")
                 arguments("-DLIBWEBP_PATH=${props.libwebpPath}")
+                targets("webpcodec_jni")
             }
         }
         consumerProguardFiles("consumer-rules.pro")
