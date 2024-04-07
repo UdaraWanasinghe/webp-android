@@ -92,7 +92,7 @@ namespace file {
      * @param jdirectory_uri Directory uri. This could be a file Uri or a tree Uri.
      * @param file_name File name to check.
      *
-     * @return RESULT_FILE_EXISTS if file exists, RESULT_FILE_NOT_FOUND if not, ERROR_JAVA_EXCEPTION if error occurred.
+     * @return RESULT_FILE_EXISTS if file exists, RESULT_FILE_NOT_FOUND if not.
      */
     ResultCode fileExists(
             JNIEnv *env,

@@ -15,8 +15,6 @@ std::string res::parseMessage(ResultCode result_code) {
             return "File not found";
         case ERROR_NULL_ENCODER:
             return "Encoder is missing";
-        case ERROR_INVALID_ENCODER:
-            return "Invalid encoder instance";
         case ERROR_VERSION_MISMATCH:
             return "Version mismatch";
         case ERROR_BITMAP_INFO_EXTRACT_FAILED:
@@ -37,8 +35,6 @@ std::string res::parseMessage(ResultCode result_code) {
             return "Failed to assemble animation";
         case ERROR_INVALID_WEBP_CONFIG:
             return "Invalid WebP configuration";
-        case ERROR_BITMAP_URI_DECODE_FAILED:
-            return "Failed to decode bitmap URI";
         case ERROR_WRITE_TO_URI_FAILED:
             return "Failed to write to URI";
         case ERROR_READ_URI_FAILED:
@@ -51,8 +47,6 @@ std::string res::parseMessage(ResultCode result_code) {
             return "Failed to write bitmap to URI";
         case ERROR_NULL_DECODER:
             return "Decoder is missing";
-        case ERROR_JAVA_EXCEPTION:
-            return "Java exception occurred";
         case ERROR_FILE_NAME_GENERATION_FAILED:
             return "File name generation failed";
         case ERROR_OUT_OF_MEMORY:
