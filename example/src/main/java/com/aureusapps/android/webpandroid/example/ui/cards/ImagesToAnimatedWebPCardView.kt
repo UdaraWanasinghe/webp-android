@@ -23,7 +23,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 @SuppressLint("ViewConstructor")
 @Suppress("NestedLambdaShadowedImplicitParameter")
 internal class ImagesToAnimatedWebPCardView(
-    context: Context
+    context: Context,
 ) : MaterialCardView(context) {
 
     private val codecViewModel by viewModels<CodecViewModel>()
@@ -65,7 +65,7 @@ internal class ImagesToAnimatedWebPCardView(
     }
 
     private fun createContent() {
-        val paddingRegular = resolvePixelDimensionAttribute(R.attr.padding_regular)
+        val paddingRegular = resolvePixelDimensionAttribute(com.aureusapps.android.styles.R.attr.padding_regular)
         addView {
             LinearLayout(it.context).apply {
                 layoutParams = LayoutParams(
@@ -106,7 +106,7 @@ internal class ImagesToAnimatedWebPCardView(
                 MaterialButton(
                     it.context,
                     null,
-                    R.attr.buttonStyle_iconOutlined
+                    com.aureusapps.android.styles.R.attr.buttonStyle_iconOutlined
                 ).apply {
                     startButton = this
                     layoutParams = LinearLayout.LayoutParams(

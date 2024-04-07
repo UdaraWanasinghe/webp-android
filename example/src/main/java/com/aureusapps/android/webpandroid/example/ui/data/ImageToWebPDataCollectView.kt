@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
 internal class ImageToWebPDataCollectView(
     context: Context,
     viewModelStoreOwner: ViewModelStoreOwner,
-    private val dismissCallback: () -> Unit
+    private val dismissCallback: () -> Unit,
 ) : CoordinatorLayout(context) {
 
     companion object {
@@ -62,7 +62,7 @@ internal class ImageToWebPDataCollectView(
     private var flagCollectData = true
 
     init {
-        setTag(R.id.view_tree_view_model_store_owner, viewModelStoreOwner)
+        setTag(com.google.android.material.R.id.view_tree_view_model_store_owner, viewModelStoreOwner)
         createContent()
     }
 
@@ -152,7 +152,7 @@ internal class ImageToWebPDataCollectView(
     }
 
     private fun createContent() {
-        val paddingLarge = resolvePixelDimensionAttribute(R.attr.padding_large)
+        val paddingLarge = resolvePixelDimensionAttribute(com.aureusapps.android.styles.R.attr.padding_large)
         addView {
             // app bar
             AppBarLayout(it.context).apply {
@@ -170,7 +170,7 @@ internal class ImageToWebPDataCollectView(
                     }
                     title = "Image to WebP"
                     setBackgroundColor(
-                        resolveColorAttribute(R.attr.colorSurface)
+                        resolveColorAttribute(com.google.android.material.R.attr.colorSurface)
                     )
                 }
             }
@@ -199,7 +199,7 @@ internal class ImageToWebPDataCollectView(
                     TextInputLayout(
                         it.context,
                         null,
-                        R.attr.textInputStyle_outlinedSmall
+                        com.aureusapps.android.styles.R.attr.textInputStyle_outlinedSmall
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
@@ -246,7 +246,7 @@ internal class ImageToWebPDataCollectView(
                     TextInputLayout(
                         it.context,
                         null,
-                        R.attr.textInputStyle_outlinedSmall
+                        com.aureusapps.android.styles.R.attr.textInputStyle_outlinedSmall
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
@@ -293,7 +293,7 @@ internal class ImageToWebPDataCollectView(
                     TextInputLayout(
                         it.context,
                         null,
-                        R.attr.textInputStyle_outlinedSmall
+                        com.aureusapps.android.styles.R.attr.textInputStyle_outlinedSmall
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
@@ -342,7 +342,7 @@ internal class ImageToWebPDataCollectView(
                         TextInputLayout(
                             it.context,
                             null,
-                            R.attr.textInputStyle_outlinedSmall
+                            com.aureusapps.android.styles.R.attr.textInputStyle_outlinedSmall
                         ).apply {
                             layoutParams = LinearLayout.LayoutParams(
                                 0, WRAP_CONTENT
@@ -380,7 +380,7 @@ internal class ImageToWebPDataCollectView(
                         TextInputLayout(
                             it.context,
                             null,
-                            R.attr.textInputStyle_outlinedSmall
+                            com.aureusapps.android.styles.R.attr.textInputStyle_outlinedSmall
                         ).apply {
                             layoutParams = LinearLayout.LayoutParams(
                                 0, WRAP_CONTENT
@@ -419,7 +419,7 @@ internal class ImageToWebPDataCollectView(
                     TextInputLayout(
                         it.context,
                         null,
-                        R.attr.autoCompleteTextInputStyle_outlinedSmall
+                        com.aureusapps.android.styles.R.attr.autoCompleteTextInputStyle_outlinedSmall
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
@@ -433,7 +433,7 @@ internal class ImageToWebPDataCollectView(
                         MaterialAutoCompleteTextView(
                             it.context,
                             null,
-                            R.attr.autoCompleteEditTextStyle_regular
+                            com.aureusapps.android.styles.R.attr.autoCompleteEditTextStyle_regular
                         ).apply {
                             presetTextView = this
                             setAdapter(
@@ -462,7 +462,7 @@ internal class ImageToWebPDataCollectView(
                     MaterialButton(
                         it.context,
                         null,
-                        R.attr.buttonStyle_elevated
+                        com.aureusapps.android.styles.R.attr.buttonStyle_elevated
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT

@@ -24,7 +24,7 @@ internal class WebPPreview(
     context: Context,
     private val imageUri: Uri,
     private val imageWidth: Int,
-    private val imageHeight: Int
+    private val imageHeight: Int,
 ) : CoordinatorLayout(context) {
 
     private lateinit var imageView: SimpleDraweeView
@@ -46,7 +46,7 @@ internal class WebPPreview(
                             MATCH_PARENT, WRAP_CONTENT
                         )
                         setBackgroundColor(
-                            resolveColorAttribute(R.attr.colorSurface)
+                            resolveColorAttribute(com.google.android.material.R.attr.colorSurface)
                         )
                         title = context.getString(R.string.preview)
                     }

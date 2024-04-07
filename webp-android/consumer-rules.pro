@@ -8,5 +8,7 @@
 -keep class com.aureusapps.android.webpandroid.decoder.WebPInfo
 -keep class com.aureusapps.android.webpandroid.decoder.WebPDecodeListener {*;}
 -keep class com.aureusapps.android.webpandroid.decoder.WebPDecodeListener
+-keep class com.aureusapps.android.webpandroid.decoder.FrameDecodeResult {*;}
+-keep class com.aureusapps.android.webpandroid.decoder.FrameDecodeResult
 -keep class com.aureusapps.android.extensions.UriExtensionsKt {*;}
 -keep class com.aureusapps.android.extensions.BitmapUtils {*;}

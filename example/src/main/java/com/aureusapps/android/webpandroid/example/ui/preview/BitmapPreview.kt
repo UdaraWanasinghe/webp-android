@@ -33,7 +33,7 @@ internal class BitmapPreview(
     context: Context,
     private val imagesUris: List<Uri>,
     private val imageWidth: Int,
-    private val imageHeight: Int
+    private val imageHeight: Int,
 ) : CoordinatorLayout(context) {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
@@ -71,7 +71,7 @@ internal class BitmapPreview(
                         )
                         title = context.getString(R.string.preview)
                         setBackgroundColor(
-                            resolveColorAttribute(R.attr.colorSurface)
+                            resolveColorAttribute(com.google.android.material.R.attr.colorSurface)
                         )
                     }
                 }
@@ -94,7 +94,7 @@ internal class BitmapPreview(
     private class ImageAdapter(
         private val files: List<Uri>,
         private val imageWidth: Int,
-        private val imageHeight: Int
+        private val imageHeight: Int,
     ) : RecyclerView.Adapter<ViewHolder>() {
 
         private val coroutineScope = CoroutineScope(Dispatchers.Main)

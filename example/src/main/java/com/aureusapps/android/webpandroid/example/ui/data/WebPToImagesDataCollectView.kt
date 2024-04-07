@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 internal class WebPToImagesDataCollectView(
     context: Context,
     viewModelStoreOwner: ViewModelStoreOwner,
-    private val dismissCallback: () -> Unit
+    private val dismissCallback: () -> Unit,
 ) : CoordinatorLayout(context) {
 
     companion object {
@@ -54,7 +54,7 @@ internal class WebPToImagesDataCollectView(
     private var flagCollectData = true
 
     init {
-        setTag(R.id.view_tree_view_model_store_owner, viewModelStoreOwner)
+        setTag(com.google.android.material.R.id.view_tree_view_model_store_owner, viewModelStoreOwner)
         createContent()
     }
 
@@ -113,7 +113,7 @@ internal class WebPToImagesDataCollectView(
     }
 
     private fun createContent() {
-        val paddingLarge = resolvePixelDimensionAttribute(R.attr.padding_large)
+        val paddingLarge = resolvePixelDimensionAttribute(com.aureusapps.android.styles.R.attr.padding_large)
         addView {
             // app bar
             AppBarLayout(it.context).apply {
@@ -131,7 +131,7 @@ internal class WebPToImagesDataCollectView(
                     }
                     title = "WebP to Images"
                     setBackgroundColor(
-                        resolveColorAttribute(R.attr.colorSurface)
+                        resolveColorAttribute(com.google.android.material.R.attr.colorSurface)
                     )
                 }
             }
@@ -160,7 +160,7 @@ internal class WebPToImagesDataCollectView(
                     TextInputLayout(
                         it.context,
                         null,
-                        R.attr.textInputStyle_outlinedSmall
+                        com.aureusapps.android.styles.R.attr.textInputStyle_outlinedSmall
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
@@ -207,7 +207,7 @@ internal class WebPToImagesDataCollectView(
                     TextInputLayout(
                         it.context,
                         null,
-                        R.attr.textInputStyle_outlinedSmall
+                        com.aureusapps.android.styles.R.attr.textInputStyle_outlinedSmall
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT
@@ -256,7 +256,7 @@ internal class WebPToImagesDataCollectView(
                     MaterialButton(
                         it.context,
                         null,
-                        R.attr.buttonStyle_elevated
+                        com.aureusapps.android.styles.R.attr.buttonStyle_elevated
                     ).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             MATCH_PARENT, WRAP_CONTENT

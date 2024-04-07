@@ -398,7 +398,7 @@ class CodecActivity : AppCompatActivity() {
                 )
 
             }.addView {
-                val paddingLarge = it.context.resolvePixelDimensionAttribute(R.attr.padding_large)
+                val paddingLarge = it.context.resolvePixelDimensionAttribute(com.aureusapps.android.styles.R.attr.padding_large)
 
                 // container layout
                 LinearLayout(it.context).apply {
