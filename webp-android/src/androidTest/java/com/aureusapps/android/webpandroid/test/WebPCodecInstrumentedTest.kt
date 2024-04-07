@@ -105,7 +105,7 @@ class WebPCodecInstrumentedTest {
         dstWidth: Int = -1,
         dstHeight: Int = -1,
         imageColor: Int = Color.argb(255, 0, 255, 0),
-        lossless: Int = WebPConfig.COMPRESSION_LOSSLESS
+        lossless: Int = WebPConfig.COMPRESSION_LOSSLESS,
     ) {
         var inputFile: File? = null
         var outputFile: File? = null
@@ -166,7 +166,7 @@ class WebPCodecInstrumentedTest {
         ),
         backgroundColor: Int = Color.WHITE,
         loopCount: Int = 0,
-        lossless: Int = WebPConfig.COMPRESSION_LOSSLESS
+        lossless: Int = WebPConfig.COMPRESSION_LOSSLESS,
     ) {
         var inputFiles: List<File>? = null
         var outputFile: File? = null
@@ -247,7 +247,7 @@ class WebPCodecInstrumentedTest {
         repeatCharacter: Char = '#',
         repeatCharacterCount: Int = 6,
         compressFormat: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
-        compressQuality: Int = 100
+        compressQuality: Int = 100,
     ) {
         var outputDirectory: File? = null
         var bitmapFile: File? = null
@@ -271,7 +271,7 @@ class WebPCodecInstrumentedTest {
                     index: Int,
                     timestamp: Long,
                     bitmap: Bitmap,
-                    uri: Uri
+                    uri: Uri,
                 ) {
                     frameCount++
                     frameUri = uri
@@ -305,7 +305,8 @@ class WebPCodecInstrumentedTest {
                 Bitmap.CompressFormat.PNG -> ".png"
                 Bitmap.CompressFormat.WEBP,
                 Bitmap.CompressFormat.WEBP_LOSSY,
-                Bitmap.CompressFormat.WEBP_LOSSLESS -> ".webp"
+                Bitmap.CompressFormat.WEBP_LOSSLESS,
+                -> ".webp"
             }
             val imageName = "${namePrefix}${middleName}${nameSuffix}"
             val expectedFrame = File(outputDirectory, imageName)
@@ -355,7 +356,7 @@ class WebPCodecInstrumentedTest {
         frameDurations: List<Int> = listOf(
             1000,
             2000
-        )
+        ),
     ) {
         var imageFile: File? = null
         var outputDirectory: File? = null
@@ -390,7 +391,7 @@ class WebPCodecInstrumentedTest {
                         index: Int,
                         timestamp: Long,
                         bitmap: Bitmap,
-                        uri: Uri
+                        uri: Uri,
                     ) {
                         if (uri != Uri.EMPTY) {
                             imageFrames.add(
@@ -416,7 +417,7 @@ class WebPCodecInstrumentedTest {
                 webPInfo?.hasAnimation ?: false
             )
             assertEquals(
-                "Unexpected WebPInfo.frameCount value",
+                "Unexpected WebPInfo.frame_count_ value",
                 imageColors.size,
                 webPInfo?.frameCount
             )
@@ -457,7 +458,7 @@ class WebPCodecInstrumentedTest {
     private fun createBitmapImage(
         width: Int,
         height: Int,
-        color: Int
+        color: Int,
     ): Bitmap {
         return Bitmap.createBitmap(
             IntArray(width * height) { color },
@@ -469,7 +470,7 @@ class WebPCodecInstrumentedTest {
 
     private fun saveBitmapImage(
         bitmap: Bitmap,
-        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
     ): File {
         val file = File.createTempFile("img", null)
         val out = FileOutputStream(file)
@@ -487,7 +488,7 @@ class WebPCodecInstrumentedTest {
         expectedHasAlphas: List<Boolean>,
         expectedBackgroundColor: Int = Color.WHITE,
         expectedLoopCount: Int = 0,
-        expectedFrameDuration: List<Int> = emptyList()
+        expectedFrameDuration: List<Int> = emptyList(),
     ) {
         val inputStream = FileInputStream(file)
         val fileData = inputStream.readBytes()
@@ -590,7 +591,7 @@ class WebPCodecInstrumentedTest {
         chunkSize: Int,
         expectedWidth: Int,
         expectedHeight: Int,
-        expectedColor: Int
+        expectedColor: Int,
     ) = verifyVP8_VP8L(buffer, chunkSize, "VP8 ", expectedWidth, expectedHeight, expectedColor)
 
     private fun verifyVP8L(
@@ -598,7 +599,7 @@ class WebPCodecInstrumentedTest {
         chunkSize: Int,
         expectedWidth: Int,
         expectedHeight: Int,
-        expectedColor: Int
+        expectedColor: Int,
     ) = verifyVP8_VP8L(buffer, chunkSize, "VP8L", expectedWidth, expectedHeight, expectedColor)
 
     private fun verifyVP8_VP8L(
@@ -607,7 +608,7 @@ class WebPCodecInstrumentedTest {
         dataFormat: String,
         expectedWidth: Int,
         expectedHeight: Int,
-        expectedColor: Int
+        expectedColor: Int,
     ) {
         val vp8Data = ByteArray(chunkSize)
         buffer.get(vp8Data)
@@ -659,7 +660,7 @@ class WebPCodecInstrumentedTest {
         expectedWidth: Int,
         expectedHeight: Int,
         expectedHasAnimation: Boolean,
-        expectedHasAlpha: Boolean
+        expectedHasAlpha: Boolean,
     ) {
         // 20..23  VP8X flags bit-map corresponding to the chunk-types present.
         val featureFlags = buffer.nextInt()
@@ -698,7 +699,7 @@ class WebPCodecInstrumentedTest {
     private fun verifyANIM(
         buffer: ByteBuffer,
         expectedBackgroundColor: Int,
-        expectedLoopCount: Int
+        expectedLoopCount: Int,
     ) {
         val backgroundColor = buffer.nextInt()
         assertEquals(
@@ -752,7 +753,7 @@ class WebPCodecInstrumentedTest {
 
     private fun verifyALPH(
         buffer: ByteBuffer,
-        chunkSize: Int
+        chunkSize: Int,
     ) {
         buffer.skipBytes(chunkSize)
     }
@@ -764,7 +765,7 @@ class WebPCodecInstrumentedTest {
         actual: Int,
         expected: Int,
         tolerance: Int = 15,
-        message: () -> String
+        message: () -> String,
     ) {
         assertThat(
             message(),

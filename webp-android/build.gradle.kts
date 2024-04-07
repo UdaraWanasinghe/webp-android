@@ -55,6 +55,9 @@ android {
             version = "3.26.4+"
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
     publishing {
         singleVariant("release") {
             withSourcesJar()

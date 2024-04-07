@@ -50,25 +50,6 @@ namespace type {
     float getFloatValue(JNIEnv *env, jobject object);
 
     /**
-     * @brief Retrieves the value of an object field.
-     *
-     * This function retrieves the value of a specific field from a Java object and returns it as a jobject.
-     *
-     * @param env A pointer to the JNI environment.
-     * @param object The Java object from which to retrieve the field value.
-     * @param name The name of the field to retrieve.
-     * @param sig The signature of the field.
-     *
-     * @return The value of the specified object field.
-     */
-    jobject getObjectField(
-            JNIEnv *env,
-            jobject object,
-            const char *name,
-            const char *sig
-    );
-
-    /**
      * @brief Checks if a Java object is null.
      *
      * This function checks whether a Java object is null and returns a boolean indicating the result.

@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import com.aureusapps.android.webpandroid.CodecResult
+import com.aureusapps.android.webpandroid.utils.CodecHelper
+import com.aureusapps.android.webpandroid.utils.Logger
 import com.getkeepsafe.relinker.ReLinker
 import java.util.concurrent.CancellationException
 
@@ -11,6 +14,10 @@ import java.util.concurrent.CancellationException
  * The [WebPDecoder] class provides functionality for decoding WebP images.
  */
 class WebPDecoder(private val context: Context) {
+
+    companion object {
+        private const val TAG = "WebPDecoder"
+    }
 
     init {
         ReLinker.loadLibrary(context, "webpcodec_jni")
@@ -27,16 +34,28 @@ class WebPDecoder(private val context: Context) {
 
     private external fun nativeConfigure(config: DecoderConfig)
 
+    private external fun nativeSetDataSource(context: Context, srcUri: Uri): Int
+
+    private external fun nativeDecodeInfo(): WebPInfo
+
+    private external fun nativeDecodeInfo2(
+        context: Context,
+        srcUri: Uri,
+    ): WebPInfo
+
+    /**
+     * Returns bitmap if decode successful. Null if failed to decode frame.
+     * This function automatically resets the decoder if it is at the end before starting decoding process.
+     */
+    private external fun nativeDecodeNextFrame(): FrameDecodeResult
+
     private external fun nativeDecodeFrames(
         context: Context,
         srcUri: Uri,
-        dstUri: Uri?
-    )
+        dstUri: Uri?,
+    ): Int
 
-    private external fun nativeDecodeInfo(
-        context: Context,
-        srcUri: Uri
-    ): WebPInfo
+    private external fun nativeResetDecoder()
 
     private external fun nativeCancel()
 
@@ -87,6 +106,35 @@ class WebPDecoder(private val context: Context) {
         return this
     }
 
+    fun setDataSource(srcUri: Uri) {
+        nativeSetDataSource(context, srcUri)
+    }
+
+    fun decodeInfo(): WebPInfo {
+        return nativeDecodeInfo()
+    }
+
+    /**
+     * Decodes the image information of a WebP image.
+     *
+     * @param srcUri The [Uri] of the source WebP image.
+     *
+     * @return The [WebPInfo] object containing the decoded image information.
+     * @throws [RuntimeException] If error occurred.
+     */
+    fun decodeInfo(srcUri: Uri): WebPInfo {
+        return nativeDecodeInfo2(context, srcUri)
+    }
+
+    fun decodeNextFrame(): FrameDecodeResult {
+        val decodeResult = nativeDecodeNextFrame()
+        val codecResult = CodecHelper.resultCodeToCodecResult(decodeResult.resultCode)
+        if (codecResult != CodecResult.SUCCESS) {
+            Logger.e(TAG, codecResult.message)
+        }
+        return decodeResult
+    }
+
     /**
      * Decodes all frames of a WebP image and optionally saves them to a destination [Uri].
      *
@@ -100,16 +148,8 @@ class WebPDecoder(private val context: Context) {
         nativeDecodeFrames(context, srcUri, dstUri)
     }
 
-    /**
-     * Decodes the image information of a WebP image.
-     *
-     * @param srcUri The [Uri] of the source WebP image.
-     *
-     * @return The [WebPInfo] object containing the decoded image information.
-     * @throws [RuntimeException] If error occurred.
-     */
-    fun decodeInfo(srcUri: Uri): WebPInfo {
-        return nativeDecodeInfo(context, srcUri)
+    fun resetDecoder() {
+        nativeResetDecoder()
     }
 
     /**

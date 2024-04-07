@@ -40,19 +40,6 @@ float type::getFloatValue(
     return static_cast<float>(value);
 }
 
-jobject type::getObjectField(
-        JNIEnv *env,
-        jobject object,
-        const char *name,
-        const char *sig
-) {
-    jclass clazz = env->GetObjectClass(object);
-    jfieldID field_id = env->GetFieldID(clazz, name, sig);
-    jobject field = env->GetObjectField(object, field_id);
-    env->DeleteLocalRef(clazz);
-    return field;
-}
-
 bool type::isObjectNull(JNIEnv *env, jobject obj) {
     if (obj == nullptr) {
         // If the object is already null, return true

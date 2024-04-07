@@ -43,7 +43,9 @@ enum ResultCode {
     ERROR_BAD_WRITE,
     ERROR_FILE_TOO_BIG,
     ERROR_USER_ABORT,
-    ERROR_LAST
+    ERROR_LAST,
+    ERROR_SET_DECODER_DATA,
+    ERROR_DECODER_DATA_SOURCE_NOT_SET
 };
 
 namespace res {

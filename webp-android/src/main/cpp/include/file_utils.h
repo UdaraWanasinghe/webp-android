@@ -10,6 +10,11 @@
 
 #include "result_codes.h"
 
+typedef struct {
+    ResultCode result_code;
+    jobject byte_buffer;
+} ReadResult;
+
 namespace file {
     /**
      * Retrieves the file descriptor associated with the Android Uri.
@@ -51,7 +56,7 @@ namespace file {
      *
      * @return Result code that tells status of the read operation.
      */
-    std::pair<ResultCode, jobject> readFromUri(
+    ReadResult readFromUri(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,

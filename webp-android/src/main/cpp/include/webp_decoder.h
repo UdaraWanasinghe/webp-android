@@ -24,15 +24,26 @@ namespace dec {
     std::string getImageNameSuffix(int compress_format_ordinal);
 }
 
-class WebPDecoder {
-private:
-    inline static bool cancelFlag = false;
+typedef struct {
+    ResultCode result_code;
+    jobject webp_info;
+} InfoDecodeResult;
 
-    dec::DecoderConfig decoderConfig{};
+typedef struct {
+    ResultCode result_code;
+    int timestamp;
+} FrameDecodeResult;
+
+class WebPDecoder {
+
+private:
+    dec::DecoderConfig decoder_config_{};
+    WebPAnimDecoder *decoder_ = nullptr;
+    bool cancel_flag_ = false;
+    int frame_count_ = 0;
+    int current_frame_index_ = 0;
 
     void configure(dec::DecoderConfig config);
-
-    static WebPDecoder *getInstance(JNIEnv *env, jobject jdecoder);
 
     static jobject getWebPInfo(JNIEnv *env, const WebPBitstreamFeatures &features);
 
@@ -76,11 +87,18 @@ private:
     static ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo);
 
 public:
+    jobject webPData = nullptr;
+    jobject bitmapFrame = nullptr;
+
+    static WebPDecoder *getInstance(JNIEnv *env, jobject jdecoder);
+
     static jlong nativeCreate(JNIEnv *env, jobject thiz);
 
     static void nativeConfigure(JNIEnv *env, jobject thiz, jobject jconfig);
 
-    static void nativeDecodeFrames(
+    static jint nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri);
+
+    static jint nativeDecodeFrames(
             JNIEnv *env,
             jobject thiz,
             jobject jcontext,
@@ -88,9 +106,24 @@ public:
             jobject jdst_uri
     );
 
-    static jobject nativeDecodeInfo(JNIEnv *env, jobject thiz, jobject jcontext, jobject jsrc_uri);
+    static jobject nativeDecodeInfo(JNIEnv *env, jobject jdecoder);
 
-    static void nativeCancel(JNIEnv *env, jobject thiz);
+    static jobject
+    nativeDecodeInfo2(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri);
 
-    static void nativeRelease(JNIEnv *env, jobject thiz);
+    static jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder);
+
+    static void nativeResetDecoder(JNIEnv *env, jobject jdecoder);
+
+    static void nativeCancel(JNIEnv *env, jobject jdecoder);
+
+    static void nativeRelease(JNIEnv *env, jobject jdecoder);
+
+    ResultCode setDecoderData(const uint8_t *file_data, size_t file_size);
+
+    InfoDecodeResult decodeWebPInfo(JNIEnv *env);
+
+    FrameDecodeResult decodeNextFrame(JNIEnv *env, jobject jbitmap);
+
+    void resetDecoder();
 };

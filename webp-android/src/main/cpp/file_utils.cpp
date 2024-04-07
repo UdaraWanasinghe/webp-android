@@ -62,14 +62,14 @@ void file::closeFileDescriptorWithError(
     env->DeleteLocalRef(jerror);
 }
 
-std::pair<ResultCode, jobject> file::readFromUri(
+ReadResult file::readFromUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         uint8_t **const file_data,
         size_t *const file_size
 ) {
-    std::pair<ResultCode, jobject> ret;
+    ReadResult ret;
     jobject jbyte_buffer = env->CallStaticObjectMethod(
             ClassRegistry::uriExtensionsClass.get(env),
             ClassRegistry::uriExtensionsReadToBufferMethodID.get(env),
@@ -77,11 +77,11 @@ std::pair<ResultCode, jobject> file::readFromUri(
             jcontext
     );
     if (type::isObjectNull(env, jbyte_buffer)) {
-        ret = std::pair(ERROR_READ_URI_FAILED, nullptr);
+        ret = {ERROR_READ_URI_FAILED, nullptr};
     } else {
         *file_data = static_cast<uint8_t *>(env->GetDirectBufferAddress(jbyte_buffer));
         *file_size = env->GetDirectBufferCapacity(jbyte_buffer);
-        ret = std::pair(RESULT_SUCCESS, jbyte_buffer);
+        ret = {RESULT_SUCCESS, jbyte_buffer};
     }
 
     return ret;
