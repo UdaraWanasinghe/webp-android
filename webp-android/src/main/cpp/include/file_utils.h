@@ -13,7 +13,7 @@
 namespace file {
     typedef struct {
         ResultCode result_code;
-        jobject byte_buffer;
+        jobject data_buffer;
     } FileReadResult;
 
     typedef struct {

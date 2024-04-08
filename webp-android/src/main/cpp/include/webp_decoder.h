@@ -33,7 +33,9 @@ namespace dec {
 
     jlong nativeCreate(JNIEnv *env, jobject thiz);
 
-    void nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig);
+    jint nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig);
+
+    jint nativeSetDataBuffer(JNIEnv *env, jobject jdecoder, jobject jbuffer);
 
     jint nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri);
 
@@ -72,7 +74,7 @@ public:
 
     void configure(dec::DecoderConfig *config);
 
-    ResultCode setDataSource(JNIEnv *env, jobject jbyte_buffer);
+    ResultCode setDataBuffer(JNIEnv *env, jobject jbuffer);
 
     dec::InfoDecodeResult decodeWebPInfo(JNIEnv *env);
 

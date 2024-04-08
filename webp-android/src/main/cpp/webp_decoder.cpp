@@ -69,9 +69,9 @@ namespace dec {
     }
 
     ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo) {
-        auto result = RESULT_SUCCESS;
+        auto result_code = RESULT_SUCCESS;
         if (type::isObjectNull(env, jinfo)) {
-            result = ERROR_WEBP_INFO_EXTRACT_FAILED;
+            result_code = ERROR_WEBP_INFO_EXTRACT_FAILED;
         } else {
             env->CallVoidMethod(
                     jdecoder,
@@ -79,7 +79,7 @@ namespace dec {
                     jinfo
             );
         }
-        return result;
+        return result_code;
     }
 
     jlong nativeCreate(JNIEnv *, jobject) {
@@ -87,20 +87,36 @@ namespace dec {
         return reinterpret_cast<jlong>(decoder);
     }
 
-    void nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig) {
+    jint nativeConfigure(
+            JNIEnv *env,
+            jobject jdecoder,
+            jobject jconfig
+    ) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-        ResultCode result = RESULT_SUCCESS;
-        if (decoder == nullptr) {
-            result = ERROR_NULL_DECODER;
-        } else {
-            dec::DecoderConfig config = dec::parseDecoderConfig(env, jconfig);
-            decoder->configure(&config);
-        }
-        res::handleResult(env, result);
+        if (decoder == nullptr) return ERROR_NULL_DECODER;
+        auto config = dec::parseDecoderConfig(env, jconfig);
+        decoder->configure(&config);
+        return RESULT_SUCCESS;
     }
 
-    jint nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri) {
+    jint nativeSetDataBuffer(
+            JNIEnv *env,
+            jobject jdecoder,
+            jobject jbuffer
+    ) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return ERROR_NULL_DECODER;
+        return decoder->setDataBuffer(env, jbuffer);
+    }
+
+    jint nativeSetDataSource(
+            JNIEnv *env,
+            jobject jdecoder,
+            jobject jcontext,
+            jobject jsrc_uri
+    ) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return ERROR_NULL_DECODER;
 
         uint8_t *file_data = nullptr;
         size_t file_size = 0;
@@ -112,10 +128,9 @@ namespace dec {
                 &file_size
         );
 
-        WebPDecoder::getInstance(env, jdecoder);
         auto result_code = read_result.result_code;
         if (result_code == RESULT_SUCCESS) {
-            result_code = decoder->setDataSource(env, read_result.byte_buffer);
+            result_code = decoder->setDataBuffer(env, read_result.data_buffer);
         }
 
         return result_code;
@@ -123,24 +138,49 @@ namespace dec {
 
     jobject nativeDecodeInfo(JNIEnv *env, jobject jdecoder) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-        auto decode_result = decoder->decodeWebPInfo(env);
+        ResultCode result_code;
+        jobject webp_info;
+
+        if (decoder == nullptr) {
+            result_code = ERROR_NULL_DECODER;
+            webp_info = nullptr;
+        } else {
+            auto decode_result = decoder->decodeWebPInfo(env);
+            result_code = decode_result.result_code;
+            webp_info = decode_result.webp_info;
+        }
+
         return env->NewObject(
                 ClassRegistry::infoDecodeResultClass.get(env),
                 ClassRegistry::infoDecodeResultConstructorID.get(env),
-                decode_result.webp_info,
-                static_cast<jint>(decode_result.result_code)
+                webp_info,
+                static_cast<jint>(result_code)
         );
     }
 
     jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-        auto decode_result = decoder->decodeNextFrame(env);
+        jobject bitmap_frame;
+        int timestamp;
+        ResultCode result_code;
+
+        if (decoder == nullptr) {
+            bitmap_frame = nullptr;
+            timestamp = 0;
+            result_code = ERROR_NULL_DECODER;
+        } else {
+            auto decode_result = decoder->decodeNextFrame(env);
+            bitmap_frame = decode_result.bitmap_frame;
+            timestamp = decode_result.timestamp;
+            result_code = decode_result.result_code;
+        }
+
         return env->NewObject(
                 ClassRegistry::frameDecodeResultClass.get(env),
                 ClassRegistry::frameDecodeResultConstructorID.get(env),
-                decode_result.bitmap_frame,
-                static_cast<jint>(decode_result.timestamp),
-                static_cast<jint>(decode_result.result_code)
+                bitmap_frame,
+                static_cast<jint>(timestamp),
+                static_cast<jint>(result_code)
         );
     }
 
@@ -151,16 +191,19 @@ namespace dec {
             jobject jdst_uri
     ) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return ERROR_NULL_DECODER;
         return decoder->decodeFrames(env, jdecoder, jcontext, jdst_uri);
     }
 
     void nativeReset(JNIEnv *env, jobject jdecoder) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return;
         decoder->reset();
     }
 
     void nativeCancel(JNIEnv *env, jobject jdecoder) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return;
         decoder->cancel();
     }
 
@@ -194,14 +237,14 @@ void WebPDecoder::configure(dec::DecoderConfig *config) {
     decoder_config_ = *config;
 }
 
-ResultCode WebPDecoder::setDataSource(JNIEnv *env, jobject jbyte_buffer) {
+ResultCode WebPDecoder::setDataBuffer(JNIEnv *env, jobject jbuffer) {
     fullReset(env);
 
     ResultCode result_code = RESULT_SUCCESS;
 
     // get buffer pointer and the size
-    const uint8_t *file_data = static_cast<uint8_t *>(env->GetDirectBufferAddress(jbyte_buffer));
-    const size_t file_size = env->GetDirectBufferCapacity(jbyte_buffer);
+    const uint8_t *file_data = static_cast<uint8_t *>(env->GetDirectBufferAddress(jbuffer));
+    const size_t file_size = env->GetDirectBufferCapacity(jbuffer);
 
     // read webp features
     VP8StatusCode features_get_status = WebPGetFeatures(file_data, file_size, &webp_features_);
@@ -244,7 +287,7 @@ ResultCode WebPDecoder::setDataSource(JNIEnv *env, jobject jbyte_buffer) {
 
     // set webp data
     if (result_code == RESULT_SUCCESS) {
-        data_buffer_ = env->NewGlobalRef(jbyte_buffer);
+        data_buffer_ = env->NewGlobalRef(jbuffer);
     } else {
         fullReset(env);
     }

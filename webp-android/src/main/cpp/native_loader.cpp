@@ -509,6 +509,11 @@ static const JNINativeMethod decoderMethods[] = {
                 reinterpret_cast<void *>(dec::nativeConfigure)
         },
         {
+                "nativeSetDataBuffer",
+                "(Ljava/nio/Buffer;)I",
+                reinterpret_cast<void *>(dec::nativeSetDataBuffer)
+        },
+        {
                 "nativeSetDataSource",
                 "(Landroid/content/Context;Landroid/net/Uri;)I",
                 reinterpret_cast<void *>(dec::nativeSetDataSource)

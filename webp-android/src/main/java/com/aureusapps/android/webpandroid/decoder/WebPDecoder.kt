@@ -8,6 +8,7 @@ import com.aureusapps.android.webpandroid.CodecException
 import com.aureusapps.android.webpandroid.CodecResult
 import com.aureusapps.android.webpandroid.utils.CodecHelper
 import com.getkeepsafe.relinker.ReLinker
+import java.nio.Buffer
 
 /**
  * The [WebPDecoder] class provides functionality for decoding WebP images.
@@ -32,6 +33,8 @@ class WebPDecoder(private val context: Context) {
     private external fun nativeCreate(): Long
 
     private external fun nativeConfigure(config: DecoderConfig)
+
+    private external fun nativeSetDataBuffer(buffer: Buffer): Int
 
     private external fun nativeSetDataSource(context: Context, srcUri: Uri): Int
 
@@ -106,6 +109,16 @@ class WebPDecoder(private val context: Context) {
     fun configure(config: DecoderConfig): WebPDecoder {
         nativeConfigure(config)
         return this
+    }
+
+    /**
+     * Sets the data buffer for processing.
+     *
+     * @param buffer The Java buffer containing the data to be processed.
+     */
+    fun setDataBuffer(buffer: Buffer) {
+        val resultCode = nativeSetDataBuffer(buffer)
+        handleResultCode<Unit>(resultCode)
     }
 
     /**
