@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aureusapps.android.extensions.scanNotNull
+import com.aureusapps.android.webpandroid.CodecException
+import com.aureusapps.android.webpandroid.CodecResult
 import com.aureusapps.android.webpandroid.decoder.WebPDecoder
 import com.aureusapps.android.webpandroid.decoder.WebPInfo
 import com.aureusapps.android.webpandroid.encoder.WebPAnimEncoder
@@ -26,7 +28,6 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
-import java.util.concurrent.CancellationException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class CodecViewModel(application: Application) : AndroidViewModel(application) {
@@ -558,21 +559,22 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         .OnConvertFinished(state)
                 }
 
-            } catch (e: CancellationException) {
-                emitState { state ->
-                    ConvertState
-                        .ImageToWebP
-                        .OnConvertCancelled(state)
-                }
-
             } catch (e: Exception) {
-                emitState { state ->
-                    ConvertState
-                        .ImageToWebP
-                        .OnConvertError(
-                            state,
-                            errorMessage = e.message ?: "Unknown error."
-                        )
+                if (e is CodecException && e.codecResult == CodecResult.ERROR_USER_ABORT) {
+                    emitState { state ->
+                        ConvertState
+                            .ImageToWebP
+                            .OnConvertCancelled(state)
+                    }
+                } else {
+                    emitState { state ->
+                        ConvertState
+                            .ImageToWebP
+                            .OnConvertError(
+                                state,
+                                errorMessage = e.message ?: "Unknown error."
+                            )
+                    }
                 }
             } finally {
                 webPEncoder.release()
@@ -650,23 +652,23 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         .OnConvertFinished(state)
                 }
 
-            } catch (e: CancellationException) {
-                emitState { state ->
-                    ConvertState
-                        .ImagesToAnimatedWebP
-                        .OnConvertCancelled(state)
-                }
-
             } catch (e: Exception) {
-                emitState { state ->
-                    ConvertState
-                        .ImagesToAnimatedWebP
-                        .OnConvertError(
-                            parent = state,
-                            errorMessage = e.message ?: "Unknown error."
-                        )
+                if (e is CodecException && e.codecResult == CodecResult.ERROR_USER_ABORT) {
+                    emitState { state ->
+                        ConvertState
+                            .ImagesToAnimatedWebP
+                            .OnConvertCancelled(state)
+                    }
+                } else {
+                    emitState { state ->
+                        ConvertState
+                            .ImagesToAnimatedWebP
+                            .OnConvertError(
+                                parent = state,
+                                errorMessage = e.message ?: "Unknown error."
+                            )
+                    }
                 }
-
             } finally {
                 webPAnimEncoder.release()
             }
@@ -751,23 +753,23 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         )
                 }
 
-            } catch (e: CancellationException) {
-                emitState { state ->
-                    ConvertState
-                        .WebPToImages
-                        .OnConvertCancelled(state)
-                }
-
             } catch (e: Exception) {
-                emitState { state ->
-                    ConvertState
-                        .WebPToImages
-                        .OnConvertError(
-                            parent = state,
-                            errorMessage = e.message ?: "Unknown error"
-                        )
+                if (e is CodecException && e.codecResult == CodecResult.ERROR_USER_ABORT) {
+                    emitState { state ->
+                        ConvertState
+                            .WebPToImages
+                            .OnConvertCancelled(state)
+                    }
+                } else {
+                    emitState { state ->
+                        ConvertState
+                            .WebPToImages
+                            .OnConvertError(
+                                parent = state,
+                                errorMessage = e.message ?: "Unknown error"
+                            )
+                    }
                 }
-
             } finally {
                 webPDecoder.release()
             }
