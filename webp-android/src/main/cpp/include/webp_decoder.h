@@ -85,9 +85,9 @@ public:
             jobject jdst_uri
     );
 
-    void cancel();
-
     void reset();
 
     void fullReset(JNIEnv *env);
+
+    void cancel();
 };

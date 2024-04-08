@@ -69,7 +69,7 @@ namespace dec {
     }
 
     ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo) {
-        ResultCode result = RESULT_SUCCESS;
+        auto result = RESULT_SUCCESS;
         if (type::isObjectNull(env, jinfo)) {
             result = ERROR_WEBP_INFO_EXTRACT_FAILED;
         } else {
@@ -135,16 +135,13 @@ namespace dec {
     jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
         auto decode_result = decoder->decodeNextFrame(env);
-        if (decode_result.result_code == RESULT_SUCCESS) {
-            return env->NewObject(
-                    ClassRegistry::frameDecodeResultClass.get(env),
-                    ClassRegistry::frameDecodeResultConstructorID.get(env),
-                    decode_result.bitmap_frame,
-                    static_cast<jint>(decode_result.timestamp),
-                    static_cast<jint>(decode_result.result_code)
-            );
-        }
-        return nullptr;
+        return env->NewObject(
+                ClassRegistry::frameDecodeResultClass.get(env),
+                ClassRegistry::frameDecodeResultConstructorID.get(env),
+                decode_result.bitmap_frame,
+                static_cast<jint>(decode_result.timestamp),
+                static_cast<jint>(decode_result.result_code)
+        );
     }
 
     jint nativeDecodeFrames(
@@ -338,7 +335,12 @@ dec::FrameDecodeResult WebPDecoder::decodeNextFrame(JNIEnv *env) {
     return {result_code, frame_index, bitmap_frame, timestamp};
 }
 
-ResultCode WebPDecoder::decodeFrames(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jdst_uri) {
+ResultCode WebPDecoder::decodeFrames(
+        JNIEnv *env,
+        jobject jdecoder,
+        jobject jcontext,
+        jobject jdst_uri
+) {
     ResultCode result_code = RESULT_SUCCESS;
 
     if (data_buffer_ == nullptr) {
@@ -359,6 +361,7 @@ ResultCode WebPDecoder::decodeFrames(JNIEnv *env, jobject jdecoder, jobject jcon
     if (result_code == RESULT_SUCCESS) {
         while (true) {
             if (cancel_flag_) {
+                result_code = ERROR_USER_ABORT;
                 break;
             }
 
