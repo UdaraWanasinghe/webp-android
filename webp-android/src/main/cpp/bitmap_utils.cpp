@@ -127,5 +127,8 @@ void bmp::recycleBitmap(
         JNIEnv *env,
         jobject jbitmap
 ) {
-    env->CallVoidMethod(jbitmap, ClassRegistry::bitmapRecycleMethodID.get(env));
+    env->CallVoidMethod(
+            jbitmap,
+            ClassRegistry::bitmapRecycleMethodID.get(env)
+    );
 }

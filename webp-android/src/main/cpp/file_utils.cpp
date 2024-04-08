@@ -2,7 +2,6 @@
 // Created by udara on 6/8/23.
 //
 
-#include <tuple>
 #include <unistd.h>
 #include <sstream>
 #include <iomanip>
@@ -47,7 +46,10 @@ file::FileOpenResult file::openFileDescriptor(
 }
 
 void file::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
-    env->CallVoidMethod(jparcel_fd, ClassRegistry::parcelFileDescriptorCloseMethodID.get(env));
+    env->CallVoidMethod(
+            jparcel_fd,
+            ClassRegistry::parcelFileDescriptorCloseMethodID.get(env)
+    );
 }
 
 void file::closeFileDescriptorWithError(
@@ -96,23 +98,23 @@ ResultCode file::writeToUri(
         const uint8_t *file_data,
         size_t file_size
 ) {
-    ResultCode result = RESULT_SUCCESS;
+    ResultCode result_code = RESULT_SUCCESS;
 
     auto open_result = openFileDescriptor(env, jcontext, juri, "w");
 
     if (open_result.fd == -1) {
-        result = ERROR_WRITE_TO_URI_FAILED;
+        result_code = ERROR_WRITE_TO_URI_FAILED;
     }
 
-    if (result == RESULT_SUCCESS) {
+    if (result_code == RESULT_SUCCESS) {
         int bytes_written = write(open_result.fd, file_data, file_size);
         if (bytes_written == -1) {
-            result = ERROR_WRITE_TO_URI_FAILED;
+            result_code = ERROR_WRITE_TO_URI_FAILED;
         }
     }
 
     if (open_result.fd != -1) {
-        if (result == RESULT_SUCCESS) {
+        if (result_code == RESULT_SUCCESS) {
             file::closeFileDescriptor(env, open_result.parcel_fd);
         } else {
             closeFileDescriptorWithError(
@@ -124,7 +126,7 @@ ResultCode file::writeToUri(
         env->DeleteLocalRef(open_result.parcel_fd);
     }
 
-    return result;
+    return result_code;
 }
 
 ResultCode file::fileExists(
@@ -141,15 +143,15 @@ ResultCode file::fileExists(
             jcontext,
             jfile_name
     );
-    ResultCode result;
+    ResultCode result_code;
     if (type::isObjectNull(env, jfile_uri)) {
-        result = RESULT_FILE_NOT_FOUND;
+        result_code = RESULT_FILE_NOT_FOUND;
     } else {
         env->DeleteLocalRef(jfile_uri);
-        result = RESULT_FILE_EXISTS;
+        result_code = RESULT_FILE_EXISTS;
     }
     env->DeleteLocalRef(jfile_name);
-    return result;
+    return result_code;
 }
 
 file::NameGenerateResult file::generateFileName(

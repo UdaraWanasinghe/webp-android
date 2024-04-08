@@ -7,9 +7,7 @@ import android.net.Uri
 import com.aureusapps.android.webpandroid.CodecException
 import com.aureusapps.android.webpandroid.CodecResult
 import com.aureusapps.android.webpandroid.utils.CodecHelper
-import com.aureusapps.android.webpandroid.utils.Logger
 import com.getkeepsafe.relinker.ReLinker
-import java.util.concurrent.CancellationException
 
 /**
  * The [WebPDecoder] class provides functionality for decoding WebP images.
@@ -39,18 +37,11 @@ class WebPDecoder(private val context: Context) {
 
     private external fun nativeDecodeInfo(): InfoDecodeResult
 
-    /**
-     * Returns bitmap if decode successful. Null if failed to decode frame.
-     * This function automatically resets the decoder if it is at the end before starting decoding process.
-     */
     private external fun nativeDecodeNextFrame(): FrameDecodeResult
 
-    private external fun nativeDecodeFrames(
-        context: Context,
-        dstUri: Uri?,
-    ): Int
+    private external fun nativeDecodeFrames(context: Context, dstUri: Uri?): Int
 
-    private external fun nativeResetDecoder()
+    private external fun nativeReset()
 
     private external fun nativeCancel()
 
@@ -62,10 +53,26 @@ class WebPDecoder(private val context: Context) {
         }
     }
 
-    private fun notifyFrameDecoded(index: Int, timestamp: Long, frame: Bitmap, uri: Uri) {
+    private fun notifyFrameDecoded(
+        index: Int,
+        timestamp: Long,
+        frame: Bitmap,
+        uri: Uri,
+    ) {
         decodeListeners.forEach { listener ->
             listener.onFrameDecoded(index, timestamp, frame, uri)
         }
+    }
+
+    private inline fun <reified T> handleResultCode(
+        resultCode: Int,
+        onSuccess: () -> T = { Unit as T },
+    ): T {
+        val codecResult = CodecHelper.resultCodeToCodecResult(resultCode)
+        if (codecResult == CodecResult.SUCCESS) {
+            return onSuccess()
+        }
+        throw CodecException(codecResult)
     }
 
     /**
@@ -101,30 +108,44 @@ class WebPDecoder(private val context: Context) {
         return this
     }
 
+    /**
+     * Sets the data source of the decoder.
+     *
+     * @param srcUri The URI of the WebP file to be decoded.
+     * @throws CodecException if failed to set data source.
+     */
     fun setDataSource(srcUri: Uri) {
-        nativeSetDataSource(context, srcUri)
+        val resultCode = nativeSetDataSource(context, srcUri)
+        handleResultCode<Unit>(resultCode)
     }
 
     /**
      * Decodes the image information of a WebP image.
      *
      * @return The [WebPInfo] object containing the decoded image information.
-     * @throws [RuntimeException] If error occurred.
+     * @throws CodecException if failed to decode WebP info or [RuntimeException] if unexpected error occurred.
      */
     fun decodeInfo(): WebPInfo {
         val decodeResult = nativeDecodeInfo()
-        if (decodeResult.webPInfo != null) {
-            return decodeResult.webPInfo
+        return handleResultCode(decodeResult.resultCode) {
+            decodeResult.webPInfo ?: throw RuntimeException("Unexpected null result: webPInfo is null")
         }
-        val codecResult = CodecHelper.resultCodeToCodecResult(decodeResult.resultCode)
-        throw CodecException(codecResult)
     }
 
+    /**
+     * Decodes the next frame of the WebP.
+     *
+     * @return The result of decoding the next frame in a [FrameDecodeResult] object. If the decoder reaches the end
+     * of the content, [FrameDecodeResult.frame] will be null, and [FrameDecodeResult.resultCode] will be equal to
+     * [CodecResult.ERROR_NO_MORE_FRAMES].
+     *
+     * @throws CodecException if the decoding of the next frame fails.
+     */
     fun decodeNextFrame(): FrameDecodeResult {
         val decodeResult = nativeDecodeNextFrame()
         val codecResult = CodecHelper.resultCodeToCodecResult(decodeResult.resultCode)
-        if (codecResult != CodecResult.SUCCESS) {
-            Logger.e(TAG, codecResult.message)
+        if (codecResult != CodecResult.SUCCESS && codecResult != CodecResult.ERROR_NO_MORE_FRAMES) {
+            throw CodecException(codecResult)
         }
         return decodeResult
     }
@@ -132,18 +153,20 @@ class WebPDecoder(private val context: Context) {
     /**
      * Decodes all frames of a WebP image and optionally saves them to a destination [Uri].
      *
-     * @param srcUri The [Uri] of the source WebP image.
      * @param dstUri The [Uri] of the destination directory to save the decoded frames (optional). This could be a file [Uri] or a tree [Uri] returned from [Intent.ACTION_OPEN_DOCUMENT_TREE].
      *
-     * @throws [RuntimeException] If decoding error occurred.
-     * @throws [CancellationException] If user cancelled the decoding process.
+     * @throws [CodecException] with [CodecException.codecResult] equal to [CodecResult.ERROR_USER_ABORT] If user cancelled the decoding process.
      */
     fun decodeFrames(dstUri: Uri? = null) {
-        nativeDecodeFrames(context, dstUri)
+        val resultCode = nativeDecodeFrames(context, dstUri)
+        handleResultCode<Unit>(resultCode)
     }
 
-    fun resetDecoder() {
-        nativeResetDecoder()
+    /**
+     * Resets the decoder's state to its initial configuration and sets the current frame index to 0.
+     */
+    fun reset() {
+        nativeReset()
     }
 
     /**

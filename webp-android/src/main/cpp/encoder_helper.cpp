@@ -22,47 +22,60 @@ WebPPreset enc::parseWebPPreset(JNIEnv *env, jobject jpreset) {
 
 void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     // lossless
-    jobject lossless = env->GetObjectField(jconfig,
-                                           ClassRegistry::webPConfigLosslessFieldID.get(env));
+    jobject lossless = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigLosslessFieldID.get(env)
+    );
     if (!type::isObjectNull(env, lossless)) {
         config->lossless = type::getIntegerValue(env, lossless);
         env->DeleteLocalRef(lossless);
     }
 
     // quality
-    jobject quality = env->GetObjectField(jconfig,
-                                          ClassRegistry::webPConfigQualityFieldID.get(env));
+    jobject quality = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigQualityFieldID.get(env)
+    );
     if (!type::isObjectNull(env, quality)) {
         config->quality = type::getFloatValue(env, quality);
         env->DeleteLocalRef(quality);
     }
 
     // method
-    jobject method = env->GetObjectField(jconfig, ClassRegistry::webPConfigMethodFieldID.get(env));
+    jobject method = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigMethodFieldID.get(env)
+    );
     if (!type::isObjectNull(env, method)) {
         config->method = type::getIntegerValue(env, method);
         env->DeleteLocalRef(method);
     }
 
     // target size
-    jobject target_size = env->GetObjectField(jconfig,
-                                              ClassRegistry::webPConfigTargetSizeFieldID.get(env));
+    jobject target_size = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigTargetSizeFieldID.get(env)
+    );
     if (!type::isObjectNull(env, target_size)) {
         config->target_size = type::getIntegerValue(env, target_size);
         env->DeleteLocalRef(target_size);
     }
 
     // target PSNR
-    jobject target_psnr = env->GetObjectField(jconfig,
-                                              ClassRegistry::webPConfigTargetPSNRFieldID.get(env));
+    jobject target_psnr = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigTargetPSNRFieldID.get(env)
+    );
     if (!type::isObjectNull(env, target_psnr)) {
         config->target_PSNR = type::getFloatValue(env, target_psnr);
         env->DeleteLocalRef(target_psnr);
     }
 
     // segments
-    jobject segments = env->GetObjectField(jconfig,
-                                           ClassRegistry::webPConfigSegmentsFieldID.get(env));
+    jobject segments = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigSegmentsFieldID.get(env)
+    );
     if (!type::isObjectNull(env, segments)) {
         config->segments = type::getIntegerValue(env, segments);
         env->DeleteLocalRef(segments);
@@ -99,16 +112,20 @@ void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     }
 
     // filter_type
-    jobject filter_type = env->GetObjectField(jconfig,
-                                              ClassRegistry::webPConfigFilterTypeFieldID.get(env));
+    jobject filter_type = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigFilterTypeFieldID.get(env)
+    );
     if (!type::isObjectNull(env, filter_type)) {
         config->filter_type = type::getIntegerValue(env, filter_type);
         env->DeleteLocalRef(filter_type);
     }
 
     // auto_filter
-    jobject auto_filter = env->GetObjectField(jconfig,
-                                              ClassRegistry::webPConfigAutoFilterFieldID.get(env));
+    jobject auto_filter = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigAutoFilterFieldID.get(env)
+    );
     if (!type::isObjectNull(env, auto_filter)) {
         config->autofilter = type::getBooleanValue(env, auto_filter);
         env->DeleteLocalRef(auto_filter);
@@ -145,7 +162,10 @@ void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     }
 
     // pass
-    jobject pass = env->GetObjectField(jconfig, ClassRegistry::webPConfigPassFieldID.get(env));
+    jobject pass = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigPassFieldID.get(env)
+    );
     if (!type::isObjectNull(env, pass)) {
         config->pass = type::getIntegerValue(env, pass);
         env->DeleteLocalRef(pass);
@@ -172,8 +192,10 @@ void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     }
 
     // partitions
-    jobject partitions = env->GetObjectField(jconfig,
-                                             ClassRegistry::webPConfigPartitionsFieldID.get(env));
+    jobject partitions = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigPartitionsFieldID.get(env)
+    );
     if (!type::isObjectNull(env, partitions)) {
         config->partitions = type::getIntegerValue(env, partitions);
         env->DeleteLocalRef(partitions);
@@ -210,8 +232,10 @@ void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     }
 
     // low_memory
-    jobject low_memory = env->GetObjectField(jconfig,
-                                             ClassRegistry::webPConfigLowMemoryFieldID.get(env));
+    jobject low_memory = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigLowMemoryFieldID.get(env)
+    );
     if (!type::isObjectNull(env, low_memory)) {
         config->low_memory = type::getBooleanValue(env, low_memory);
         env->DeleteLocalRef(low_memory);
@@ -228,7 +252,10 @@ void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     }
 
     // exact
-    jobject exact = env->GetObjectField(jconfig, ClassRegistry::webPConfigExactFieldID.get(env));
+    jobject exact = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigExactFieldID.get(env)
+    );
     if (!type::isObjectNull(env, exact)) {
         config->exact = type::getBooleanValue(env, exact);
         env->DeleteLocalRef(exact);
@@ -255,14 +282,20 @@ void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
     }
 
     // qmin
-    jobject qmin = env->GetObjectField(jconfig, ClassRegistry::webPConfigQMinFieldID.get(env));
+    jobject qmin = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigQMinFieldID.get(env)
+    );
     if (!type::isObjectNull(env, qmin)) {
         config->qmin = type::getIntegerValue(env, qmin);
         env->DeleteLocalRef(qmin);
     }
 
     // qmax
-    jobject qmax = env->GetObjectField(jconfig, ClassRegistry::webPConfigQMaxFieldID.get(env));
+    jobject qmax = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigQMaxFieldID.get(env)
+    );
     if (!type::isObjectNull(env, qmax)) {
         config->qmax = type::getIntegerValue(env, qmax);
         env->DeleteLocalRef(qmax);
@@ -270,8 +303,10 @@ void enc::applyWebPConfig(JNIEnv *env, jobject jconfig, WebPConfig *config) {
 }
 
 float enc::parseWebPQuality(JNIEnv *env, jobject jconfig) {
-    jobject quality_field = env->GetObjectField(jconfig,
-                                                ClassRegistry::webPConfigQualityFieldID.get(env));
+    jobject quality_field = env->GetObjectField(
+            jconfig,
+            ClassRegistry::webPConfigQualityFieldID.get(env)
+    );
     float quality;
     if (type::isObjectNull(env, quality_field)) {
         quality = 70.0f;
@@ -298,16 +333,20 @@ void enc::parseEncoderOptions(
     }
 
     // kmin
-    jobject kmin = env->GetObjectField(joptions,
-                                       ClassRegistry::webPAnimEncoderOptionsKMinFieldID.get(env));
+    jobject kmin = env->GetObjectField(
+            joptions,
+            ClassRegistry::webPAnimEncoderOptionsKMinFieldID.get(env)
+    );
     if (!type::isObjectNull(env, kmin)) {
         options->kmin = type::getIntegerValue(env, kmin);
         env->DeleteLocalRef(kmin);
     }
 
     // kmax
-    jobject kmax = env->GetObjectField(joptions,
-                                       ClassRegistry::webPAnimEncoderOptionsKMaxFieldID.get(env));
+    jobject kmax = env->GetObjectField(
+            joptions,
+            ClassRegistry::webPAnimEncoderOptionsKMaxFieldID.get(env)
+    );
     if (!type::isObjectNull(env, kmax)) {
         options->kmax = type::getIntegerValue(env, kmax);
         env->DeleteLocalRef(kmax);

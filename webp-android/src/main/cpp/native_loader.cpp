@@ -501,47 +501,47 @@ static const JNINativeMethod decoderMethods[] = {
         {
                 "nativeCreate",
                 "()J",
-                reinterpret_cast<void *>(WebPDecoder::nativeCreate)
+                reinterpret_cast<void *>(dec::nativeCreate)
         },
         {
                 "nativeConfigure",
                 "(Lcom/aureusapps/android/webpandroid/decoder/DecoderConfig;)V",
-                reinterpret_cast<void *>(WebPDecoder::nativeConfigure)
+                reinterpret_cast<void *>(dec::nativeConfigure)
         },
         {
                 "nativeSetDataSource",
                 "(Landroid/content/Context;Landroid/net/Uri;)I",
-                reinterpret_cast<void *>(WebPDecoder::nativeSetDataSource)
+                reinterpret_cast<void *>(dec::nativeSetDataSource)
         },
         {
                 "nativeDecodeInfo",
                 "()Lcom/aureusapps/android/webpandroid/decoder/InfoDecodeResult;",
-                reinterpret_cast<void *>(WebPDecoder::nativeDecodeInfo)
-        },
-        {
-                "nativeDecodeFrames",
-                "(Landroid/content/Context;Landroid/net/Uri;)I",
-                reinterpret_cast<void *>(WebPDecoder::nativeDecodeFrames)
+                reinterpret_cast<void *>(dec::nativeDecodeInfo)
         },
         {
                 "nativeDecodeNextFrame",
                 "()Lcom/aureusapps/android/webpandroid/decoder/FrameDecodeResult;",
-                reinterpret_cast<void *>(WebPDecoder::nativeDecodeNextFrame)
+                reinterpret_cast<void *>(dec::nativeDecodeNextFrame)
         },
         {
-                "nativeResetDecoder",
+                "nativeDecodeFrames",
+                "(Landroid/content/Context;Landroid/net/Uri;)I",
+                reinterpret_cast<void *>(dec::nativeDecodeFrames)
+        },
+        {
+                "nativeReset",
                 "()V",
-                reinterpret_cast<void *>(WebPDecoder::nativeResetDecoder)
+                reinterpret_cast<void *>(dec::nativeReset)
         },
         {
                 "nativeCancel",
                 "()V",
-                reinterpret_cast<void *>(WebPDecoder::nativeCancel)
+                reinterpret_cast<void *>(dec::nativeCancel)
         },
         {
                 "nativeRelease",
                 "()V",
-                reinterpret_cast<void *>(WebPDecoder::nativeRelease)
+                reinterpret_cast<void *>(dec::nativeRelease)
         },
 };
 

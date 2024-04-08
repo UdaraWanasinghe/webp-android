@@ -11,7 +11,6 @@
 #include "result_codes.h"
 
 namespace file {
-
     typedef struct {
         ResultCode result_code;
         jobject byte_buffer;
@@ -66,7 +65,7 @@ namespace file {
      * @param file_data A pointer to the dynamically allocated buffer that will store the file data.
      * @param file_size A pointer to the variable that will store the size of the file.
      *
-     * @return Result code that tells status of the read operation.
+     * @return FileReadResult
      */
     FileReadResult readFromUri(
             JNIEnv *env,

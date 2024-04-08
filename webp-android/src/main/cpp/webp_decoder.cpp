@@ -67,6 +67,117 @@ namespace dec {
                 return ".webp";
         }
     }
+
+    ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo) {
+        ResultCode result = RESULT_SUCCESS;
+        if (type::isObjectNull(env, jinfo)) {
+            result = ERROR_WEBP_INFO_EXTRACT_FAILED;
+        } else {
+            env->CallVoidMethod(
+                    jdecoder,
+                    ClassRegistry::decoderNotifyInfoDecodedMethodID.get(env),
+                    jinfo
+            );
+        }
+        return result;
+    }
+
+    jlong nativeCreate(JNIEnv *, jobject) {
+        auto *decoder = new WebPDecoder();
+        return reinterpret_cast<jlong>(decoder);
+    }
+
+    void nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        ResultCode result = RESULT_SUCCESS;
+        if (decoder == nullptr) {
+            result = ERROR_NULL_DECODER;
+        } else {
+            dec::DecoderConfig config = dec::parseDecoderConfig(env, jconfig);
+            decoder->configure(&config);
+        }
+        res::handleResult(env, result);
+    }
+
+    jint nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+
+        uint8_t *file_data = nullptr;
+        size_t file_size = 0;
+        auto read_result = file::readFromUri(
+                env,
+                jcontext,
+                jsrc_uri,
+                &file_data,
+                &file_size
+        );
+
+        WebPDecoder::getInstance(env, jdecoder);
+        auto result_code = read_result.result_code;
+        if (result_code == RESULT_SUCCESS) {
+            result_code = decoder->setDataSource(env, read_result.byte_buffer);
+        }
+
+        return result_code;
+    }
+
+    jobject nativeDecodeInfo(JNIEnv *env, jobject jdecoder) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        auto decode_result = decoder->decodeWebPInfo(env);
+        return env->NewObject(
+                ClassRegistry::infoDecodeResultClass.get(env),
+                ClassRegistry::infoDecodeResultConstructorID.get(env),
+                decode_result.webp_info,
+                static_cast<jint>(decode_result.result_code)
+        );
+    }
+
+    jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        auto decode_result = decoder->decodeNextFrame(env);
+        if (decode_result.result_code == RESULT_SUCCESS) {
+            return env->NewObject(
+                    ClassRegistry::frameDecodeResultClass.get(env),
+                    ClassRegistry::frameDecodeResultConstructorID.get(env),
+                    decode_result.bitmap_frame,
+                    static_cast<jint>(decode_result.timestamp),
+                    static_cast<jint>(decode_result.result_code)
+            );
+        }
+        return nullptr;
+    }
+
+    jint nativeDecodeFrames(
+            JNIEnv *env,
+            jobject jdecoder,
+            jobject jcontext,
+            jobject jdst_uri
+    ) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        return decoder->decodeFrames(env, jdecoder, jcontext, jdst_uri);
+    }
+
+    void nativeReset(JNIEnv *env, jobject jdecoder) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        decoder->reset();
+    }
+
+    void nativeCancel(JNIEnv *env, jobject jdecoder) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        decoder->cancel();
+    }
+
+    void nativeRelease(JNIEnv *env, jobject jdecoder) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return;
+        decoder->fullReset(env);
+        env->SetLongField(
+                jdecoder,
+                ClassRegistry::webPDecoderPointerFieldID.get(env),
+                static_cast<jlong>(0)
+        );
+        delete decoder;
+    }
 }
 
 WebPDecoder *WebPDecoder::getInstance(JNIEnv *env, jobject jdecoder) {
@@ -86,8 +197,8 @@ void WebPDecoder::configure(dec::DecoderConfig *config) {
     decoder_config_ = *config;
 }
 
-ResultCode WebPDecoder::setDecoderData(JNIEnv *env, jobject jbyte_buffer) {
-    fullResetDecoder(env);
+ResultCode WebPDecoder::setDataSource(JNIEnv *env, jobject jbyte_buffer) {
+    fullReset(env);
 
     ResultCode result_code = RESULT_SUCCESS;
 
@@ -138,13 +249,13 @@ ResultCode WebPDecoder::setDecoderData(JNIEnv *env, jobject jbyte_buffer) {
     if (result_code == RESULT_SUCCESS) {
         data_buffer_ = env->NewGlobalRef(jbyte_buffer);
     } else {
-        fullResetDecoder(env);
+        fullReset(env);
     }
 
     return result_code;
 }
 
-InfoDecodeResult WebPDecoder::decodeWebPInfo(JNIEnv *env) {
+dec::InfoDecodeResult WebPDecoder::decodeWebPInfo(JNIEnv *env) {
     ResultCode result_code = RESULT_SUCCESS;
     if (data_buffer_ == nullptr) {
         result_code = ERROR_DATA_SOURCE_NOT_SET;
@@ -180,7 +291,7 @@ InfoDecodeResult WebPDecoder::decodeWebPInfo(JNIEnv *env) {
     return {result_code, webp_info};
 }
 
-FrameDecodeResult WebPDecoder::decodeNextFrame(JNIEnv *env) {
+dec::FrameDecodeResult WebPDecoder::decodeNextFrame(JNIEnv *env) {
     ResultCode result_code;
     int frame_index = -1;
     jobject bitmap_frame = nullptr;
@@ -227,132 +338,18 @@ FrameDecodeResult WebPDecoder::decodeNextFrame(JNIEnv *env) {
     return {result_code, frame_index, bitmap_frame, timestamp};
 }
 
-void WebPDecoder::resetDecoder() {
-    current_frame_index_ = 0;
-    if (decoder_ != nullptr) {
-        WebPAnimDecoderReset(decoder_);
-    }
-}
-
-void WebPDecoder::fullResetDecoder(JNIEnv *env) {
-    // delete previous decoder if exists
-    if (decoder_ != nullptr) {
-        WebPAnimDecoderDelete(decoder_);
-        decoder_ = nullptr;
-    }
-    // recycle bitmap
-    if (bitmap_frame_ != nullptr) {
-        bmp::recycleBitmap(env, bitmap_frame_);
-        env->DeleteGlobalRef(bitmap_frame_);
-        bitmap_frame_ = nullptr;
-    }
-    // remove webp data ref
-    if (data_buffer_ != nullptr) {
-        env->DeleteGlobalRef(data_buffer_);
-        data_buffer_ = nullptr;
-    }
-    // reset data
-    webp_features_ = {0};
-    anim_info_ = {0};
-    current_frame_index_ = 0;
-}
-
-ResultCode WebPDecoder::notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo) {
-    ResultCode result = RESULT_SUCCESS;
-    if (type::isObjectNull(env, jinfo)) {
-        result = ERROR_WEBP_INFO_EXTRACT_FAILED;
-    } else {
-        env->CallVoidMethod(
-                jdecoder,
-                ClassRegistry::decoderNotifyInfoDecodedMethodID.get(env),
-                jinfo
-        );
-    }
-    return result;
-}
-
-jlong WebPDecoder::nativeCreate(JNIEnv *, jobject) {
-    auto *decoder = new WebPDecoder();
-    return reinterpret_cast<jlong>(decoder);
-}
-
-void WebPDecoder::nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig) {
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-    ResultCode result = RESULT_SUCCESS;
-    if (decoder == nullptr) {
-        result = ERROR_NULL_DECODER;
-    } else {
-        dec::DecoderConfig config = dec::parseDecoderConfig(env, jconfig);
-        decoder->configure(&config);
-    }
-    res::handleResult(env, result);
-}
-
-jint WebPDecoder::nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri) {
-    uint8_t *file_data = nullptr;
-    size_t file_size = 0;
-    auto read_result = file::readFromUri(
-            env,
-            jcontext,
-            jsrc_uri,
-            &file_data,
-            &file_size
-    );
-
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-    ResultCode result_code = read_result.result_code;
-    if (result_code == RESULT_SUCCESS) {
-        result_code = decoder->setDecoderData(env, read_result.byte_buffer);
-    }
-
-    return result_code;
-}
-
-jobject WebPDecoder::nativeDecodeInfo(JNIEnv *env, jobject jdecoder) {
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-    auto decode_result = decoder->decodeWebPInfo(env);
-    return env->NewObject(
-            ClassRegistry::infoDecodeResultClass.get(env),
-            ClassRegistry::infoDecodeResultConstructorID.get(env),
-            decode_result.webp_info,
-            static_cast<jint>(decode_result.result_code)
-    );
-}
-
-jobject WebPDecoder::nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder) {
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-    auto decode_result = decoder->decodeNextFrame(env);
-    if (decode_result.result_code == RESULT_SUCCESS) {
-        return env->NewObject(
-                ClassRegistry::frameDecodeResultClass.get(env),
-                ClassRegistry::frameDecodeResultConstructorID.get(env),
-                decode_result.bitmap_frame,
-                static_cast<jint>(decode_result.timestamp),
-                static_cast<jint>(decode_result.result_code)
-        );
-    }
-    return nullptr;
-}
-
-jint WebPDecoder::nativeDecodeFrames(
-        JNIEnv *env,
-        jobject jdecoder,
-        jobject jcontext,
-        jobject jdst_uri
-) {
+ResultCode WebPDecoder::decodeFrames(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jdst_uri) {
     ResultCode result_code = RESULT_SUCCESS;
 
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-
-    if (decoder->data_buffer_ == nullptr) {
+    if (data_buffer_ == nullptr) {
         result_code = ERROR_DATA_SOURCE_NOT_SET;
     }
 
     // notify webp info decoded
     if (result_code == RESULT_SUCCESS) {
-        auto info_decode_result = decoder->decodeWebPInfo(env);
+        auto info_decode_result = decodeWebPInfo(env);
         if (info_decode_result.result_code == RESULT_SUCCESS) {
-            notifyInfoDecoded(env, jdecoder, info_decode_result.webp_info);
+            dec::notifyInfoDecoded(env, jdecoder, info_decode_result.webp_info);
         } else {
             result_code = info_decode_result.result_code;
         }
@@ -361,11 +358,11 @@ jint WebPDecoder::nativeDecodeFrames(
     // decode frames
     if (result_code == RESULT_SUCCESS) {
         while (true) {
-            if (decoder->cancel_flag_) {
+            if (cancel_flag_) {
                 break;
             }
 
-            auto frame_decode_result = decoder->decodeNextFrame(env);
+            auto frame_decode_result = decodeNextFrame(env);
             // stop loop if decode failed or no more frames
             if (frame_decode_result.result_code != RESULT_SUCCESS) {
                 if (frame_decode_result.result_code != ERROR_NO_MORE_FRAMES) {
@@ -382,19 +379,18 @@ jint WebPDecoder::nativeDecodeFrames(
                         ClassRegistry::uriEmptyFieldID.get(env)
                 );
             } else {
-                auto decoder_config = decoder->decoder_config_;
                 auto image_name_suffix = dec::getImageNameSuffix(
-                        decoder_config.compress_format_ordinal
+                        decoder_config_.compress_format_ordinal
                 );
                 auto name_generate_result = file::generateFileName(
                         env,
                         jcontext,
                         jdst_uri,
                         frame_decode_result.frame_index,
-                        decoder_config.name_prefix,
+                        decoder_config_.name_prefix,
                         image_name_suffix,
-                        decoder_config.repeat_character_count,
-                        decoder_config.repeat_character
+                        decoder_config_.repeat_character_count,
+                        decoder_config_.repeat_character
                 );
                 if (name_generate_result.success) {
                     jbitmap_uri = bmp::saveToDirectory(
@@ -402,8 +398,8 @@ jint WebPDecoder::nativeDecodeFrames(
                             jcontext,
                             frame_decode_result.bitmap_frame,
                             jdst_uri,
-                            decoder_config.compress_format_ordinal,
-                            decoder_config.compress_quality,
+                            decoder_config_.compress_format_ordinal,
+                            decoder_config_.compress_quality,
                             name_generate_result.file_name
                     );
                     if (type::isObjectNull(env, jbitmap_uri)) {
@@ -433,24 +429,36 @@ jint WebPDecoder::nativeDecodeFrames(
     return result_code;
 }
 
-void WebPDecoder::nativeResetDecoder(JNIEnv *env, jobject jdecoder) {
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-    decoder->resetDecoder();
+void WebPDecoder::reset() {
+    current_frame_index_ = 0;
+    if (decoder_ != nullptr) {
+        WebPAnimDecoderReset(decoder_);
+    }
 }
 
-void WebPDecoder::nativeCancel(JNIEnv *env, jobject jdecoder) {
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-    decoder->cancel_flag_ = true;
+void WebPDecoder::fullReset(JNIEnv *env) {
+    // delete previous decoder if exists
+    if (decoder_ != nullptr) {
+        WebPAnimDecoderDelete(decoder_);
+        decoder_ = nullptr;
+    }
+    // recycle bitmap
+    if (bitmap_frame_ != nullptr) {
+        bmp::recycleBitmap(env, bitmap_frame_);
+        env->DeleteGlobalRef(bitmap_frame_);
+        bitmap_frame_ = nullptr;
+    }
+    // remove webp data ref
+    if (data_buffer_ != nullptr) {
+        env->DeleteGlobalRef(data_buffer_);
+        data_buffer_ = nullptr;
+    }
+    // reset data
+    webp_features_ = {0};
+    anim_info_ = {0};
+    current_frame_index_ = 0;
 }
 
-void WebPDecoder::nativeRelease(JNIEnv *env, jobject jdecoder) {
-    auto *decoder = WebPDecoder::getInstance(env, jdecoder);
-    if (decoder == nullptr) return;
-    decoder->fullResetDecoder(env);
-    env->SetLongField(
-            jdecoder,
-            ClassRegistry::webPDecoderPointerFieldID.get(env),
-            static_cast<jlong>(0)
-    );
-    delete decoder;
+void WebPDecoder::cancel() {
+    cancel_flag_ = true;
 }

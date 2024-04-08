@@ -19,22 +19,41 @@ namespace dec {
         int compress_quality = 100;
     } DecoderConfig;
 
-    DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig);
+    typedef struct {
+        ResultCode result_code;
+        jobject webp_info;
+    } InfoDecodeResult;
 
-    std::string getImageNameSuffix(int compress_format_ordinal);
+    typedef struct {
+        ResultCode result_code;
+        int frame_index;
+        jobject bitmap_frame;
+        int timestamp;
+    } FrameDecodeResult;
+
+    jlong nativeCreate(JNIEnv *env, jobject thiz);
+
+    void nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig);
+
+    jint nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri);
+
+    jobject nativeDecodeInfo(JNIEnv *env, jobject jdecoder);
+
+    jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder);
+
+    jint nativeDecodeFrames(
+            JNIEnv *env,
+            jobject thiz,
+            jobject jcontext,
+            jobject jdst_uri
+    );
+
+    void nativeReset(JNIEnv *env, jobject jdecoder);
+
+    void nativeCancel(JNIEnv *env, jobject jdecoder);
+
+    void nativeRelease(JNIEnv *env, jobject jdecoder);
 }
-
-typedef struct {
-    ResultCode result_code;
-    jobject webp_info;
-} InfoDecodeResult;
-
-typedef struct {
-    ResultCode result_code;
-    int frame_index;
-    jobject bitmap_frame;
-    int timestamp;
-} FrameDecodeResult;
 
 class WebPDecoder {
 
@@ -48,44 +67,27 @@ private:
     WebPAnimInfo anim_info_ = {0};
     int current_frame_index_ = 0;
 
-    void configure(dec::DecoderConfig *config);
-
-    static ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo);
-
 public:
     static WebPDecoder *getInstance(JNIEnv *env, jobject jdecoder);
 
-    static jlong nativeCreate(JNIEnv *env, jobject thiz);
+    void configure(dec::DecoderConfig *config);
 
-    static void nativeConfigure(JNIEnv *env, jobject jdecoder, jobject jconfig);
+    ResultCode setDataSource(JNIEnv *env, jobject jbyte_buffer);
 
-    static jint nativeSetDataSource(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri);
+    dec::InfoDecodeResult decodeWebPInfo(JNIEnv *env);
 
-    static jint nativeDecodeFrames(
+    dec::FrameDecodeResult decodeNextFrame(JNIEnv *env);
+
+    ResultCode decodeFrames(
             JNIEnv *env,
-            jobject thiz,
+            jobject jdecoder,
             jobject jcontext,
             jobject jdst_uri
     );
 
-    static jobject nativeDecodeInfo(JNIEnv *env, jobject jdecoder);
+    void cancel();
 
-    static jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder);
+    void reset();
 
-    static void nativeResetDecoder(JNIEnv *env, jobject jdecoder);
-
-    static void nativeCancel(JNIEnv *env, jobject jdecoder);
-
-    ResultCode setDecoderData(JNIEnv *env, jobject jbyte_buffer);
-
-    InfoDecodeResult decodeWebPInfo(JNIEnv *env);
-
-    FrameDecodeResult decodeNextFrame(JNIEnv *env);
-
-    void resetDecoder();
-
-    void fullResetDecoder(JNIEnv *env);
-
-    static void nativeRelease(JNIEnv *env, jobject jdecoder);
-
+    void fullReset(JNIEnv *env);
 };
