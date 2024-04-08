@@ -12,11 +12,11 @@
 
 namespace dec {
     typedef struct DecoderConfig {
-        std::string namePrefix = "IMG_";
-        char repeatCharacter = '0';
-        int repeatCharacterCount = 4;
-        int compressFormatOrdinal = 1;
-        int compressQuality = 100;
+        std::string name_prefix = "IMG_";
+        char repeat_character = '0';
+        int repeat_character_count = 4;
+        int compress_format_ordinal = 1;
+        int compress_quality = 100;
     } DecoderConfig;
 
     DecoderConfig parseDecoderConfig(JNIEnv *env, jobject jconfig);
@@ -31,6 +31,7 @@ typedef struct {
 
 typedef struct {
     ResultCode result_code;
+    int frame_index;
     jobject bitmap_frame;
     int timestamp;
 } FrameDecodeResult;
@@ -40,7 +41,7 @@ class WebPDecoder {
 private:
     dec::DecoderConfig decoder_config_{};
     bool cancel_flag_ = false;
-    jobject webp_data_ = nullptr;
+    jobject data_buffer_ = nullptr;
     jobject bitmap_frame_ = nullptr;
     WebPAnimDecoder *decoder_ = nullptr;
     WebPBitstreamFeatures webp_features_ = {0};
@@ -48,45 +49,6 @@ private:
     int current_frame_index_ = 0;
 
     void configure(dec::DecoderConfig *config);
-
-    static jobject getWebPInfo(JNIEnv *env, const WebPBitstreamFeatures &features);
-
-    static jobject decodeAnimInfo(
-            JNIEnv *env,
-            WebPAnimDecoder *decoder,
-            const WebPBitstreamFeatures &features
-    );
-
-    static ResultCode processFrame(
-            JNIEnv *env,
-            jobject jdecoder,
-            jobject jcontext,
-            jobject jbitmap,
-            jobject jdst_uri,
-            uint8_t *pixels,
-            int timestamp,
-            int index
-    );
-
-    static ResultCode decodeAnimFrames(
-            JNIEnv *env,
-            jobject jdecoder,
-            jobject jcontext,
-            jobject jdst_uri,
-            WebPBitstreamFeatures &features,
-            const uint8_t *file_data,
-            size_t file_size
-    );
-
-    static ResultCode decodeStaticFrame(
-            JNIEnv *env,
-            jobject jdecoder,
-            jobject jcontext,
-            jobject jdst_uri,
-            const WebPBitstreamFeatures &features,
-            const uint8_t *file_data,
-            size_t file_size
-    );
 
     static ResultCode notifyInfoDecoded(JNIEnv *env, jobject jdecoder, jobject jinfo);
 
@@ -103,14 +65,10 @@ public:
             JNIEnv *env,
             jobject thiz,
             jobject jcontext,
-            jobject jsrc_uri,
             jobject jdst_uri
     );
 
     static jobject nativeDecodeInfo(JNIEnv *env, jobject jdecoder);
-
-    static jobject
-    nativeDecodeInfo2(JNIEnv *env, jobject jdecoder, jobject jcontext, jobject jsrc_uri);
 
     static jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder);
 

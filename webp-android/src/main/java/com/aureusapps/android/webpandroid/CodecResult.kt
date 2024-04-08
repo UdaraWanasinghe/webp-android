@@ -40,6 +40,7 @@ enum class CodecResult(val message: String) {
     ERROR_NOT_ENOUGH_DATA("Not enough data"),
     ERROR_ANIM_DECODER_CREATE_FAILED("Failed to create animation decoder"),
     ERROR_ANIM_INFO_GET_FAILED("Failed to animation info"),
-    ERROR_SET_DECODER_DATA("Failed to set decoder data"),
-    ERROR_DECODER_DATA_SOURCE_NOT_SET("Decoder data source not set")
+    ERROR_SET_DATA_SOURCE_FAILED("Failed to set decoder data"),
+    ERROR_DATA_SOURCE_NOT_SET("Decoder data source not set"),
+    ERROR_NO_MORE_FRAMES("No more frames to decode")
 }

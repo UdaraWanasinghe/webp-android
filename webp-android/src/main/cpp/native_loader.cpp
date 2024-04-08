@@ -514,19 +514,14 @@ static const JNINativeMethod decoderMethods[] = {
                 reinterpret_cast<void *>(WebPDecoder::nativeSetDataSource)
         },
         {
-                "nativeDecodeFrames",
-                "(Landroid/content/Context;Landroid/net/Uri;Landroid/net/Uri;)I",
-                reinterpret_cast<void *>(WebPDecoder::nativeDecodeFrames)
-        },
-        {
                 "nativeDecodeInfo",
-                "()Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;",
+                "()Lcom/aureusapps/android/webpandroid/decoder/InfoDecodeResult;",
                 reinterpret_cast<void *>(WebPDecoder::nativeDecodeInfo)
         },
         {
-                "nativeDecodeInfo2",
-                "(Landroid/content/Context;Landroid/net/Uri;)Lcom/aureusapps/android/webpandroid/decoder/WebPInfo;",
-                reinterpret_cast<void *>(WebPDecoder::nativeDecodeInfo2)
+                "nativeDecodeFrames",
+                "(Landroid/content/Context;Landroid/net/Uri;)I",
+                reinterpret_cast<void *>(WebPDecoder::nativeDecodeFrames)
         },
         {
                 "nativeDecodeNextFrame",

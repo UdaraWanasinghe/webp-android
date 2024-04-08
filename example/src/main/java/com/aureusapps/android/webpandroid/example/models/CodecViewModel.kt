@@ -500,7 +500,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     }
 
     private fun convertImageToWebP(
-        data: ConvertData.ImageToWebP
+        data: ConvertData.ImageToWebP,
     ): Flow<ConvertState.ImageToWebP> {
         val context = getApplication<Application>().applicationContext
         val sharedFlow = MutableSharedFlow<ConvertState.ImageToWebP>()
@@ -582,7 +582,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     }
 
     private fun convertImagesToAnimatedWebP(
-        data: ConvertData.ImagesToAnimatedWebP
+        data: ConvertData.ImagesToAnimatedWebP,
     ): Flow<ConvertState.ImagesToAnimatedWebP> {
         val context = getApplication<Application>().applicationContext
         val webPAnimEncoder = WebPAnimEncoder(
@@ -675,7 +675,7 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
     }
 
     private fun convertWebPToImages(
-        data: ConvertData.WebPToImages
+        data: ConvertData.WebPToImages,
     ): Flow<ConvertState.WebPToImages> {
         val context = getApplication<Application>().applicationContext
         val webPDecoder = WebPDecoder(context)
@@ -740,7 +740,8 @@ internal class CodecViewModel(application: Application) : AndroidViewModel(appli
                         }
                     }
                 )
-                webPDecoder.decodeFrames(data.srcUri, data.dstUri)
+                webPDecoder.setDataSource(data.srcUri)
+                webPDecoder.decodeFrames(data.dstUri)
                 emitState { state ->
                     ConvertState
                         .WebPToImages

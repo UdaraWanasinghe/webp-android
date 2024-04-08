@@ -11,7 +11,7 @@
 #include "include/native_loader.h"
 #include "include/type_helper.h"
 
-std::pair<int, jobject> file::openFileDescriptor(
+file::FileOpenResult file::openFileDescriptor(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
@@ -36,12 +36,14 @@ std::pair<int, jobject> file::openFileDescriptor(
         fd = -1;
     }
     if (fd == 0) {
-        fd = env->CallIntMethod(jparcel_fd,
-                                ClassRegistry::parcelFileDescriptorGetFdMethodID.get(env));
+        fd = env->CallIntMethod(
+                jparcel_fd,
+                ClassRegistry::parcelFileDescriptorGetFdMethodID.get(env)
+        );
     }
     env->DeleteLocalRef(jcontent_resolver);
     env->DeleteLocalRef(jread_mode);
-    return std::make_pair(fd, jparcel_fd);
+    return {fd, jparcel_fd};
 }
 
 void file::closeFileDescriptor(JNIEnv *env, jobject jparcel_fd) {
@@ -62,14 +64,14 @@ void file::closeFileDescriptorWithError(
     env->DeleteLocalRef(jerror);
 }
 
-ReadResult file::readFromUri(
+file::FileReadResult file::readFromUri(
         JNIEnv *env,
         jobject jcontext,
         jobject juri,
         uint8_t **const file_data,
         size_t *const file_size
 ) {
-    ReadResult ret;
+    FileReadResult read_result;
     jobject jbyte_buffer = env->CallStaticObjectMethod(
             ClassRegistry::uriExtensionsClass.get(env),
             ClassRegistry::uriExtensionsReadToBufferMethodID.get(env),
@@ -77,14 +79,14 @@ ReadResult file::readFromUri(
             jcontext
     );
     if (type::isObjectNull(env, jbyte_buffer)) {
-        ret = {ERROR_READ_URI_FAILED, nullptr};
+        read_result = {ERROR_READ_URI_FAILED, nullptr};
     } else {
         *file_data = static_cast<uint8_t *>(env->GetDirectBufferAddress(jbyte_buffer));
         *file_size = env->GetDirectBufferCapacity(jbyte_buffer);
-        ret = {RESULT_SUCCESS, jbyte_buffer};
+        read_result = {RESULT_SUCCESS, jbyte_buffer};
     }
 
-    return ret;
+    return read_result;
 }
 
 ResultCode file::writeToUri(
@@ -96,33 +98,30 @@ ResultCode file::writeToUri(
 ) {
     ResultCode result = RESULT_SUCCESS;
 
-    auto fd_pair = openFileDescriptor(env, jcontext, juri, "w");
-    int fd;
-    jobject jparcel_fd;
-    std::tie(fd, jparcel_fd) = fd_pair;
+    auto open_result = openFileDescriptor(env, jcontext, juri, "w");
 
-    if (fd == -1) {
+    if (open_result.fd == -1) {
         result = ERROR_WRITE_TO_URI_FAILED;
     }
 
     if (result == RESULT_SUCCESS) {
-        int bytes_written = write(fd, file_data, file_size);
+        int bytes_written = write(open_result.fd, file_data, file_size);
         if (bytes_written == -1) {
             result = ERROR_WRITE_TO_URI_FAILED;
         }
     }
 
-    if (fd != -1) {
+    if (open_result.fd != -1) {
         if (result == RESULT_SUCCESS) {
-            file::closeFileDescriptor(env, jparcel_fd);
+            file::closeFileDescriptor(env, open_result.parcel_fd);
         } else {
             closeFileDescriptorWithError(
                     env,
-                    jparcel_fd,
+                    open_result.parcel_fd,
                     "Failed to write to the given file descriptor"
             );
         }
-        env->DeleteLocalRef(jparcel_fd);
+        env->DeleteLocalRef(open_result.parcel_fd);
     }
 
     return result;
@@ -153,7 +152,7 @@ ResultCode file::fileExists(
     return result;
 }
 
-std::pair<bool, std::string> file::generateFileName(
+file::NameGenerateResult file::generateFileName(
         JNIEnv *env,
         jobject jcontext,
         jobject jdirectory_uri,
@@ -164,7 +163,8 @@ std::pair<bool, std::string> file::generateFileName(
         char name_repeat_character
 ) {
     int counter = index;
-    std::pair<bool, std::string> result(false, "");
+    bool success;
+    std::string file_name;
     while (true) {
         std::stringstream ss;
         ss << name_prefix
@@ -174,9 +174,10 @@ std::pair<bool, std::string> file::generateFileName(
            << name_suffix;
         int exists = file::fileExists(env, jcontext, jdirectory_uri, ss.str());
         if (exists == RESULT_FILE_NOT_FOUND) {
-            result = std::pair(true, ss.str());
+            success = true;
+            file_name = ss.str();
             break;
         }
     }
-    return result;
+    return {success, file_name};
 }

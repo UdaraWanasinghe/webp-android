@@ -39,11 +39,6 @@ class WebPDecoder(private val context: Context) {
 
     private external fun nativeDecodeInfo(): InfoDecodeResult
 
-    private external fun nativeDecodeInfo2(
-        context: Context,
-        srcUri: Uri,
-    ): WebPInfo
-
     /**
      * Returns bitmap if decode successful. Null if failed to decode frame.
      * This function automatically resets the decoder if it is at the end before starting decoding process.
@@ -52,7 +47,6 @@ class WebPDecoder(private val context: Context) {
 
     private external fun nativeDecodeFrames(
         context: Context,
-        srcUri: Uri,
         dstUri: Uri?,
     ): Int
 
@@ -111,6 +105,12 @@ class WebPDecoder(private val context: Context) {
         nativeSetDataSource(context, srcUri)
     }
 
+    /**
+     * Decodes the image information of a WebP image.
+     *
+     * @return The [WebPInfo] object containing the decoded image information.
+     * @throws [RuntimeException] If error occurred.
+     */
     fun decodeInfo(): WebPInfo {
         val decodeResult = nativeDecodeInfo()
         if (decodeResult.webPInfo != null) {
@@ -118,18 +118,6 @@ class WebPDecoder(private val context: Context) {
         }
         val codecResult = CodecHelper.resultCodeToCodecResult(decodeResult.resultCode)
         throw CodecException(codecResult)
-    }
-
-    /**
-     * Decodes the image information of a WebP image.
-     *
-     * @param srcUri The [Uri] of the source WebP image.
-     *
-     * @return The [WebPInfo] object containing the decoded image information.
-     * @throws [RuntimeException] If error occurred.
-     */
-    fun decodeInfo(srcUri: Uri): WebPInfo {
-        return nativeDecodeInfo2(context, srcUri)
     }
 
     fun decodeNextFrame(): FrameDecodeResult {
@@ -150,8 +138,8 @@ class WebPDecoder(private val context: Context) {
      * @throws [RuntimeException] If decoding error occurred.
      * @throws [CancellationException] If user cancelled the decoding process.
      */
-    fun decodeFrames(srcUri: Uri, dstUri: Uri? = null) {
-        nativeDecodeFrames(context, srcUri, dstUri)
+    fun decodeFrames(dstUri: Uri? = null) {
+        nativeDecodeFrames(context, dstUri)
     }
 
     fun resetDecoder() {

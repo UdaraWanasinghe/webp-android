@@ -10,12 +10,24 @@
 
 #include "result_codes.h"
 
-typedef struct {
-    ResultCode result_code;
-    jobject byte_buffer;
-} ReadResult;
-
 namespace file {
+
+    typedef struct {
+        ResultCode result_code;
+        jobject byte_buffer;
+    } FileReadResult;
+
+    typedef struct {
+        int fd;
+        jobject parcel_fd;
+
+    } FileOpenResult;
+
+    typedef struct {
+        bool success;
+        std::string file_name;
+    } NameGenerateResult;
+
     /**
      * Retrieves the file descriptor associated with the Android Uri.
      * The Uri could be a content provider Uri, file Uri or an Android resource Uri.
@@ -25,9 +37,9 @@ namespace file {
      * @param juri The Android Uri object representing the file.
      * @param mode File mode used to open the file.
      *
-     * @return A pair of the file descriptor associated with the Android Uri and the parcel file descriptor, or -1 if an error occurred.
+     * @return FileOpenResult
      */
-    std::pair<int, jobject> openFileDescriptor(
+    FileOpenResult openFileDescriptor(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,
@@ -56,7 +68,7 @@ namespace file {
      *
      * @return Result code that tells status of the read operation.
      */
-    ReadResult readFromUri(
+    FileReadResult readFromUri(
             JNIEnv *env,
             jobject jcontext,
             jobject juri,
@@ -114,7 +126,7 @@ namespace file {
      *
      * @return A pair indicating success flag and the generated file name.
      */
-    std::pair<bool, std::string> generateFileName(
+    NameGenerateResult generateFileName(
             JNIEnv *env,
             jobject jcontext,
             jobject jdirectory_uri,

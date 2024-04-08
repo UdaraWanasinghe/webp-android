@@ -71,10 +71,12 @@ std::string res::parseMessage(ResultCode result_code) {
             return "Abort request by user";
         case ERROR_LAST:
             return "List terminator. always last.";
-        case ERROR_SET_DECODER_DATA:
+        case ERROR_SET_DATA_SOURCE_FAILED:
             return "Failed to set decoder data";
-        case ERROR_DECODER_DATA_SOURCE_NOT_SET:
+        case ERROR_DATA_SOURCE_NOT_SET:
             return "Decoder data source not set";
+        default:
+            return "Remove ";
     }
 }
 

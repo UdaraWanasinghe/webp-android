@@ -287,11 +287,9 @@ class WebPCodecInstrumentedTest {
                     compressQuality = compressQuality
                 )
             )
-            decoder.decodeFrames(
-                bitmapFile.toUri(),
-                outputDirectory.toUri()
-            )
-            val decodedInfo = decoder.decodeInfo(bitmapFile.toUri())
+            decoder.setDataSource(bitmapFile.toUri())
+            decoder.decodeFrames(outputDirectory.toUri())
+            val decodedInfo = decoder.decodeInfo()
             decoder.removeDecodeListener(decodeListener)
             decoder.release()
 
@@ -404,10 +402,8 @@ class WebPCodecInstrumentedTest {
                     }
                 }
             )
-            decoder.decodeFrames(
-                imageFile.toUri(),
-                outputDirectory.toUri()
-            )
+            decoder.setDataSource(imageFile.toUri())
+            decoder.decodeFrames(outputDirectory.toUri())
             decoder.release()
 
             // verify

@@ -94,6 +94,9 @@ webPAnimEncoder.release()
 // Create decoder instance
 val webPDecoder = WebPDecoder(context)
 
+// Set data source
+webPDecoder.setDataSource(context, srcUri)
+
 // Add decode listener to receive decoding events
 webPDecoder.addDecodeListener(
     object : WebPDecodeListener {
@@ -111,16 +114,19 @@ webPDecoder.addDecodeListener(
 // Configure decoder
 webPDecoder.configure(
     config = DecoderConfig(
-        namePrefix = "IMAGE_",
-        repeatCharacter = '0',
-        repeatCharacterCount = 6,
+        name_prefix = "IMAGE_",
+        repeat_character = '0',
+        repeat_character_count = 6,
         compressFormat = Bitmap.CompressFormat.PNG,
-        compressQuality = 100
+        compress_quality = 100
     )
 )
 
+// Decode a single frame
+val decodeResult = webPDecoder.decodeNextFrame()
+
 // Decode frames from a WebP file
-webPDecoder.decodeFrames(srcUri, dstUri)
+webPDecoder.decodeFrames(dstUri)
 
 // Decode only the image information from a WebP file
 val info = webPDecoder.decodeInfo(srcUri)
