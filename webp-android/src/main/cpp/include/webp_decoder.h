@@ -41,6 +41,10 @@ namespace dec {
 
     jobject nativeDecodeInfo(JNIEnv *env, jobject jdecoder);
 
+    jboolean nativeHasNextFrame(JNIEnv *env, jobject jdecoder);
+
+    jint nativeNextFrameIndex(JNIEnv *env, jobject jdecoder);
+
     jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder);
 
     jint nativeDecodeFrames(
@@ -77,6 +81,10 @@ public:
     ResultCode setDataBuffer(JNIEnv *env, jobject jbuffer);
 
     dec::InfoDecodeResult decodeWebPInfo(JNIEnv *env);
+
+    int nextFrameIndex();
+
+    bool hasNextFrame();
 
     dec::FrameDecodeResult decodeNextFrame(JNIEnv *env);
 

@@ -524,6 +524,16 @@ static const JNINativeMethod decoderMethods[] = {
                 reinterpret_cast<void *>(dec::nativeDecodeInfo)
         },
         {
+                "nativeHasNextFrame",
+                "()Z",
+                reinterpret_cast<void *>(dec::nativeHasNextFrame)
+        },
+        {
+                "nativeNextFrameIndex",
+                "()I",
+                reinterpret_cast<void *>(dec::nativeNextFrameIndex)
+        },
+        {
                 "nativeDecodeNextFrame",
                 "()Lcom/aureusapps/android/webpandroid/decoder/InternalFrameDecodeResult;",
                 reinterpret_cast<void *>(dec::nativeDecodeNextFrame)

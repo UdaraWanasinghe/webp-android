@@ -40,6 +40,10 @@ class WebPDecoder(private val context: Context) {
 
     private external fun nativeDecodeInfo(): InfoDecodeResult
 
+    private external fun nativeHasNextFrame(): Boolean
+
+    private external fun nativeNextFrameIndex(): Int
+
     private external fun nativeDecodeNextFrame(): InternalFrameDecodeResult
 
     private external fun nativeDecodeFrames(context: Context, dstUri: Uri?): Int
@@ -143,6 +147,20 @@ class WebPDecoder(private val context: Context) {
         return handleResultCode(decodeResult.resultCode) {
             decodeResult.webPInfo ?: throw RuntimeException("Unexpected null result: webPInfo is null")
         }
+    }
+
+    /**
+     * Return true if frames are available to decode.
+     */
+    fun hasNextFrame(): Boolean {
+        return nativeHasNextFrame()
+    }
+
+    /**
+     * Returns index of the next frame.
+     */
+    fun nextFrameIndex(): Int {
+        return nativeNextFrameIndex()
     }
 
     /**

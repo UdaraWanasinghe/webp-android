@@ -158,6 +158,18 @@ namespace dec {
         );
     }
 
+    jboolean nativeHasNextFrame(JNIEnv *env, jobject jdecoder) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return false;
+        return static_cast<jboolean>(decoder->hasNextFrame());
+    }
+
+    jint nativeNextFrameIndex(JNIEnv *env, jobject jdecoder) {
+        auto *decoder = WebPDecoder::getInstance(env, jdecoder);
+        if (decoder == nullptr) return -1;
+        return static_cast<jint>(decoder->nextFrameIndex());
+    }
+
     jobject nativeDecodeNextFrame(JNIEnv *env, jobject jdecoder) {
         auto *decoder = WebPDecoder::getInstance(env, jdecoder);
         jobject bitmap_frame;
@@ -329,6 +341,19 @@ dec::InfoDecodeResult WebPDecoder::decodeWebPInfo(JNIEnv *env) {
         }
     }
     return {result_code, webp_info};
+}
+
+bool WebPDecoder::hasNextFrame() {
+    if (data_buffer_ == nullptr) return false;
+    if (webp_features_.has_animation) {
+        return WebPAnimDecoderHasMoreFrames(decoder_);
+    } else {
+        return current_frame_index_ < 1;
+    }
+}
+
+int WebPDecoder::nextFrameIndex() {
+    return current_frame_index_;
 }
 
 dec::FrameDecodeResult WebPDecoder::decodeNextFrame(JNIEnv *env) {
