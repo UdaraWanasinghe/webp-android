@@ -122,6 +122,12 @@ webPDecoder.configure(
     )
 )
 
+// Check if frames are available to decode
+val hasFrames = webPDecoder.hasNextFrame()
+
+// Get next frame index
+val nextIndex = webPDecoder.nextFrameIndex()
+
 // Decode a single frame
 val decodeResult = webPDecoder.decodeNextFrame()
 
