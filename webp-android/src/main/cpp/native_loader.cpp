@@ -525,7 +525,7 @@ static const JNINativeMethod decoderMethods[] = {
         },
         {
                 "nativeDecodeNextFrame",
-                "()Lcom/aureusapps/android/webpandroid/decoder/FrameDecodeResult;",
+                "()Lcom/aureusapps/android/webpandroid/decoder/InternalFrameDecodeResult;",
                 reinterpret_cast<void *>(dec::nativeDecodeNextFrame)
         },
         {

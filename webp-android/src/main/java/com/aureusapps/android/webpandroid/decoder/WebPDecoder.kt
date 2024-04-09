@@ -40,7 +40,7 @@ class WebPDecoder(private val context: Context) {
 
     private external fun nativeDecodeInfo(): InfoDecodeResult
 
-    private external fun nativeDecodeNextFrame(): FrameDecodeResult
+    private external fun nativeDecodeNextFrame(): InternalFrameDecodeResult
 
     private external fun nativeDecodeFrames(context: Context, dstUri: Uri?): Int
 
@@ -160,7 +160,11 @@ class WebPDecoder(private val context: Context) {
         if (codecResult != CodecResult.SUCCESS && codecResult != CodecResult.ERROR_NO_MORE_FRAMES) {
             throw CodecException(codecResult)
         }
-        return decodeResult
+        return FrameDecodeResult(
+            frame = decodeResult.frame,
+            timestamp = decodeResult.timestamp,
+            codecResult = codecResult
+        )
     }
 
     /**
