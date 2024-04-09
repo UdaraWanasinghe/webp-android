@@ -37,12 +37,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.file.Files
+
 
 @RunWith(AndroidJUnit4::class)
 class WebPCodecInstrumentedTest {
@@ -97,6 +102,39 @@ class WebPCodecInstrumentedTest {
     @Test
     fun test_decodeAnimatedImage() {
         testDecodeAnimatedImage()
+    }
+
+    private fun readWebImageFile(): Buffer {
+        val url = URL("https://mathiasbynens.be/demo/animated-webp-supported.webp")
+        val connection = url.openConnection() as HttpURLConnection
+        connection.connect()
+        val inputStream = connection.inputStream
+        val byteArrayOutputStream = ByteArrayOutputStream()
+
+        val buffer = ByteArray(1024)
+        var len: Int
+        while (inputStream.read(buffer).also { len = it } != -1) {
+            byteArrayOutputStream.write(buffer, 0, len)
+        }
+        inputStream.close()
+        byteArrayOutputStream.close()
+
+        val byteArray = byteArrayOutputStream.toByteArray()
+        val byteBuffer = ByteBuffer.allocateDirect(byteArray.size)
+        byteBuffer.put(byteArray)
+        byteBuffer.flip()
+
+        return byteBuffer
+    }
+
+    @Test
+    fun test_decodeByteBuffer() {
+        val webPDecoder = WebPDecoder(context)
+        val byteBuffer = readWebImageFile()
+        webPDecoder.setDataBuffer(byteBuffer)
+        val decodeResult = webPDecoder.decodeNextFrame()
+        assertNotNull(decodeResult.frame)
+        assertEquals(Color.argb(255, 0, 51, 102), decodeResult.frame?.getPixel(0, 0))
     }
 
     private fun testEncodeImage(
