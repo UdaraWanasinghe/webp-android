@@ -48,7 +48,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.file.Files
 
-
 @RunWith(AndroidJUnit4::class)
 class WebPCodecInstrumentedTest {
 

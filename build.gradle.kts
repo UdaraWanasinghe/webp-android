@@ -5,7 +5,7 @@ import com.aureusapps.gradle.PublishLibraryConstants.VERSION_NAME
 
 loadLocalProperties(project)
 project.extra[GROUP_ID] = "com.aureusapps.android"
-project.extra[VERSION_CODE] = 8
+project.extra[VERSION_CODE] = 6
 project.extra[VERSION_NAME] = "1.0.7"
 project.extra["LIBWEBP_PATH"] = "../../../../../libwebp"
 
