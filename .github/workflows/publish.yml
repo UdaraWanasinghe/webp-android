@@ -39,6 +39,13 @@ jobs:
           token: ${{ secrets.COMMON_GRADLE_PLUGINS_ACCESS_TOKEN }}
           path: common-gradle-plugins
 
+      - name: Check out android-providerfile
+        uses: actions/checkout@v3
+        with:
+          repository: UdaraWanasinghe/android-providerfile
+          token: ${{ secrets.PROVIDERFILE_ACCESS_TOKEN }}
+          path: android-providerfile
+
       - name: Check out webp-android
         uses: actions/checkout@v3
         with:
@@ -57,6 +64,10 @@ jobs:
 
       - name: Publish common-gradle-plugins
         working-directory: common-gradle-plugins
+        run: ./gradlew publishToMavenLocal
+
+      - name: Publish android-providerfile
+        working-directory: android-providerfile
         run: ./gradlew publishToMavenLocal
 
       - name: Release build webp-android
