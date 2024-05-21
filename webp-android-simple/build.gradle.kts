@@ -44,11 +44,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.core.ktx)
+    implementation(libs.androidx.core.ktx)
     implementation(libs.aureusapps.extensions)
-
-    testImplementation(libs.junit)
-
-    androidTestImplementation(libs.junit.ext)
-    androidTestImplementation(libs.espresso.core)
 }

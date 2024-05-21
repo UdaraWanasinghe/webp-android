@@ -11,9 +11,9 @@ plugins {
 }
 
 class Props(project: Project) {
-    val groupId = project.findProperty(GROUP_ID).toString()
-    val versionCode = project.findProperty(VERSION_CODE).toString().toInt()
-    val versionName = project.findProperty(VERSION_NAME).toString()
+    val groupId = project.findProperty(GROUP_ID) as String
+    val versionCode = project.findProperty(VERSION_CODE) as Int
+    val versionName = project.findProperty(VERSION_NAME) as String
 }
 
 val props = Props(project)
@@ -50,22 +50,17 @@ android {
 
 dependencies {
     implementation(libs.kotlin.stdlib)
-    implementation(libs.core.ktx)
-    implementation(libs.appcompat)
-    implementation(libs.constraintlayout)
-    implementation(libs.material)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.android.material)
     implementation(libs.fresco)
     implementation(libs.fresco.animated.webp)
     implementation(libs.fresco.webpsupport)
-    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.aureusapps.extensions)
     implementation(libs.aureusapps.styles)
-    implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.documentfile)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.documentfile)
     implementation(project(":webp-android"))
-
-    testImplementation(libs.junit)
-
-    androidTestImplementation(libs.junit.ext)
-    androidTestImplementation(libs.espresso.core)
 }

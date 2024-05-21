@@ -11,9 +11,9 @@ plugins {
 }
 
 class Props(project: Project) {
-    val groupId = project.findProperty(GROUP_ID).toString()
-    val libwebpPath = project.findProperty("LIBWEBP_PATH").toString()
-    val versionName = project.findProperty(VERSION_NAME).toString()
+    val groupId = project.findProperty(GROUP_ID) as String
+    val libWEBPPath = project.findProperty("LIBWEBP_PATH") as String
+    val versionName = project.findProperty(VERSION_NAME) as String
 }
 
 val props = Props(project)
@@ -28,7 +28,7 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags("-std=c++17", "-fvisibility=hidden")
-                arguments("-DLIBWEBP_PATH=${props.libwebpPath}")
+                arguments("-DLIBWEBP_PATH=${props.libWEBPPath}")
                 targets("webpcodec_jni")
             }
         }
@@ -48,7 +48,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
     externalNativeBuild {
         cmake {
@@ -85,16 +85,14 @@ publishLibrary {
 
 dependencies {
     implementation(libs.kotlin.stdlib)
-    implementation(libs.annotation)
+    implementation(libs.androidx.annotation)
     implementation(libs.okhttp)
-    implementation(libs.documentfile)
+    implementation(libs.androidx.documentfile)
     implementation(libs.aureusapps.extensions)
     implementation(libs.relinker)
 
-    testImplementation(libs.junit)
-
-    androidTestImplementation(libs.junit.ext)
-    androidTestImplementation(libs.espresso.core)
-    androidTestImplementation(libs.core.ktx)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.androidx.core.ktx)
     androidTestImplementation(libs.aureusapps.extensions)
 }
