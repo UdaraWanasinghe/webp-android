@@ -20,6 +20,13 @@ dependencies {
 }
 ```
 
+### Publish material-components-android locally
+```shell
+git clone --branch release-1.12-hotfix --depth 1 git@github.com:UdaraWanasinghe/material-components-android.git
+cd material-components-android
+./gradlew publishToMavenLocal
+```
+
 ### Encoding a Bitmap with WebPEncoder
 
 ```kotlin
