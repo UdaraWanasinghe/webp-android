@@ -19,7 +19,7 @@ class Props(project: Project) {
 val props = Props(project)
 
 android {
-    compileSdk = 34
+    compileSdk = 35
     namespace = "${props.groupId}.webpandroid"
     defaultConfig {
         minSdk = 21

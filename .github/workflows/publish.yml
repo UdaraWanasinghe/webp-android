@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: UdaraWanasinghe/common-gradle-plugins
-          ref: v1.0.0
+          ref: v1.0.1
           token: ${{ secrets.COMMON_GRADLE_PLUGINS_ACCESS_TOKEN }}
           path: common-gradle-plugins
 
@@ -45,21 +45,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: UdaraWanasinghe/android-providerfile
-          ref: v1.0.1
+          ref: v1.0.3
           token: ${{ secrets.PROVIDERFILE_ACCESS_TOKEN }}
           path: android-providerfile
-        
+
       - name: Check out webp-android
         uses: actions/checkout@v3
         with:
-          ref: v1.0.8
+          ref: v1.0.9
           path: webp-android
 
       - name: Check out libwebp
         uses: actions/checkout@v3
         with:
           repository: webmproject/libwebp
-          ref: v1.3.0
+          ref: 1.5.0
           path: libwebp
 
       - name: Check out material-components-android
