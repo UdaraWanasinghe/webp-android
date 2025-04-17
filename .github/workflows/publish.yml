@@ -62,13 +62,6 @@ jobs:
           ref: 1.5.0
           path: libwebp
 
-      - name: Check out material-components-android
-        uses: actions/checkout@v3
-        with:
-          repository: UdaraWanasinghe/material-components-android
-          ref: release-1.12-hotfix
-          path: material-components-android
-
       - name: Publish version-catalog
         working-directory: version-catalog
         run: ./gradlew publishToMavenLocal
@@ -79,10 +72,6 @@ jobs:
 
       - name: Publish android-providerfile
         working-directory: android-providerfile
-        run: ./gradlew publishToMavenLocal
-
-      - name: Publish material-components-android
-        working-directory: material-components-android
         run: ./gradlew publishToMavenLocal
 
       - name: Release build webp-android
