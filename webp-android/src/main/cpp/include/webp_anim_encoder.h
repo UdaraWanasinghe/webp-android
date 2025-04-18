@@ -45,13 +45,22 @@ public:
      * Adds a frame to the animation sequence with the specified pixel data, bitmap dimensions, and timestamp.
      *
      * @param pixels Pointer to the pixel data of the frame.
-     * @param width The width of the frame bitmap in pixels.
-     * @param height The height of the frame bitmap in pixels.
+     * @param image_width The width of the bitmap in pixels.
+     * @param image_height The height of the bitmap in pixels.
+     * @param output_width The width of the output frame in pixels.
+     * @param output_height The height of the output frame in pixels.
      * @param timestamp The timestamp of the frame in milliseconds.
      *
      * @return 0 if success or error code if failed.
      */
-    ResultCode addFrame(uint8_t *pixels, int width, int height, long timestamp);
+    ResultCode addFrame(
+            uint8_t *pixels,
+            int image_width,
+            int image_height,
+            int output_width,
+            int output_height,
+            long timestamp
+    );
 
     /**
      * Assembles the animation with the provided timestamp and saves it to the specified output path.

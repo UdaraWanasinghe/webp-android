@@ -23,30 +23,42 @@ void WebPEncoder::configure(WebPConfig config) {
 
 ResultCode WebPEncoder::encode(
         const uint8_t *const pixels,
-        const int width,
-        const int height,
+        const int image_width,
+        const int image_height,
+        const int output_width,
+        const int output_height,
         const uint8_t **webp_data,
         size_t *webp_size
 ) {
+    // Validate config
     if (!WebPValidateConfig(&webPConfig)) {
         return ERROR_INVALID_WEBP_CONFIG;
     }
 
+    // Init picture
     WebPPicture pic;
     if (!WebPPictureInit(&pic)) {
         return ERROR_VERSION_MISMATCH;
     }
-    pic.width = width;
-    pic.height = height;
     pic.use_argb = true;
+    pic.width = image_width;
+    pic.height = image_height;
 
+    // Allocate memory
     if (!WebPPictureAlloc(&pic)) {
         return ERROR_MEMORY_ERROR;
     }
 
-    if (!WebPPictureImportRGBA(&pic, pixels, width * 4)) {
+    // Import pixel data
+    if (!WebPPictureImportRGBA(&pic, pixels, image_width * 4)) {
         WebPPictureFree(&pic);
         return ERROR_MEMORY_ERROR;
+    }
+
+    // Resize if output size doesn't match
+    if ((image_width != output_width || image_height != output_height) && !WebPPictureRescale(&pic, output_width, output_height)) {
+        WebPPictureFree(&pic);
+        return ERROR_BITMAP_RESIZE_FAILED;
     }
 
     // set progress hook
@@ -56,7 +68,6 @@ ResultCode WebPEncoder::encode(
     WebPMemoryWriter wtr;
     // initialize 'wtr'
     WebPMemoryWriterInit(&wtr);
-
     pic.writer = WebPMemoryWrite;
     pic.custom_ptr = &wtr;
 
@@ -201,82 +212,56 @@ void WebPEncoder::nativeEncode(
         jobject jsrc_bitmap,
         jobject jdst_uri
 ) {
-    ResultCode result = RESULT_SUCCESS;
-
     auto *encoder = WebPEncoder::getInstance(env, thiz);
     if (encoder == nullptr) {
-        result = ERROR_NULL_ENCODER;
+        res::handleResult(env, ERROR_NULL_ENCODER);
+        return;
     }
 
     AndroidBitmapInfo info;
-    if (result == RESULT_SUCCESS) {
-        if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
-            result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
-        }
+    if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        res::handleResult(env, ERROR_BITMAP_INFO_EXTRACT_FAILED);
+        return;
     }
 
-    bool bitmap_resized = false;
-    if (result == RESULT_SUCCESS) {
-        int width = encoder->imageWidth;
-        if (width <= 0) {
-            width = static_cast<int>(info.width);
-        }
-        int height = encoder->imageHeight;
-        if (height <= 0) {
-            height = static_cast<int>(info.height);
-        }
-        if (info.width != width || info.height != height) {
-            jsrc_bitmap = bmp::resizeBitmap(
-                    env,
-                    jsrc_bitmap,
-                    width,
-                    height
-            );
-            if (type::isObjectNull(env, jsrc_bitmap)) {
-                result = ERROR_BITMAP_RESIZE_FAILED;
-            } else {
-                bitmap_resized = true;
-                if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) !=
-                    ANDROID_BITMAP_RESULT_SUCCESS) {
-                    result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
-                } else if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-                    result = ERROR_INVALID_BITMAP_FORMAT;
-                }
-            }
-        }
+    int output_width = (encoder->imageWidth > 0) ? encoder->imageWidth : static_cast<int>(info.width);
+    int output_height = (encoder->imageHeight > 0) ? encoder->imageHeight : static_cast<int>(info.height);
+
+    void *pixels;
+    if (!(AndroidBitmap_lockPixels(env, jsrc_bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS)) {
+        res::handleResult(env, ERROR_LOCK_BITMAP_PIXELS_FAILED);
+        return;
     }
 
-    if (result == RESULT_SUCCESS) {
-        void *pixels;
-        if (AndroidBitmap_lockPixels(env, jsrc_bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
-            const uint8_t *webp_data;
-            size_t webp_size;
-            result = encoder->encode(
-                    static_cast<uint8_t *>(pixels),
-                    static_cast<int>(info.width),
-                    static_cast<int>(info.height),
-                    &webp_data,
-                    &webp_size
-            );
-            if (result == RESULT_SUCCESS) {
-                result = file::writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
-                WebPFree((void *) webp_data);
-                webp_data = nullptr;
-            }
-            if (AndroidBitmap_unlockPixels(env, jsrc_bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
-                result = ERROR_UNLOCK_BITMAP_PIXELS_FAILED;
-            }
-        } else {
-            result = ERROR_LOCK_BITMAP_PIXELS_FAILED;
-        }
+    const uint8_t *webp_data;
+    size_t webp_size;
+    ResultCode result = encoder->encode(
+            static_cast<uint8_t *>(pixels),
+            static_cast<int>(info.width),
+            static_cast<int>(info.height),
+            output_width,
+            output_height,
+            &webp_data,
+            &webp_size
+    );
+    if (result != RESULT_SUCCESS) {
+        res::handleResult(env, result);
+        return;
     }
 
-    if (bitmap_resized) {
-        bmp::recycleBitmap(env, jsrc_bitmap);
-        env->DeleteLocalRef(jsrc_bitmap);
+    result = file::writeToUri(env, jcontext, jdst_uri, webp_data, webp_size);
+    WebPFree((void *) webp_data);
+
+    if (result != RESULT_SUCCESS) {
+        AndroidBitmap_unlockPixels(env, jsrc_bitmap);
+        res::handleResult(env, result);
+        return;
     }
 
-    res::handleResult(env, result);
+    if (AndroidBitmap_unlockPixels(env, jsrc_bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        res::handleResult(env, ERROR_UNLOCK_BITMAP_PIXELS_FAILED);
+        return;
+    }
 }
 
 void WebPEncoder::nativeCancel(JNIEnv *, jobject) {

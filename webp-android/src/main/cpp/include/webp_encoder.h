@@ -40,8 +40,10 @@ public:
      * Encodes the image into WebP format.
      *
      * @param pixels Pointer to the input pixel data from Android bitmap.
-     * @param width The width of the input image.
-     * @param height The height of the input image.
+     * @param image_width The width of the input image.
+     * @param image_height The height of the input image.
+     * @param output_width The width the output image.
+     * @param output_height The height of the output image.
      * @param webp_data Pointer to the output buffer for the WebP data.
      * @param webp_size Pointer to store the size of the WebP data.
      *
@@ -49,8 +51,10 @@ public:
      */
     ResultCode encode(
             const uint8_t *pixels,
-            int width,
-            int height,
+            int image_width,
+            int image_height,
+            int output_width,
+            int output_height,
             const uint8_t **webp_data,
             size_t *webp_size
     );

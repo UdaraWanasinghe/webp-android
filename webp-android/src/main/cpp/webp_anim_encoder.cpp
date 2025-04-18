@@ -30,21 +30,38 @@ void WebPAnimationEncoder::configure(WebPConfig config) {
     webPConfig = config;
 }
 
-ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height, long timestamp) {
+ResultCode WebPAnimationEncoder::addFrame(
+        uint8_t *pixels,
+        int image_width,
+        int image_height,
+        int output_width,
+        int output_height,
+        long timestamp
+) {
+    // Init picture
     WebPPicture pic;
     if (!WebPPictureInit(&pic)) {
         return ERROR_VERSION_MISMATCH;
     }
     pic.use_argb = true;
-    pic.width = width;
-    pic.height = height;
+    pic.width = image_width;
+    pic.height = image_height;
+
+    // Allocate memory
     if (!WebPPictureAlloc(&pic)) {
         return ERROR_MEMORY_ERROR;
     }
 
-    if (!WebPPictureImportRGBA(&pic, pixels, width * 4)) {
+    // Import pixel data
+    if (!WebPPictureImportRGBA(&pic, pixels, image_width * 4)) {
         WebPPictureFree(&pic);
         return ERROR_MEMORY_ERROR;
+    }
+
+    // Resize if output size doesn't match
+    if ((image_width != output_width || image_height != output_height) && !WebPPictureRescale(&pic, output_width, output_height)) {
+        WebPPictureFree(&pic);
+        return ERROR_BITMAP_RESIZE_FAILED;
     }
 
     auto user_data = UserData{};
@@ -52,17 +69,20 @@ ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height
     pic.user_data = reinterpret_cast<void *>(&user_data);
     pic.progress_hook = &notifyProgressChanged;
 
-    ResultCode result;
+    // Create encoder if not created
     if (webPAnimEncoder == nullptr) {
-        webPAnimEncoder = WebPAnimEncoderNew(width, height, &encoderOptions);
+        webPAnimEncoder = WebPAnimEncoderNew(output_width, output_height, &encoderOptions);
     }
-    if (WebPAnimEncoderAdd(webPAnimEncoder, &pic, timestamp, &webPConfig)) {
-        result = RESULT_SUCCESS;
-    } else {
-        result = res::encodingErrorToResultCode(pic.error_code);
+
+    // Add frame
+    if (!WebPAnimEncoderAdd(webPAnimEncoder, &pic, timestamp, &webPConfig)) {
+        WebPPictureFree(&pic);
+        return res::encodingErrorToResultCode(pic.error_code);
     }
+
+    // Release picture
     WebPPictureFree(&pic);
-    return result;
+    return RESULT_SUCCESS;
 }
 
 ResultCode WebPAnimationEncoder::assemble(long timestamp, WebPData *data) {
@@ -171,7 +191,12 @@ jlong WebPAnimationEncoder::nativeCreate(
     if (!type::isObjectNull(env, joptions)) {
         enc::parseEncoderOptions(env, joptions, &options);
     }
+
+    // Releases in nativeRelease
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "MemoryLeak"
     auto *encoder = new WebPAnimationEncoder(jwidth, jheight, options);
+#pragma clang diagnostic pop
     return reinterpret_cast<jlong>(encoder);
 }
 
@@ -225,76 +250,59 @@ void WebPAnimationEncoder::nativeAddFrame(
         jlong jtimestamp,
         jobject jsrc_bitmap
 ) {
-    ResultCode result = RESULT_SUCCESS;
-
+    // Get encoder
     auto *encoder = WebPAnimationEncoder::getInstance(env, thiz);
     if (encoder == nullptr) {
-        result = ERROR_NULL_ENCODER;
+        res::handleResult(env, ERROR_NULL_ENCODER);
+        return;
     }
 
+    // Validate bitmap frame
     AndroidBitmapInfo info;
-    if (result == RESULT_SUCCESS) {
-        if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
-            result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
-        } else if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
-            result = ERROR_INVALID_BITMAP_FORMAT;
-        }
+    if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        res::handleResult(env, ERROR_BITMAP_INFO_EXTRACT_FAILED);
+        return;
+    } else if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        res::handleResult(env, ERROR_INVALID_BITMAP_FORMAT);
+        return;
     }
 
-    bool bitmap_resized = false;
-    if (result == RESULT_SUCCESS) {
-        int width = encoder->imageWidth;
-        if (width <= 0) {
-            width = static_cast<int>(info.width);
-            encoder->imageWidth = width;
-        }
-        int height = encoder->imageHeight;
-        if (height <= 0) {
-            height = static_cast<int>(info.height);
-            encoder->imageHeight = height;
-        }
-        if (info.width != width || info.height != height) {
-            jsrc_bitmap = bmp::resizeBitmap(
-                    env,
-                    jsrc_bitmap,
-                    width,
-                    height
-            );
-            if (type::isObjectNull(env, jsrc_bitmap)) {
-                result = ERROR_BITMAP_RESIZE_FAILED;
-            } else {
-                bitmap_resized = true;
-                if (AndroidBitmap_getInfo(env, jsrc_bitmap, &info) !=
-                    ANDROID_BITMAP_RESULT_SUCCESS) {
-                    result = ERROR_BITMAP_INFO_EXTRACT_FAILED;
-                }
-            }
-        }
+    // Get output size
+    int output_width = encoder->imageWidth;
+    if (output_width <= 0) {
+        output_width = static_cast<int>(info.width);
+        encoder->imageWidth = output_width;
+    }
+    int output_height = encoder->imageHeight;
+    if (output_height <= 0) {
+        output_height = static_cast<int>(info.height);
+        encoder->imageHeight = output_height;
     }
 
-    if (result == RESULT_SUCCESS) {
-        void *pixels;
-        if (AndroidBitmap_lockPixels(env, jsrc_bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
-            result = encoder->addFrame(
-                    static_cast<uint8_t *>(pixels),
-                    static_cast<int>(info.width),
-                    static_cast<int>(info.height),
-                    static_cast<long>(jtimestamp)
-            );
-            if (AndroidBitmap_unlockPixels(env, jsrc_bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
-                result = ERROR_UNLOCK_BITMAP_PIXELS_FAILED;
-            }
-        } else {
-            result = ERROR_LOCK_BITMAP_PIXELS_FAILED;
-        }
+    void *pixels;
+    if (AndroidBitmap_lockPixels(env, jsrc_bitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        res::handleResult(env, ERROR_LOCK_BITMAP_PIXELS_FAILED);
+        return;
     }
 
-    if (bitmap_resized) {
-        bmp::recycleBitmap(env, jsrc_bitmap);
-        env->DeleteLocalRef(jsrc_bitmap);
+    ResultCode result = encoder->addFrame(
+            static_cast<uint8_t *>(pixels),
+            static_cast<int>(info.width),
+            static_cast<int>(info.height),
+            output_width,
+            output_height,
+            static_cast<long>(jtimestamp)
+    );
+
+    if (result != RESULT_SUCCESS) {
+        AndroidBitmap_unlockPixels(env, jsrc_bitmap);
+        res::handleResult(env, result);
+        return;
     }
 
-    res::handleResult(env, result);
+    if (AndroidBitmap_unlockPixels(env, jsrc_bitmap) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        res::handleResult(env, result);
+    }
 }
 
 void WebPAnimationEncoder::nativeAssemble(
