@@ -41,7 +41,12 @@ ResultCode WebPAnimationEncoder::addFrame(uint8_t *pixels, int width, int height
     if (!WebPPictureAlloc(&pic)) {
         return ERROR_MEMORY_ERROR;
     }
-    enc::copyPixels(pixels, &pic);
+
+    if (!WebPPictureImportRGBA(&pic, pixels, width * 4)) {
+        WebPPictureFree(&pic);
+        return ERROR_MEMORY_ERROR;
+    }
+
     auto user_data = UserData{};
     user_data.frameIndex = frameCount++;
     pic.user_data = reinterpret_cast<void *>(&user_data);

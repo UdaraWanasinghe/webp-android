@@ -409,29 +409,3 @@ void enc::parseEncoderOptions(
     }
     options->anim_params = params;
 }
-
-void enc::copyPixels(
-        const uint8_t *src,
-        WebPPicture *pic
-) {
-    // Need to swap rb channels
-    // Android bitmap -> int color = (A & 0xff) << 24 | (B & 0xff) << 16 | (G & 0xff) << 8 | (R & 0xff)
-    // Encoder pixels -> int color = (A & 0xFF) << 24 | (R & 0xFF) << 16 | (G & 0xFF) << 8 | (B & 0xFF)
-    auto *dst = reinterpret_cast<uint8_t *>(pic->argb);
-    const uint8_t *end = src + pic->width * pic->height * 4;
-    while (src < end) {
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        *dst++ = src[0];
-        *dst++ = src[3];
-        *dst++ = src[2];
-        *dst++ = src[1];
-        src += 4;
-#else
-        *dst++ = src[2];
-        *dst++ = src[1];
-        *dst++ = src[0];
-        *dst++ = src[3];
-        src += 4;
-#endif
-    }
-}

@@ -28,59 +28,53 @@ ResultCode WebPEncoder::encode(
         const uint8_t **webp_data,
         size_t *webp_size
 ) {
-    ResultCode result = RESULT_SUCCESS;
-    if (WebPValidateConfig(&webPConfig)) {
-        // Setup the input data
-        WebPPicture pic;
-        if (WebPPictureInit(&pic)) {
-            // allocated pic of dimension width x height
-            pic.width = width;
-            pic.height = height;
-            pic.use_argb = true;
-            if (WebPPictureAlloc(&pic)) {
-                // at this point, 'pic' has been initialized as a container,
-                // and can receive the Y/U/V samples.
-                // Alternatively, one could use ready-made import functions like
-                // WebPPictureImportRGB(), which will take care of memory allocation.
-                // In any case, past this point, one will have to call
-                // WebPPictureFree(&pic) to reclaim memory.
-                enc::copyPixels(pixels, &pic);
-
-                // set progress hook
-                pic.progress_hook = &notifyProgressChanged;
-
-                // Set up a byte-output write method. WebPMemoryWriter, for instance.
-                WebPMemoryWriter wtr;
-                // initialize 'wtr'
-                WebPMemoryWriterInit(&wtr);
-
-                pic.writer = WebPMemoryWrite;
-                pic.custom_ptr = &wtr;
-
-                // Compress!
-                // encodeSuccess = 0 => error occurred!
-                if (WebPEncode(&webPConfig, &pic)) {
-                    // output data should have been handled by the wtr at that point.
-                    // -> compressed data is the memory buffer described by wtr.mem / wtr.size
-                    *webp_data = wtr.mem;
-                    *webp_size = wtr.size;
-                } else {
-                    result = res::encodingErrorToResultCode(pic.error_code);
-                }
-
-                // Release resources.
-                // must be called independently of the encode success result.
-                WebPPictureFree(&pic);
-            } else {
-                result = ERROR_MEMORY_ERROR;
-            }
-        } else {
-            result = ERROR_VERSION_MISMATCH;
-        }
-    } else {
-        result = ERROR_INVALID_WEBP_CONFIG;
+    if (!WebPValidateConfig(&webPConfig)) {
+        return ERROR_INVALID_WEBP_CONFIG;
     }
-    return result;
+
+    WebPPicture pic;
+    if (!WebPPictureInit(&pic)) {
+        return ERROR_VERSION_MISMATCH;
+    }
+    pic.width = width;
+    pic.height = height;
+    pic.use_argb = true;
+
+    if (!WebPPictureAlloc(&pic)) {
+        return ERROR_MEMORY_ERROR;
+    }
+
+    if (!WebPPictureImportRGBA(&pic, pixels, width * 4)) {
+        WebPPictureFree(&pic);
+        return ERROR_MEMORY_ERROR;
+    }
+
+    // set progress hook
+    pic.progress_hook = &notifyProgressChanged;
+
+    // Set up a byte-output write method. WebPMemoryWriter, for instance.
+    WebPMemoryWriter wtr;
+    // initialize 'wtr'
+    WebPMemoryWriterInit(&wtr);
+
+    pic.writer = WebPMemoryWrite;
+    pic.custom_ptr = &wtr;
+
+    if (!WebPEncode(&webPConfig, &pic)) {
+        WebPPictureFree(&pic);
+        return res::encodingErrorToResultCode(pic.error_code);
+    }
+
+    // output data should have been handled by the wtr at that point.
+    // -> compressed data is the memory buffer described by wtr.mem / wtr.size
+    *webp_data = wtr.mem;
+    *webp_size = wtr.size;
+
+    // Release resources.
+    // must be called independently of the encode success result.
+    WebPPictureFree(&pic);
+
+    return RESULT_SUCCESS;
 }
 
 void WebPEncoder::release() {
@@ -152,7 +146,12 @@ void WebPEncoder::clearProgressNotifier(JNIEnv *env) {
 jlong WebPEncoder::nativeCreate(JNIEnv *env, jobject thiz, jint jwidth, jint jheight) {
     env->GetJavaVM(&jvm);
     setProgressNotifier(env, thiz);
+
+    // Using nativeRelease to release memory
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "MemoryLeak"
     auto *encoder = new WebPEncoder(jwidth, jheight);
+#pragma clang diagnostic pop
     return reinterpret_cast<jlong>(encoder);
 }
 

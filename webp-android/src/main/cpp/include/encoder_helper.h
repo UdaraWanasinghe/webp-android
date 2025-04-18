@@ -60,15 +60,4 @@ namespace enc {
             jobject joptions,
             WebPAnimEncoderOptions *options
     );
-
-    /**
-     * Copies pixels from the source buffer to the WebPPicture.
-     *
-     * @param src Pointer to the source buffer containing the pixel data.
-     * @param pic Pointer to the WebPPicture object.
-     */
-    void copyPixels(
-            const uint8_t *src,
-            WebPPicture *pic
-    );
 }
