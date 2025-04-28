@@ -28,23 +28,6 @@ jobject bmp::createBitmap(
     return jbitmap;
 }
 
-jobject bmp::resizeBitmap(
-        JNIEnv *env,
-        jobject jbitmap,
-        int width,
-        int height
-) {
-    jobject jresized_bitmap = env->CallStaticObjectMethod(
-            ClassRegistry::bitmapClass.get(env),
-            ClassRegistry::bitmapCreateScaledMethodID.get(env),
-            jbitmap,
-            width,
-            height,
-            true
-    );
-    return jresized_bitmap;
-}
-
 ResultCode bmp::copyPixels(
         JNIEnv *env,
         const uint8_t *src_pixels,

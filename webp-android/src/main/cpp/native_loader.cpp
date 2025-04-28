@@ -387,11 +387,7 @@ LazyStaticMethod ClassRegistry::bitmapCreateMethodID = LazyStaticMethod(
         "createBitmap",
         "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;"
 );
-LazyStaticMethod ClassRegistry::bitmapCreateScaledMethodID = LazyStaticMethod(
-        bitmapClass,
-        "createScaledBitmap",
-        "(Landroid/graphics/Bitmap;IIZ)Landroid/graphics/Bitmap;"
-);
+
 LazyStaticMethod ClassRegistry::bitmapUtilsSaveInDirectoryMethodID = LazyStaticMethod(
         bitmapUtilsClass,
         "saveInDirectory",

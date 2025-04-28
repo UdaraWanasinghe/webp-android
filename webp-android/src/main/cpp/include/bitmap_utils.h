@@ -26,23 +26,6 @@ namespace bmp {
     );
 
     /**
-     * Resizes an existing bitmap object.
-     *
-     * @param env Pointer to the JNI environment.
-     * @param jbitmap The bitmap object to be resized.
-     * @param width The desired width of the resized bitmap.
-     * @param height The desired height of the resized bitmap.
-     *
-     * @return The resized Bitmap object as a jobject.
-     */
-    jobject resizeBitmap(
-            JNIEnv *env,
-            jobject jbitmap,
-            int width,
-            int height
-    );
-
-    /**
      * Copies src_pixels in RGBA_8888 format to the jdst_bitmap.
      *
      * @param env Pointer to the JNI environment.

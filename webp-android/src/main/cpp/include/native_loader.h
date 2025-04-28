@@ -200,7 +200,6 @@ public:
     static LazyMethod webPInfoConstructorID;
 
     static LazyStaticMethod bitmapCreateMethodID;
-    static LazyStaticMethod bitmapCreateScaledMethodID;
     static LazyStaticMethod bitmapUtilsSaveInDirectoryMethodID;
     static LazyStaticMethod uriExtensionsFindFileMethodID;
     static LazyStaticMethod uriExtensionsReadToBufferMethodID;
