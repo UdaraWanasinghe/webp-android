@@ -1,30 +1,23 @@
 # webp-android
 
 [![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)](https://central.sonatype.com/artifact/com.aureusapps.android/webp-android/1.1.0)
-[![javadoc](https://javadoc.io/badge2/com.aureusapps.android/webp-android/1.1.0/javadoc.svg)](https://javadoc.io/doc/com.aureusapps.android/webp-android/1.1.0)
+[![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)](https://central.sonatype.com/artifact/com.aureusapps.android/webp-android/1.1.1)
+[![javadoc](https://javadoc.io/badge2/com.aureusapps.android/webp-android/1.1.1/javadoc.svg)](https://javadoc.io/doc/com.aureusapps.android/webp-android/1.1.1)
 
 ## What's Inside
 
-* Encode a series of android bitmap images to a static or an animated WebP image.
+* Encode a series of Android bitmap images into a static or animated WebP image.
 * Extract bitmap images from an animated WebP image.
 
-## Using
+## Usage
 
-### Import the library into your project.
+### Import the Library into Your Project
 
 ```groovy
-// module level build.gradle.kts
+// Module-level build.gradle.kts
 dependencies {
-    implementation "com.aureusapps.android:webp-android:1.1.0"
+    implementation "com.aureusapps.android:webp-android:1.1.1"
 }
-```
-
-### Publish material-components-android locally
-```shell
-git clone --branch release-1.12-hotfix --depth 1 git@github.com:UdaraWanasinghe/material-components-android.git
-cd material-components-android
-./gradlew publishToMavenLocal
 ```
 
 ### Encoding a Bitmap with WebPEncoder
@@ -55,7 +48,7 @@ webPEncoder.encode(srcBitmap, dstUri)
 webPEncoder.release()
 ```
 
-### Encoding a list of Bitmaps with WebPAnimEncoder
+### Encoding a List of Bitmaps with WebPAnimEncoder
 
 ```kotlin
 val webPAnimEncoder = WebPAnimEncoder(
@@ -95,7 +88,7 @@ webPAnimEncoder.assemble(timestamp, dstUri)
 webPAnimEncoder.release()
 ```
 
-### Decoding WebP Image with WebPDecoder
+### Decoding a WebP Image with WebPDecoder
 
 ```kotlin
 // Create decoder instance
@@ -113,7 +106,7 @@ webPDecoder.addDecodeListener(
 
         override fun onFrameDecoded(index: Int, timestamp: Long, bitmap: Bitmap, uri: Uri?) {
             // Handle decoded frames
-            // Do not recycle the bitmap image as it is reused internally
+            // Do not recycle the bitmap image, as it is reused internally
         }
     }
 )
@@ -148,7 +141,7 @@ val info = webPDecoder.decodeInfo(srcUri)
 webPDecoder.release()
 ```
 
-## Appreciate my work!
+## Support My Work!
 
 If you find this library useful, please consider buying me a coffee.
 

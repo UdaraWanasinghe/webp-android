@@ -18,8 +18,8 @@ fun loadLocalProperties(project: Project) {
 
 loadLocalProperties(project)
 project.extra["GROUP_ID"] = "com.aureusapps.android"
-project.extra["VERSION_CODE"] = 11
-project.extra["VERSION_NAME"] = "1.1.0"
+project.extra["VERSION_CODE"] = 12
+project.extra["VERSION_NAME"] = "1.1.1"
 project.extra["LIBWEBP_PATH"] = "../../../../../libwebp"
 
 plugins {
