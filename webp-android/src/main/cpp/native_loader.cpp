@@ -10,7 +10,7 @@
 LazyClass ClassRegistry::bitmapClass = LazyClass("android/graphics/Bitmap");
 LazyClass ClassRegistry::bitmapCompressFormatClass = LazyClass("android/graphics/Bitmap$CompressFormat");
 LazyClass ClassRegistry::bitmapConfigClass = LazyClass("android/graphics/Bitmap$Config");
-LazyClass ClassRegistry::bitmapUtilsClass = LazyClass("com/aureusapps/android/extensions/BitmapUtils");
+LazyClass ClassRegistry::bitmapUtilsClass = LazyClass("com/aureusapps/android/webpandroid/utils/BitmapUtils");
 LazyClass ClassRegistry::booleanClass = LazyClass("java/lang/Boolean");
 LazyClass ClassRegistry::cancellationExceptionClass = LazyClass("java/util/concurrent/CancellationException");
 LazyClass ClassRegistry::contentResolverClass = LazyClass("android/content/ContentResolver");
@@ -22,7 +22,7 @@ LazyClass ClassRegistry::integerClass = LazyClass("java/lang/Integer");
 LazyClass ClassRegistry::parcelFileDescriptorClass = LazyClass("android/os/ParcelFileDescriptor");
 LazyClass ClassRegistry::runtimeExceptionClass = LazyClass("java/lang/RuntimeException");
 LazyClass ClassRegistry::uriClass = LazyClass("android/net/Uri");
-LazyClass ClassRegistry::uriExtensionsClass = LazyClass("com/aureusapps/android/extensions/UriExtensionsKt");
+LazyClass ClassRegistry::uriExtensionsClass = LazyClass("com/aureusapps/android/webpandroid/extensions/UriExtensionsKt");
 LazyClass ClassRegistry::webPAnimEncoderClass = LazyClass("com/aureusapps/android/webpandroid/encoder/WebPAnimEncoder");
 LazyClass ClassRegistry::webPAnimEncoderOptionsClass = LazyClass("com/aureusapps/android/webpandroid/encoder/WebPAnimEncoderOptions");
 LazyClass ClassRegistry::webPConfigClass = LazyClass("com/aureusapps/android/webpandroid/encoder/WebPConfig");

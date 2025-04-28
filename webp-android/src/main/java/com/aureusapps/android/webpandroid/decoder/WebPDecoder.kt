@@ -71,9 +71,9 @@ class WebPDecoder(private val context: Context) {
         }
     }
 
-    private inline fun <reified T> handleResultCode(
+    private inline fun <T> handleResultCode(
         resultCode: Int,
-        onSuccess: () -> T = { Unit as T },
+        onSuccess: () -> T,
     ): T {
         val codecResult = CodecHelper.resultCodeToCodecResult(resultCode)
         if (codecResult == CodecResult.SUCCESS) {
@@ -122,7 +122,9 @@ class WebPDecoder(private val context: Context) {
      */
     fun setDataBuffer(buffer: Buffer) {
         val resultCode = nativeSetDataBuffer(buffer)
-        handleResultCode<Unit>(resultCode)
+        handleResultCode(resultCode) {
+
+        }
     }
 
     /**
@@ -133,7 +135,9 @@ class WebPDecoder(private val context: Context) {
      */
     fun setDataSource(srcUri: Uri) {
         val resultCode = nativeSetDataSource(context, srcUri)
-        handleResultCode<Unit>(resultCode)
+        handleResultCode(resultCode) {
+
+        }
     }
 
     /**
@@ -167,7 +171,7 @@ class WebPDecoder(private val context: Context) {
      * Decodes the next frame of the WebP.
      *
      * @return The result of decoding the next frame in a [FrameDecodeResult] object. If the decoder reaches the end
-     * of the content, [FrameDecodeResult.frame] will be null, and [FrameDecodeResult.resultCode] will be equal to
+     * of the content, [FrameDecodeResult.frame] will be null, and [FrameDecodeResult.codecResult] will be equal to
      * [CodecResult.ERROR_NO_MORE_FRAMES].
      *
      * @throws CodecException if the decoding of the next frame fails.
@@ -194,7 +198,9 @@ class WebPDecoder(private val context: Context) {
      */
     fun decodeFrames(dstUri: Uri? = null) {
         val resultCode = nativeDecodeFrames(context, dstUri)
-        handleResultCode<Unit>(resultCode)
+        handleResultCode(resultCode) {
+
+        }
     }
 
     /**

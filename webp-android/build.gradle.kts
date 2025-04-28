@@ -1,22 +1,25 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.aureusapps.gradle.PublishLibraryConstants.GROUP_ID
-import com.aureusapps.gradle.PublishLibraryConstants.VERSION_NAME
-
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    id("com.aureusapps.gradle.update-version")
-    id("com.aureusapps.gradle.publish-library")
+    `maven-publish`
+    signing
 }
 
 class Props(project: Project) {
-    val groupId = project.findProperty(GROUP_ID) as String
-    val libWEBPPath = project.findProperty("LIBWEBP_PATH") as String
-    val versionName = project.findProperty(VERSION_NAME) as String
+    val groupId = project.findProperty("GROUP_ID") as String
+    val libwebpPath = project.findProperty("LIBWEBP_PATH") as String
+    val versionName = project.findProperty("VERSION_NAME") as String
+    val signingKeyId = project.findProperty("SIGNING_KEY_ID") as String?
+    val signingKey = project.findProperty("SIGNING_KEY") as String?
+    val signingPassword = project.findProperty("SIGNING_PASSWORD") as String?
 }
 
 val props = Props(project)
+
+project.group = props.groupId
+project.version = props.versionName
 
 android {
     compileSdk = 35
@@ -28,7 +31,7 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags("-std=c++17", "-fvisibility=hidden")
-                arguments("-DLIBWEBP_PATH=${props.libWEBPPath}")
+                arguments("-DLIBWEBP_PATH=${props.libwebpPath}")
                 targets("webpcodec_jni")
             }
         }
@@ -67,32 +70,57 @@ android {
     }
 }
 
-publishLibrary {
-    groupId.set(props.groupId)
-    artifactId.set("webp-android")
-    versionName.set(props.versionName)
-    libName.set("WebPAndroid")
-    libDescription.set("libwebp JNI bindings for Android.")
-    libUrl.set("https://github.com/UdaraWanasinghe/webp-android")
-    licenseName.set("MIT License")
-    licenseUrl.set("https://github.com/UdaraWanasinghe/webp-android/blob/main/LICENSE")
-    devId.set("UdaraWanasinghe")
-    devName.set("Udara Wanasinghe")
-    devEmail.set("udara.developer@gmail.com")
-    scmConnection.set("scm:git:https://github.com/UdaraWanasinghe/webp-android.git")
-    scmDevConnection.set("scm:git:ssh://git@github.com/UdaraWanasinghe/webp-android.git")
+publishing {
+    publications {
+        create<MavenPublication>("releasePublication") {
+            groupId = props.groupId
+            artifactId = "webp-android"
+            version = props.versionName
+            from(project.components.findByName("release"))
+
+            pom {
+                name = "WebPAndroid"
+                description = "libwebp JNI bindings for Android."
+                url = "https://github.com/UdaraWanasinghe/webp-android"
+
+                licenses {
+                    license {
+                        name = "MIT License"
+                        url = "https://github.com/UdaraWanasinghe/webp-android/blob/main/LICENSE"
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = "UdaraWanasinghe"
+                        name = "Udara Wanasinghe"
+                        email = "udara.developer@gmail.com"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:https://github.com/UdaraWanasinghe/webp-android.git"
+                    developerConnection = "scm:git:ssh://git@github.com/UdaraWanasinghe/webp-android.git"
+                    url = "https://github.com/UdaraWanasinghe/webp-android"
+                }
+            }
+        }
+    }
+}
+
+signing {
+    useInMemoryPgpKeys(props.signingKeyId, props.signingKey, props.signingPassword)
+    sign(publishing.publications)
 }
 
 dependencies {
     implementation(libs.kotlin.stdlib)
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.annotation)
     implementation(libs.okhttp)
-    implementation(libs.androidx.documentfile)
-    implementation(libs.aureusapps.extensions)
     implementation(libs.relinker)
 
+    androidTestImplementation(libs.androidx.core.ktx)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
-    androidTestImplementation(libs.androidx.core.ktx)
-    androidTestImplementation(libs.aureusapps.extensions)
 }

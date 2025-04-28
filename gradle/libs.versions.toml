@@ -1,0 +1,25 @@
+[versions]
+androidx-annotation = "1.9.1"
+androidx-core = "1.16.0"
+kotlin-stdlib = "2.1.20"
+okhttp = "4.12.0"
+relinker = "1.4.5"
+androidx-test-espresso = "3.6.1"
+androidx-test-ext-junit = "1.2.1"
+android-plugin = "8.8.2"
+kotlin-android-plugin = "2.1.20"
+nexus-publish-plugin = "2.0.0"
+
+[libraries]
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin-stdlib" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+relinker = { module = "com.getkeepsafe.relinker:relinker", version.ref = "relinker" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-test-espresso" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext-junit" }
+
+[plugins]
+com-android-library = { id = "com.android.library", version.ref = "android-plugin" }
+org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin-android-plugin" }
+io-github-gradle-nexus-publish-plugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish-plugin" }

@@ -13,13 +13,6 @@ import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.aureusapps.android.extensions.BitmapUtils
-import com.aureusapps.android.extensions.getBits
-import com.aureusapps.android.extensions.nextBytes
-import com.aureusapps.android.extensions.nextInt
-import com.aureusapps.android.extensions.nextString
-import com.aureusapps.android.extensions.putString
-import com.aureusapps.android.extensions.skipBytes
 import com.aureusapps.android.webpandroid.decoder.DecoderConfig
 import com.aureusapps.android.webpandroid.decoder.WebPDecodeListener
 import com.aureusapps.android.webpandroid.decoder.WebPDecoder
@@ -31,6 +24,13 @@ import com.aureusapps.android.webpandroid.encoder.WebPEncoder
 import com.aureusapps.android.webpandroid.encoder.WebPMuxAnimParams
 import com.aureusapps.android.webpandroid.encoder.WebPPreset
 import com.aureusapps.android.webpandroid.test.matchers.inRange
+import com.aureusapps.android.webpandroid.test.utils.getBits
+import com.aureusapps.android.webpandroid.test.utils.nextBytes
+import com.aureusapps.android.webpandroid.test.utils.nextInt
+import com.aureusapps.android.webpandroid.test.utils.nextString
+import com.aureusapps.android.webpandroid.test.utils.putString
+import com.aureusapps.android.webpandroid.test.utils.skipBytes
+import com.aureusapps.android.webpandroid.utils.BitmapUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -341,7 +341,7 @@ class WebPCodecInstrumentedTest {
                 Bitmap.CompressFormat.WEBP,
                 Bitmap.CompressFormat.WEBP_LOSSY,
                 Bitmap.CompressFormat.WEBP_LOSSLESS,
-                -> ".webp"
+                    -> ".webp"
             }
             val imageName = "${namePrefix}${middleName}${nameSuffix}"
             val expectedFrame = File(outputDirectory, imageName)

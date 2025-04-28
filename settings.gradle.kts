@@ -13,17 +13,9 @@ buildscript {
         mavenLocal()
         gradlePluginPortal()
     }
-    dependencies {
-        classpath("com.aureusapps.gradle:plugin-utils:1.0.1")
-    }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    versionCatalogs {
-        create("libs") {
-            from("com.aureusapps:version-catalog:1.0.6")
-        }
-    }
     repositories {
         mavenLocal()
         google()
@@ -31,4 +23,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "webp-android"
-include("example", "webp-android", "webp-android-simple")
+include("webp-android")

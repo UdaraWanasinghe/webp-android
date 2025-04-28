@@ -1,5 +1,5 @@
--keep class com.aureusapps.android.extensions.BitmapUtils {*;}
--keep class com.aureusapps.android.extensions.UriExtensionsKt {*;}
+-keep class com.aureusapps.android.webpandroid.utils.BitmapUtils {*;}
+-keep class com.aureusapps.android.webpandroid.extensions.UriExtensionsKt {*;}
 -keep class com.aureusapps.android.webpandroid.decoder.**
 -keep class com.aureusapps.android.webpandroid.decoder.** {*;}
 -keep class com.aureusapps.android.webpandroid.encoder.**

@@ -1,18 +1,41 @@
-import com.aureusapps.gradle.PluginUtils.loadLocalProperties
-import com.aureusapps.gradle.PublishLibraryConstants.GROUP_ID
-import com.aureusapps.gradle.PublishLibraryConstants.VERSION_CODE
-import com.aureusapps.gradle.PublishLibraryConstants.VERSION_NAME
+import java.io.FileInputStream
+import java.util.Properties
+
+fun loadLocalProperties(project: Project) {
+    val rootProject = project.rootProject
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        FileInputStream(file).use { inputStream ->
+            val properties = Properties()
+            properties.load(inputStream)
+            val extraProperties = rootProject.extensions.extraProperties
+            properties.forEach { key, value ->
+                extraProperties[key.toString()] = value.toString()
+            }
+        }
+    }
+}
 
 loadLocalProperties(project)
-project.extra[GROUP_ID] = "com.aureusapps.android"
-project.extra[VERSION_CODE] = 11
-project.extra[VERSION_NAME] = "1.1.0"
+project.extra["GROUP_ID"] = "com.aureusapps.android"
+project.extra["VERSION_CODE"] = 11
+project.extra["VERSION_NAME"] = "1.1.0"
 project.extra["LIBWEBP_PATH"] = "../../../../../libwebp"
 
 plugins {
-    alias(libs.plugins.com.android.application) apply false
     alias(libs.plugins.com.android.library) apply false
     alias(libs.plugins.org.jetbrains.kotlin.android) apply false
-    alias(libs.plugins.com.aureusapps.gradle.update.version) apply true
-    alias(libs.plugins.com.aureusapps.gradle.publish.library) apply true
+    alias(libs.plugins.io.github.gradle.nexus.publish.plugin) apply true
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            nexusUrl = uri("https://s01.oss.sonatype.org/service/local/")
+            snapshotRepositoryUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            username = project.findProperty("OSSRH_USERNAME") as String?
+            password = project.findProperty("OSSRH_PASSWORD") as String?
+            stagingProfileId = project.findProperty("STAGING_PROFILE_ID") as String?
+        }
+    }
 }

@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import com.aureusapps.android.extensions.BitmapUtils
+import com.aureusapps.android.webpandroid.utils.BitmapUtils
 import com.getkeepsafe.relinker.ReLinker
 import java.util.concurrent.CancellationException
 
@@ -33,18 +33,18 @@ class WebPEncoder(private val context: Context, width: Int = -1, height: Int = -
 
     private external fun nativeCreate(
         width: Int,
-        height: Int
+        height: Int,
     ): Long
 
     private external fun nativeConfigure(
         config: WebPConfig?,
-        preset: WebPPreset?
+        preset: WebPPreset?,
     )
 
     private external fun nativeEncode(
         context: Context,
         srcBitmap: Bitmap,
-        dstUri: Uri
+        dstUri: Uri,
     )
 
     private external fun nativeCancel()

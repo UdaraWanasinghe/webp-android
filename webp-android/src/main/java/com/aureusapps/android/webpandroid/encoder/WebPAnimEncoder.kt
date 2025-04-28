@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import com.aureusapps.android.extensions.BitmapUtils
+import com.aureusapps.android.webpandroid.utils.BitmapUtils
 import com.getkeepsafe.relinker.ReLinker
 
 /**
@@ -19,7 +19,7 @@ class WebPAnimEncoder(
     private val context: Context,
     width: Int = -1,
     height: Int = -1,
-    options: WebPAnimEncoderOptions? = null
+    options: WebPAnimEncoderOptions? = null,
 ) {
 
     init {
@@ -40,23 +40,23 @@ class WebPAnimEncoder(
     private external fun nativeCreate(
         width: Int,
         height: Int,
-        options: WebPAnimEncoderOptions?
+        options: WebPAnimEncoderOptions?,
     ): Long
 
     private external fun nativeConfigure(
         config: WebPConfig?,
-        preset: WebPPreset?
+        preset: WebPPreset?,
     )
 
     private external fun nativeAddFrame(
         timestamp: Long,
-        srcBitmap: Bitmap
+        srcBitmap: Bitmap,
     )
 
     private external fun nativeAssemble(
         context: Context,
         timestamp: Long,
-        dstUri: Uri
+        dstUri: Uri,
     )
 
     private external fun nativeCancel()
