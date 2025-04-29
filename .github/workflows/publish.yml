@@ -39,4 +39,5 @@ jobs:
 
       - name: Publish webp-android to MavenCentral
         working-directory: webp-android
-        run: ./gradlew publishMavenPublicationToMavenCentralRepository
+        run: echo $ORG_GRADLE_PROJECT_signingInMemoryKeyId $ORG_GRADLE_PROJECT_signingInMemoryKeyPassword $ORG_GRADLE_PROJECT_signingInMemoryKey
+#        run: ./gradlew publishMavenPublicationToMavenCentralRepository
