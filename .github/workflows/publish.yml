@@ -39,4 +39,4 @@ jobs:
 
       - name: Publish webp-android to MavenCentral
         working-directory: webp-android
-        run: ./gradlew :webp-android:publishMavenPublicationToMavenCentralRepository
+        run: ./gradlew tasks
