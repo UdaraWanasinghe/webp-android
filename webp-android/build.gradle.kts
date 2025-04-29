@@ -1,19 +1,18 @@
 @file:Suppress("UnstableApiUsage")
 
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    `maven-publish`
-    signing
+    id("com.vanniktech.maven.publish")
 }
 
 class Props(project: Project) {
-    val groupId = project.findProperty("GROUP_ID") as String
     val libwebpPath = project.findProperty("LIBWEBP_PATH") as String
+    val groupId = project.findProperty("GROUP_ID") as String
     val versionName = project.findProperty("VERSION_NAME") as String
-    val signingKeyId = project.findProperty("SIGNING_KEY_ID") as String?
-    val signingKey = project.findProperty("SIGNING_KEY") as String?
-    val signingPassword = project.findProperty("SIGNING_PASSWORD") as String?
 }
 
 val props = Props(project)
@@ -62,55 +61,50 @@ android {
     buildFeatures {
         buildConfig = true
     }
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-            withJavadocJar()
-        }
-    }
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("releasePublication") {
-            groupId = props.groupId
-            artifactId = "webp-android"
-            version = props.versionName
-            from(project.components.findByName("release"))
+mavenPublishing {
+    configure(
+        AndroidSingleVariantLibrary(
+            variant = "release",
+            sourcesJar = true,
+            publishJavadocJar = true,
+        )
+    )
 
-            pom {
-                name = "WebPAndroid"
-                description = "libwebp JNI bindings for Android."
-                url = "https://github.com/UdaraWanasinghe/webp-android"
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-                licenses {
-                    license {
-                        name = "MIT License"
-                        url = "https://github.com/UdaraWanasinghe/webp-android/blob/main/LICENSE"
-                    }
-                }
+    pom {
+        name = "WebPAndroid"
+        description = "libwebp JNI bindings for Android."
+        inceptionYear = "2023"
+        url = "https://github.com/UdaraWanasinghe/webp-android"
 
-                developers {
-                    developer {
-                        id = "UdaraWanasinghe"
-                        name = "Udara Wanasinghe"
-                        email = "udara.developer@gmail.com"
-                    }
-                }
-
-                scm {
-                    connection = "scm:git:https://github.com/UdaraWanasinghe/webp-android.git"
-                    developerConnection = "scm:git:ssh://git@github.com/UdaraWanasinghe/webp-android.git"
-                    url = "https://github.com/UdaraWanasinghe/webp-android"
-                }
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://github.com/UdaraWanasinghe/webp-android/blob/main/LICENSE"
+                distribution = "https://github.com/UdaraWanasinghe/webp-android/blob/main/LICENSE"
             }
         }
-    }
-}
 
-signing {
-    useInMemoryPgpKeys(props.signingKeyId, props.signingKey, props.signingPassword)
-    sign(publishing.publications)
+        developers {
+            developer {
+                id = "UdaraWanasinghe"
+                name = "Udara Wanasinghe"
+                email = "udara.developer@gmail.com"
+                url = "https://github.com/UdaraWanasinghe"
+            }
+        }
+
+        scm {
+            url = "https://github.com/UdaraWanasinghe/webp-android"
+            connection = "scm:git:https://github.com/UdaraWanasinghe/webp-android.git"
+            developerConnection = "scm:git:ssh://git@github.com/UdaraWanasinghe/webp-android.git"
+        }
+    }
+
+    signAllPublications()
 }
 
 dependencies {

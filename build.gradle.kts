@@ -25,17 +25,5 @@ project.extra["LIBWEBP_PATH"] = "../../../../../libwebp"
 plugins {
     alias(libs.plugins.com.android.library) apply false
     alias(libs.plugins.org.jetbrains.kotlin.android) apply false
-    alias(libs.plugins.io.github.gradle.nexus.publish.plugin) apply true
-}
-
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl = uri("https://ossrh-staging-api.central.sonatype.com/service/local/")
-            snapshotRepositoryUrl = uri("https://central.sonatype.com/repository/maven-snapshots/")
-            username = project.findProperty("OSSRH_USERNAME") as String?
-            password = project.findProperty("OSSRH_PASSWORD") as String?
-            stagingProfileId = project.findProperty("STAGING_PROFILE_ID") as String?
-        }
-    }
+    alias(libs.plugins.com.vanniktech.maven.publish) apply false
 }
