@@ -27,7 +27,7 @@ jobs:
       - name: Check out webp-android
         uses: actions/checkout@v3
         with:
-          ref: v1.1.1
+          ref: v1.1.2
           path: webp-android
 
       - name: Check out libwebp
@@ -39,4 +39,4 @@ jobs:
 
       - name: Publish webp-android to MavenCentral
         working-directory: webp-android
-        run: ./gradlew tasks
+        run: ./gradlew publishMavenPublicationToMavenCentralRepository

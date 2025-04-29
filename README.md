@@ -1,8 +1,8 @@
 # webp-android
 
 [![Publish](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml/badge.svg)](https://github.com/UdaraWanasinghe/webp-android/actions/workflows/publish.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)](https://central.sonatype.com/artifact/com.aureusapps.android/webp-android/1.1.1)
-[![javadoc](https://javadoc.io/badge2/com.aureusapps.android/webp-android/1.1.1/javadoc.svg)](https://javadoc.io/doc/com.aureusapps.android/webp-android/1.1.1)
+[![Maven Central](https://img.shields.io/maven-central/v/com.aureusapps.android/webp-android)](https://central.sonatype.com/artifact/com.aureusapps.android/webp-android/1.1.2)
+[![javadoc](https://javadoc.io/badge2/com.aureusapps.android/webp-android/1.1.2/javadoc.svg)](https://javadoc.io/doc/com.aureusapps.android/webp-android/1.1.2)
 
 ## What's Inside
 
@@ -16,7 +16,7 @@
 ```groovy
 // Module-level build.gradle.kts
 dependencies {
-    implementation "com.aureusapps.android:webp-android:1.1.1"
+    implementation "com.aureusapps.android:webp-android:1.1.2"
 }
 ```
 
