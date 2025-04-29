@@ -6,32 +6,33 @@ on:
       - '*'
   workflow_dispatch:
 
-env:
-  ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-  ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-  ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
-  ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_IN_MEMORY_KEY_ID }}
-  ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
-
 jobs:
   publish:
     name: Release build and publish
     runs-on: ubuntu-latest
+    environment:
+      name: maven-central-publish
+    env:
+      ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+      ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+      ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+      ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_IN_MEMORY_KEY_ID }}
+      ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
     steps:
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: adopt
           java-version: 17
 
       - name: Check out webp-android
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          ref: v1.1.2
+          ref: ${{ github.ref_name }}
           path: webp-android
 
       - name: Check out libwebp
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: webmproject/libwebp
           ref: 1.5.0
@@ -39,5 +40,4 @@ jobs:
 
       - name: Publish webp-android to MavenCentral
         working-directory: webp-android
-        run: echo "Key ${{ secrets.MAVEN_CENTRAL_USERNAME }} ${{ secrets.SIGNING_IN_MEMORY_KEY }}"
-#        run: ./gradlew publishMavenPublicationToMavenCentralRepository
+        run: ./gradlew publishMavenPublicationToMavenCentralRepository
